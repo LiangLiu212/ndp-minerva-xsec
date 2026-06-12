@@ -90,12 +90,6 @@ specs derive per-file xrootd URLs from those lists, never hand-written.)
      with the expected dtype (data-tree vs MC-tree presence semantics respected),
      reported per role group — the input is "valid for this analysis" iff the
      contract passes.
-7. Run `fetch_data.py` for both specs (21.6 GB MC in background), then
-   `summarize_inputs.py` on the golden pair.
-*Gates: sha256 match frozen manifest; tarball unpacked + contents listed; re-run of
-fetch is an idempotent no-op; summary reproduces POT 2.049772e17 / 9.988797e18 and
-data timestamps fall inside the ME1A run-period window; branch contract passes for
-all roles on both files.* STOP.
 
 ## Step 3 — Stage 2: cuts code (reco selection + signal definition)
 
