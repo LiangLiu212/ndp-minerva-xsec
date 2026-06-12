@@ -18,6 +18,15 @@ To settle at Stage-2.3 (weighters): identify the exact reco-tree branch(es) behi
 `MinosMuonEfficiencyCorrection::Get(...).GetCorrection(pmu, batchPOT, isFHC)`), and
 confirm they are filled in the open-data MasterAnaDev tuples.
 
+**Update 2026-06-12 (mostly resolved — see docs/cv_reweight.md §4):**
+`GetBatchPOT` = `numi_pot / k` with k from `batch_structure` and
+`reco_vertex_batch` (MinervaUniverse.cxx:441-484; k ∈ {4,5,6,8,10}).
+All four input branches verified present in BOTH open-data tuples
+(data + MC, streamed 2026-06-12): `numi_pot` (double), `batch_structure`
+(int32), `reco_vertex_batch` (int32), `MasterAnaDev_minos_trk_p` (double).
+REMAINING (only): locate the efficiency-table file in the tarball at the
+inventory step.
+
 ### 2026-06-12 — Flux usage 1 (CV): normalization integral Φ_int
 
 Flux enters the cross-section denominator once, as a scalar:
