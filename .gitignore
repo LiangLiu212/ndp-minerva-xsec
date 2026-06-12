@@ -1,0 +1,18 @@
+# heavy data (lives in ../data/ anyway, but guard local copies)
+data/
+*.root
+*.tgz
+
+# run outputs
+results/*
+!results/.gitkeep
+
+# python
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+
+# misc
+.DS_Store
+*.log
