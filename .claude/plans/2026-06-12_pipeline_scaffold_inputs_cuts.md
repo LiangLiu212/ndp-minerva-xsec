@@ -28,6 +28,14 @@ Decisions captured:
   with provenance comments (NSFDefaults.h / TargetUtils / paper).
 - Environment: parent pixi workspace `/home/feanor/ndp-genesis-agent/pixi.toml`,
   auto-discovered (this repo has no own pixi.toml).
+- **Streaming-only policy (2026-06-12): AnaTuples are never copied to local disk.**
+  All reads go through xrootd streaming; uproot fetches only the requested
+  branches/trees (verified offsite: Meta-tree POT reads of both golden files).
+  File identity is checked by streamed fingerprints — POT_Used/POT_Total + tree
+  entry counts vs the frozen 2026-06-09 manifest — not sha256 (which would require
+  reading whole files). The only local-fetch input in the entire pipeline is the
+  FluxAndReweightFiles tarball (a .tgz cannot be streamed), deferred to the weights
+  stage that consumes it.
 
 ## Step 0 — Scaffold + git init + commit plan  ✅ (this commit)
 
@@ -42,23 +50,26 @@ README.md (4-stage workflow), .gitignore, this plan, `config/`, `xsec/__init__.p
    mass/charge and ν_μ/μ⁻ MC IDs offline.
 *Gate: both imports + printed PDG lookup (m_μ, IDs 13/14 fetched via API).* STOP.
 
-## Step 2 — Stage 1: input-file structure + all external data + input summary
+## Step 2 — Stage 1: input-file structure (streaming-only) + input summary
 
-Every input declared in a spec; finalized scripts materialize, verify, and
-**summarize** them. (Already done ahead of this step, commit bdb6066: official
-playlist file lists ingested to `config/playlists/` with 12 pinned input tests —
-specs derive per-file xrootd URLs from those lists, never hand-written.)
+Every input declared in a spec; verification and summary happen **by streaming** —
+no AnaTuple is ever downloaded. (Already done ahead of this step, commit bdb6066:
+official playlist file lists ingested to `config/playlists/` with 12 pinned input
+tests — specs derive per-file xrootd URLs from those lists, never hand-written.)
 
-1. `config/datasets/me1A_single_pair.json` — data run 10066 (196 MB) + MC run 110040
-   (21.6 GB): role, playlist (minervame1A), run, xrootd URL (taken from
-   `config/playlists/*.txt`), expected sha256 + size from the frozen exploration-repo
-   manifest (`runs/2026-06-09_dsigma_dpt/manifest.json`), POT recorded after first
-   read (reference: POT_Used 2.049772e17 data / 9.988797e18 MC, streamed 2026-06-12).
+1. `config/datasets/me1A_single_pair.json` — data run 10066 + MC run 110040:
+   role, playlist (minervame1A), run, xrootd URL (taken from
+   `config/playlists/*.txt`), and **expected streamed fingerprints** — Meta
+   POT_Used/POT_Total and reco/Truth entry counts — referenced against the frozen
+   exploration-repo manifest (`runs/2026-06-09_dsigma_dpt/manifest.json`:
+   POT_Used 2.049772e17 data / 9.988797e18 MC, 6304 reco data, 186205 reco +
+   544600 Truth MC). Remote size from `xrdfs stat` is informational.
    Spec format scales to playlists 1B–1P without code changes.
 2. `config/datasets/aux_flux_reweight.json` —
    `FluxAndReweightFiles_Tarred_Feb_20_2026_1145_FNALTime.tgz`
-   (`root://fndca1.fnal.gov:1095//pnfs/fnal.gov/usr/minerva/persistent/OpenData/FluxAndReweightFiles/`),
-   size via `xrdfs stat`; unpack target recorded.
+   (`root://fndca1.fnal.gov:1095//pnfs/fnal.gov/usr/minerva/persistent/OpenData/FluxAndReweightFiles/`).
+   **The one exception to streaming-only** (a .tgz cannot be streamed): spec written
+   now; the actual fetch+unpack happens at the weights stage that consumes it.
 3. `config/published.json` — pointer to the vendored anc/ answer key (referenced,
    not duplicated).
 4. **`config/branches.json` — curated analysis branch catalog** (single source of
@@ -71,15 +82,12 @@ specs derive per-file xrootd URLs from those lists, never hand-written.)
    exploration repo `docs/minerva/branches.md` + vendored Tuple-Documentation —
    cited per entry. Step 3's `REQUIRED_BRANCHES` is **imported from this catalog**
    (docs and code cannot drift).
-5. `fetch_data.py` (argparse + RunLog): `--spec <json> --data-root <dir>` (default
-   `/home/feanor/ndp-genesis-agent/data/`, shared outside the repo); `xrdfs ls`
-   check → resumable `xrdcp` of missing files → sha256 verify → tarball unpack →
-   summary; RunLog records every file.
-6. **`summarize_inputs.py` (argparse + RunLog) — the Stage-1 summary feature.**
-   Given a dataset spec (+ branch catalog), works on local files or streams via
-   xrootd, and produces `results/<ts>__summarize_inputs/{summary.md,summary.json}`:
-   - per file: run, role, playlist, size, sha256 status, Meta POT_Used/POT_Total,
-     reco-tree entries (+ Truth entries for MC);
+5. **`summarize_inputs.py` (argparse + RunLog) — the Stage-1 summary feature.**
+   Given a dataset spec (+ branch catalog), streams via xrootd and produces
+   `results/<ts>__summarize_inputs/{summary.md,summary.json}`:
+   - per file: run, role, playlist, remote size (`xrdfs stat`), Meta
+     POT_Used/POT_Total, reco-tree entries (+ Truth entries for MC), fingerprint
+     status (streamed values vs spec expectations);
    - per data file: **data-taking time span** from the event GPS-time branches
      (exact branch names verified against the tuple at implementation; candidates
      `ev_gps_time_sec`/`ev_gps_time_usec`), cross-checked against the published
@@ -103,15 +111,17 @@ Vectorized uproot/awkward, arrays in / boolean masks out, no I/O inside:
    `reco_selection`). Constants from `config/constants.py`.
 3. `xsec/signal.py` — truth signal (mc_incoming==ν_μ && mc_current==CC) and
    phase space (z, apothem, θ≤20°, p_z≥1.5 GeV) for the efficiency denominator.
-4. `tests/` — synthetic per-cut boundary tests + golden parity gate on staged
-   files: **exactly 844 selected data / 43643 selected MC (43539 signal, 104
-   background)**; skips cleanly when data not staged.
+4. `tests/` — synthetic per-cut boundary tests + golden parity gate **streaming the
+   golden pair via xrootd** (network-marked, skips cleanly offline; reads only the
+   catalogued branches ≈ 1–2% of file bytes): **exactly 844 selected data / 43643
+   selected MC (43539 signal, 104 background)**.
 *Gates: pytest green; parity exact; branch list documented.* STOP.
 
 ## Later stages (outline only)
 
-- Stage 3: `make_ingredients.py` — event loop → `.npz` with the six ingredients,
-  binning-agnostic flat slots (1D pT and 2D pT×p_∥ as config).
+- Stage 3: `make_ingredients.py` — event loop **streaming source tuples via xrootd**
+  → `.npz` with the six ingredients (the intermediates are the only local
+  artifacts), binning-agnostic flat slots (1D pT and 2D pT×p_∥ as config).
 - Stage 4: `extract_xsec.py` — bkg subtraction → NumPy D'Agostini (10 iter) →
   efficiency → Φ, T (TargetUtils port, ±2% gate vs 3.23e30), POT, widths → dσ;
   `compare_published.py` vs anc tables.
@@ -122,5 +132,8 @@ Vectorized uproot/awkward, arrays in / boolean masks out, no I/O inside:
 
 1. Private runlog_tools needs SSH — verified working.
 2. `pdg` offline DB behavior — smoke-tested in Step 1 first.
-3. 21.6 GB xrootd egress slow — background + resumable.
+3. Streaming latency/repeat-read cost (no local copies by policy) — uproot reads
+   only catalogued branches (~1–2% of bytes); slow full-loop passes are network-
+   marked tests or RunLog-tracked runs; Stage-3 intermediates make downstream
+   stages local.
 4. Vectorized-cuts drift vs certified selector — blocking parity gate in Step 3.
