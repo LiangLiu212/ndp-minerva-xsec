@@ -171,6 +171,24 @@ To settle at implementation:
 
 ## Resolved
 
+### 2026-06-12 — Reco-selection cross-check vs MAT/MAT-MINERvA source
+
+Every cut and branch of the 6-cut reco selection traced through the C++:
+
+| Cut | C++ path | Branch | Condition | Verdict |
+|---|---|---|---|---|
+| ZRange | CCInclusiveCuts.h:156-170 → MuonFunctions.h:154 | `vtx[2]` | `>=5980 && <=8422` (inclusive) | exact match |
+| Apothem | CCInclusiveCuts.h:174-186 | `vtx[0..1]` | strict `<`, slope −1/√3, intercept 2a/√3 | exact match |
+| MaxMuonAngle | CCInclusiveCuts.h:141-152 → MuonFunctions.h:120-134 → BaseUniverse.cxx:67-75 | `muon_thetaX`, `muon_thetaY` | `theta3D < 20°` strict | formula algebraically identical (sec² −1 = tan²); MAT's backward fold (π−θ for θX/Y>π/2) omitted as in certified selector — shielded by MINOS match |
+| HasMINOSMatch | CCInclusiveCuts.h:45-57 → CVUniverse.h:107-110,191 | `isMinosMatchTrack` | `== 1` | exact match |
+| NoDeadtime | CCInclusiveCuts.h:101-102 = `Maximum<…,&GetTDead>(1)` → Cut.h:135-137 (`<= m_Max`) → CVUniverse.h:126-128 | `phys_n_dead_discr_pair_upstream_prim_track_proj` | `<= 1` | exact match — **corrects an earlier reading**: the `< m_nDeadAllowed` snippet at CCInclusiveCuts.h:78-90 is COMMENTED-OUT example code; the live path is the `Maximum` alias with `<=` |
+| IsNeutrino | CCInclusiveCuts.h:111-119 → CVUniverse.h:159-160 | `MasterAnaDev_minos_trk_qp` | `< 0` | exact match |
+
+Cut order in the C++ Cutter affects only per-cut cutflow statistics
+(short-circuit `all_of`); the final selection is the AND, so the vectorized
+mask composition is equivalent — per-cut cutflows must be derived
+sequentially if ever compared.
+
 ### 2026-06-12 — Step-2 implementation findings (streamed verification of the golden pair)
 
 Evidence: `results/2026_06_12_195440__summarize_inputs/` + RunLog

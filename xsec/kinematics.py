@@ -19,6 +19,15 @@ def theta3d(theta_x, theta_y):
     """3D polar angle from the two projected track angles (radians).
 
     acos(1/sqrt(1 + tan^2(tx) + tan^2(ty))) — selector's theta3d, vectorized.
+
+    Cross-checked vs MAT BaseUniverse::theta3D (BaseUniverse.cxx:67-75,
+    called by GetThetamu via MuonFunctions.h:133): MAT uses
+    acos(1/sqrt(sec^2(tx) + sec^2(ty) - 1)), algebraically IDENTICAL since
+    sec^2 - 1 = tan^2. MAT additionally folds backward tracks
+    (theta_x or theta_y > pi/2 -> pi - angle); the certified selector and
+    this port deliberately omit the fold — a backward muon cannot satisfy
+    the MINOS match, so the final selection is unaffected (certified parity:
+    0 mismatches on the golden files).
     """
     tx = np.tan(np.asarray(theta_x, dtype=np.float64))
     ty = np.tan(np.asarray(theta_y, dtype=np.float64))
