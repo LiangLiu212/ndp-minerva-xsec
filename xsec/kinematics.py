@@ -44,6 +44,21 @@ def in_hex_apothem(x, y):
     return (ax < APOTHEM_MM) & (ay < APOTHEM_SLOPE * ax + APOTHEM_INTERCEPT_MM)
 
 
+def reco_pt_pz_gev(leptonE, theta_x, theta_y):
+    """Reconstructed muon (p_T, p_parallel) in GeV/c — Stage-B convention.
+
+    p = |leptonE[:, 0:3]| (MeV); theta = theta3d(muon_thetaX, muon_thetaY);
+    p_T = p*sin(theta)/1000, p_parallel = p*cos(theta)/1000.
+    Source: dsigma_dpt.py:179-190 (frozen; pT identical to Stage B
+    stageB_pT_selection.py:189-194); p_parallel uses the same |p| and angle.
+    """
+    lep = np.asarray(leptonE, dtype=np.float64)
+    p_mev = np.sqrt(lep[:, 0] ** 2 + lep[:, 1] ** 2 + lep[:, 2] ** 2)
+    theta = theta3d(theta_x, theta_y)
+    return (p_mev * np.sin(theta) / 1000.0,
+            p_mev * np.cos(theta) / 1000.0)
+
+
 def true_theta_p(px, py, pz):
     """True angle w.r.t. the NuMI beam axis and momentum magnitude (MeV/c).
 

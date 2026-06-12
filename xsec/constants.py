@@ -43,6 +43,12 @@ APOTHEM_INTERCEPT_MM = 2.0 * APOTHEM_MM / math.sqrt(3.0)
 MAX_MU_THETA_RAD = 20.0 * math.pi / 180.0
 PZ_MIN_TRUE_MEV = 1500.0  # truth::PZMu >= 1500 MeV/c (runEventLoop.cpp:377)
 
+# --- dead-time guard ----------------------------------------------------------
+# NoDeadtime(1) == Maximum<...,&GetTDead>(1): pass if <= 1 dead discriminator
+# pairs upstream of the track projection (Cut.h:137; cross-checked 2026-06-12 —
+# the "<1" in CCInclusiveCuts.h:78-90 is commented-out example code).
+DEAD_MAX_DISCR_PAIRS = 1
+
 # --- beam geometry ----------------------------------------------------------
 # NuMI beam points downward in detector coordinates; true kinematics are
 # evaluated in beam coordinates via RotateX(NUMI_BEAM_ANGLE_RAD).
