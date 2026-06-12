@@ -42,14 +42,18 @@ README.md (4-stage workflow), .gitignore, this plan, `config/`, `xsec/__init__.p
    mass/charge and ν_μ/μ⁻ MC IDs offline.
 *Gate: both imports + printed PDG lookup (m_μ, IDs 13/14 fetched via API).* STOP.
 
-## Step 2 — Stage 1: input-file structure + all external data
+## Step 2 — Stage 1: input-file structure + all external data + input summary
 
-Every input declared in a spec; one finalized script materializes and verifies.
+Every input declared in a spec; finalized scripts materialize, verify, and
+**summarize** them. (Already done ahead of this step, commit bdb6066: official
+playlist file lists ingested to `config/playlists/` with 12 pinned input tests —
+specs derive per-file xrootd URLs from those lists, never hand-written.)
+
 1. `config/datasets/me1A_single_pair.json` — data run 10066 (196 MB) + MC run 110040
-   (21.6 GB): role, playlist (minervame1A), run, xrootd URL
-   (`root://fndcadoor.fnal.gov:1095//pnfs/fnal.gov/usr/minerva/persistent/OpenData/MediumEnergy_FHC/{Data,MC/StandardMC}/Playlist1A/…`),
-   expected sha256 + size from the frozen exploration-repo manifest
-   (`runs/2026-06-09_dsigma_dpt/manifest.json`), POT recorded after first read.
+   (21.6 GB): role, playlist (minervame1A), run, xrootd URL (taken from
+   `config/playlists/*.txt`), expected sha256 + size from the frozen exploration-repo
+   manifest (`runs/2026-06-09_dsigma_dpt/manifest.json`), POT recorded after first
+   read (reference: POT_Used 2.049772e17 data / 9.988797e18 MC, streamed 2026-06-12).
    Spec format scales to playlists 1B–1P without code changes.
 2. `config/datasets/aux_flux_reweight.json` —
    `FluxAndReweightFiles_Tarred_Feb_20_2026_1145_FNALTime.tgz`
@@ -57,13 +61,41 @@ Every input declared in a spec; one finalized script materializes and verifies.
    size via `xrdfs stat`; unpack target recorded.
 3. `config/published.json` — pointer to the vendored anc/ answer key (referenced,
    not duplicated).
-4. `fetch_data.py` (argparse + RunLog): `--spec <json> --data-root <dir>` (default
+4. **`config/branches.json` — curated analysis branch catalog** (single source of
+   truth for "which branches this analysis uses and why"): branch name → tree
+   (reco/Truth/Meta), dtype, units, one-line definition, and role(s) ∈
+   {`measurement` (muon p_T / p_∥ ingredients: lepton momentum + angles),
+   `reco_selection` (the 6 cuts' branches), `signal_definition`
+   (mc_incoming, mc_current), `phase_space` (truth vertex + truth lepton
+   kinematics), `pot` (Meta/POT_Used, POT_Total)}. Definitions sourced from the
+   exploration repo `docs/minerva/branches.md` + vendored Tuple-Documentation —
+   cited per entry. Step 3's `REQUIRED_BRANCHES` is **imported from this catalog**
+   (docs and code cannot drift).
+5. `fetch_data.py` (argparse + RunLog): `--spec <json> --data-root <dir>` (default
    `/home/feanor/ndp-genesis-agent/data/`, shared outside the repo); `xrdfs ls`
    check → resumable `xrdcp` of missing files → sha256 verify → tarball unpack →
    summary; RunLog records every file.
-5. Run for both specs (21.6 GB MC in background).
-*Gates: sha256 match frozen manifest; tarball unpacked + contents listed; re-run is
-an idempotent no-op.* STOP.
+6. **`summarize_inputs.py` (argparse + RunLog) — the Stage-1 summary feature.**
+   Given a dataset spec (+ branch catalog), works on local files or streams via
+   xrootd, and produces `results/<ts>__summarize_inputs/{summary.md,summary.json}`:
+   - per file: run, role, playlist, size, sha256 status, Meta POT_Used/POT_Total,
+     reco-tree entries (+ Truth entries for MC);
+   - per data file: **data-taking time span** from the event GPS-time branches
+     (exact branch names verified against the tuple at implementation; candidates
+     `ev_gps_time_sec`/`ev_gps_time_usec`), cross-checked against the published
+     run-period window for the playlist (ME1A: 12-Sep-2013 → 14-Jan-2014); MC
+     marked "simulated" (timestamps not physical);
+   - dataset level: total POT, file count, run range, date range;
+   - **branch contract check**: every catalogued branch exists in the expected tree
+     with the expected dtype (data-tree vs MC-tree presence semantics respected),
+     reported per role group — the input is "valid for this analysis" iff the
+     contract passes.
+7. Run `fetch_data.py` for both specs (21.6 GB MC in background), then
+   `summarize_inputs.py` on the golden pair.
+*Gates: sha256 match frozen manifest; tarball unpacked + contents listed; re-run of
+fetch is an idempotent no-op; summary reproduces POT 2.049772e17 / 9.988797e18 and
+data timestamps fall inside the ME1A run-period window; branch contract passes for
+all roles on both files.* STOP.
 
 ## Step 3 — Stage 2: cuts code (reco selection + signal definition)
 
@@ -73,7 +105,8 @@ Vectorized uproot/awkward, arrays in / boolean masks out, no I/O inside:
 2. `xsec/cuts.py` — 6 named mask functions + `reco_selection(arrays)`:
    ZRange [5980,8422] mm, Apothem 850 mm, θ_μ<20°, isMinosMatchTrack==1,
    deadtime≤1, minos_trk_qp<0 (MINOS-match guard ordering preserved);
-   exports `REQUIRED_BRANCHES`. Constants from `config/constants.py`.
+   `REQUIRED_BRANCHES` imported from `config/branches.json` (role
+   `reco_selection`). Constants from `config/constants.py`.
 3. `xsec/signal.py` — truth signal (mc_incoming==ν_μ && mc_current==CC) and
    phase space (z, apothem, θ≤20°, p_z≥1.5 GeV) for the efficiency denominator.
 4. `tests/` — synthetic per-cut boundary tests + golden parity gate on staged
