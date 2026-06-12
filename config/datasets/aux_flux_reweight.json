@@ -1,0 +1,27 @@
+{
+  "_meta": {
+    "name": "aux_flux_reweight",
+    "description": "FluxAndReweightFiles tarball — the ONE exception to the streaming-only policy (a .tgz cannot be streamed). Consumed at the weights stage.",
+    "status": "fetched 2026-06-12 (size verified vs remote stat); unpack deferred to the weights stage"
+  },
+  "url": "root://fndca1.fnal.gov:1095/pnfs/fnal.gov/usr/minerva/persistent/OpenData/FluxAndReweightFiles/FluxAndReweightFiles_Tarred_Feb_20_2026_1145_FNALTime.tgz",
+  "local_path": "data/flux/FluxAndReweightFiles_Tarred_Feb_20_2026_1145_FNALTime.tgz",
+  "size_bytes": 2596125261,
+  "remote_mtime": "2026-02-20 17:46:54",
+  "release_tag": "Feb_20_2026_1145_FNALTime",
+  "entries": 1821,
+  "layout": {
+    "MATFluxAndReweightFiles/": "equivalent of $PLOTUTILSROOT/data (flux/, flux_daisy/, hadronReweight/, mhrwKineRenorm/, dataMCWiggle/, lowNuReweight/, neutronInelasticReweight/)",
+    "MParamFiles/": "equivalent of $MPARAMFILES parent (data/FluxConstraints/ incl. sorted_NuEConstraint_FHC_RHC_IMD.txt)"
+  },
+  "key_files_for_me1A_cv": [
+    "MATFluxAndReweightFiles/flux/flux-gen2thin-pdg14-minervame1D_rearrangedUniverses.root",
+    "MATFluxAndReweightFiles/flux/flux-g4numiv6-pdg14-minervame1D.root",
+    "MParamFiles/data/FluxConstraints/sorted_NuEConstraint_FHC_RHC_IMD.txt"
+  ],
+  "notes": [
+    "me1A-1F all map to the minervame1D flux files (FluxReweighter::playlistString).",
+    "Reweighted flux hist: flux_E_cvweighted; generated flux hist: flux_E_unweighted.",
+    "nu-e constraint is applied at load time from the constraint txt; see docs/open_questions.md."
+  ]
+}

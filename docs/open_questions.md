@@ -171,4 +171,31 @@ To settle at implementation:
 
 ## Resolved
 
-(none yet)
+### 2026-06-12 — Step-2 implementation findings (streamed verification of the golden pair)
+
+Evidence: `results/2026_06_12_195440__summarize_inputs/` + RunLog
+`~/log/ndp-minerva-xsec/2026_06_12_195444.log`; closes items from the "Data
+files", "MC files" and (partially) "MINOS-efficiency" entries above.
+
+- **Data file trees**: `MasterAnaDev` + `Meta` only — there is NO Truth tree in
+  data files (not even empty).
+- **mc_* branches are genuinely ABSENT in the data tree** (mc_incoming,
+  mc_current, mc_intType, mc_vtx, mc_primFSLepton, mc_incomingE verified absent
+  on run 10066) — no sentinel-reading hazard for OUR branches; the branch
+  contract asserts absence.
+- **Timestamp branches identified**: `ev_gps_time_sec` / `ev_gps_time_usec`
+  (int32, Unix epoch UTC). Run 10066 spans 2014-01-14 09:27:32 → 13:41:53 UTC,
+  4.24 h, 23 subruns (matches the published "10066/23"), ending 2 s before the
+  published ME1A period end.
+- **uproot Truth-cycle handling verified**: `f["Truth"]` resolves to the live
+  cycle `Truth;285` (544,600 entries); stale `Truth;284` (543,576) present but
+  not double-counted. Cycle audit is part of the MC extras block.
+- **Golden fingerprints reproduced by streaming**: POT_Used 2.049772e17 (data) /
+  9.988797e18 (MC), ratio 0.0205207; entries 6304 / 186205+544600; truth-signal
+  rows 397,604 — exactly the frozen-manifest value; 36 truth_genie_wgt_*
+  families in both MC trees.
+- **Beam-intensity branches located** (for the MINOS-efficiency entry): the reco
+  tree carries a per-spill `numi_*` block incl. `numi_pot`, toroids
+  (`numi_tor101`, `numi_tortgt`), horn current and beam-quality flags — prime
+  candidates for GetBatchPOT's input; exact mapping still to be confirmed from
+  MAT-MINERvA source at the weights stage.
