@@ -68,8 +68,11 @@ tests — specs derive per-file xrootd URLs from those lists, never hand-written
 2. `config/datasets/aux_flux_reweight.json` —
    `FluxAndReweightFiles_Tarred_Feb_20_2026_1145_FNALTime.tgz`
    (`root://fndca1.fnal.gov:1095//pnfs/fnal.gov/usr/minerva/persistent/OpenData/FluxAndReweightFiles/`).
-   **The one exception to streaming-only** (a .tgz cannot be streamed): spec written
-   now; the actual fetch+unpack happens at the weights stage that consumes it.
+   **The one exception to streaming-only** (a .tgz cannot be streamed). Status: the
+   tarball is already fetched (2026-06-12) to `data/flux/`, 2,596,125,261 B verified
+   vs remote stat; unpack still deferred to the weights stage. Contents: 1821
+   entries, two trees mapping to the C++ env vars — `MATFluxAndReweightFiles/` ≡
+   `$PLOTUTILSROOT/data`, `MParamFiles/` ≡ `$MPARAMFILES` parent.
 3. `config/published.json` — pointer to the vendored anc/ answer key (referenced,
    not duplicated).
 4. **`config/branches.json` — curated analysis branch catalog** (single source of
@@ -82,22 +85,47 @@ tests — specs derive per-file xrootd URLs from those lists, never hand-written
    exploration repo `docs/minerva/branches.md` + vendored Tuple-Documentation —
    cited per entry. Step 3's `REQUIRED_BRANCHES` is **imported from this catalog**
    (docs and code cannot drift).
-5. **`summarize_inputs.py` (argparse + RunLog) — the Stage-1 summary feature.**
-   Given a dataset spec (+ branch catalog), streams via xrootd and produces
-   `results/<ts>__summarize_inputs/{summary.md,summary.json}`:
-   - per file: run, role, playlist, remote size (`xrdfs stat`), Meta
-     POT_Used/POT_Total, reco-tree entries (+ Truth entries for MC), fingerprint
-     status (streamed values vs spec expectations);
-   - per data file: **data-taking time span** from the event GPS-time branches
-     (exact branch names verified against the tuple at implementation; candidates
-     `ev_gps_time_sec`/`ev_gps_time_usec`), cross-checked against the published
-     run-period window for the playlist (ME1A: 12-Sep-2013 → 14-Jan-2014); MC
-     marked "simulated" (timestamps not physical);
-   - dataset level: total POT, file count, run range, date range;
-   - **branch contract check**: every catalogued branch exists in the expected tree
-     with the expected dtype (data-tree vs MC-tree presence semantics respected),
-     reported per role group — the input is "valid for this analysis" iff the
-     contract passes.
+5. **`config/run_periods.json` — vendored run-period table** (from
+   minerva.fnal.gov/data-run-periods/, fetched 2026-06-12): per playlist → run/subrun
+   range, start/end timestamps, beam config (`me000z200i`), water/helium target
+   state. Source of truth for the "run period" fields of the summary and for
+   validating per-file timestamps and run numbers.
+6. **`summarize_inputs.py` (argparse + RunLog) — the Stage-1 summary, streaming-only.**
+   `--spec <json> --catalog <json> [--outdir]` → `results/<ts>__summarize_inputs/{summary.md,summary.json}`;
+   the JSON is the machine-readable contract, the md a human-readable table view.
+
+   **Per-file record, common core (every role):**
+   - *identity*: role (data/MC), playlist, run, xrootd URL, remote size + mtime
+     (`xrdfs stat`);
+   - *run period*: the playlist's published window from `config/run_periods.json`
+     (run range, start/end dates, target state) + check that the file's run number
+     falls inside it;
+   - *timestamps*: data → min/max event GPS time streamed from the timestamp
+     branches (exact names verified at implementation; candidates
+     `ev_gps_time_sec`/`ev_gps_time_usec`), ISO-8601, checked inside the run-period
+     window; MC → marked "simulated" (timestamps not physical);
+   - *events*: reco-tree entry count; MC additionally Truth-tree entry count (live
+     cycle only — assert no stale-cycle double count);
+   - *POT*: Meta POT_Used + POT_Total + number of Meta entries (≥1 asserted);
+   - *fingerprint status*: streamed values vs spec expectations, pass/fail per field.
+
+   **Role-specific extension blocks — designed open-ended**: each block is produced
+   by a registered summarizer function keyed on role, so "potential more info"
+   later means adding a function, not restructuring the schema:
+   - data extras (v1): `ev_run`/`ev_subrun` consistency with the filename run
+     number; subrun count; timestamp span in hours;
+   - MC extras (v1): Truth/reco entry ratio; truth-signal row count
+     (mc_incoming==ν_μ && mc_current==CC) as a cheap physics fingerprint;
+     presence check of the `truth_genie_wgt_*` branches needed at the weights
+     stage; Truth-cycle audit (cycle numbers seen, entries per cycle).
+
+   **Dataset level:** file count, run range, total POT_Used (data and MC
+   separately), data/MC POT ratio, combined timestamp range vs the run-period
+   window, per-role event totals.
+
+   **Branch contract check** (gate for "valid for this analysis"): every
+   catalogued branch exists in the expected tree with the expected dtype,
+   data-tree vs MC-tree presence semantics respected, reported per role group.
 
 ## Step 3 — Stage 2: cuts code (reco selection + signal definition)
 
