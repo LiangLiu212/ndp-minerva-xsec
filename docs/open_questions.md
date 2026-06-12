@@ -171,6 +171,29 @@ To settle at implementation:
 
 ## Resolved
 
+### 2026-06-12 — POT ledger over ALL 12 playlists: open data carries the paper's exposure
+
+`pot_ledger.py` streamed the Meta tree of all 2,307 files (1,818 data + 489 MC,
+0 failures, 44 s; RunLog 2026_06_12_211937; results/<ts>__pot_ledger/ledger.{json,md}):
+
+- **Σ POT_Used (data, 1A–1P) = 1.0574e21 = 10.574e20 — 99.66% of the paper's
+  10.61e20.** The open-data release carries essentially exactly the paper's
+  exposure; the "10.61 vs 12.13/11.12" puzzle is closed:
+  - the 12.13e20 figure (user's first planning doc) was simply wrong;
+  - the getdata-page per-playlist values are coarse delivered-POT accounting —
+    their sum (11.12e20) matches our Σ POT_Total (11.079e20) to 0.4%;
+  - **minervame1M is the one real anomaly**: preserved files hold
+    POT_Used 1.581e20 / POT_Total 1.714e20 vs page 2.1e20 (~25% of the period
+    not in the preserved set — consistent with NOT-PRESERVED runs and 1M's
+    missing edge runs). Every other playlist agrees with its page value
+    within ±3% (POT_Used) once 2-s.f. rounding is allowed.
+- Per-playlist MC/data POT ratios range 4.2–5.9 (total MC = 4.978e21, 4.71×).
+- **Recommendation for the final comparison** (user to confirm): use all 12
+  playlists with Σ POT_Used = 10.574e20 — it IS the paper's exposure to 0.34%,
+  no subset hunting needed; the residual 0.34% is plausibly good-runs
+  accounting differences and is far below the 3.9% flux normalization
+  uncertainty.
+
 ### 2026-06-12 — Full playlist-1A stream: POT ledger (data) + first 2D distributions
 
 `plot_2d_ptpl.py` streamed all 253 data + 41 MC files (0 failures, 395 s,
