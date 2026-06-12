@@ -60,21 +60,27 @@ def overlay_1d(edges, data, mc_scaled, xlabel, logx, path, title):
     return ratio
 
 
-def plot_migration_1d(m, edges, axis_label, path, title):
+def plot_migration_1d(m, edges, axis_label, path, title, logscale=False):
+    """Migration on PHYSICAL axes: cell sizes show the real bin widths."""
     rows = m.sum(axis=1, keepdims=True)
     norm = np.divide(m, rows, out=np.zeros_like(m), where=rows > 0)
-    n = m.shape[0]
-    fig, ax = plt.subplots(figsize=(7, 6))
-    pcm = ax.imshow(np.ma.masked_equal(norm, 0.0), origin="lower",
-                    norm=LogNorm(vmin=1e-4, vmax=1.0), cmap="viridis",
-                    extent=(-0.5, n - 0.5, -0.5, n - 0.5))
-    ax.set_xticks(range(n))
-    ax.set_yticks(range(n))
-    labels = [f"{lo:g}–{hi:g}" for lo, hi in zip(edges[:-1], edges[1:])]
-    ax.set_xticklabels(labels, rotation=90, fontsize=7)
-    ax.set_yticklabels(labels, fontsize=7)
-    ax.set_xlabel(f"reco {axis_label} bin [GeV/c]")
-    ax.set_ylabel(f"true {axis_label} bin [GeV/c]")
+    fig, ax = plt.subplots(figsize=(7.5, 6.5))
+    # norm[true, reco]: rows are y (true), columns x (reco)
+    pcm = ax.pcolormesh(edges, edges, np.ma.masked_equal(norm, 0.0),
+                        norm=LogNorm(vmin=1e-4, vmax=1.0), cmap="viridis")
+    if logscale:
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+    ax.set_xticks(edges)
+    ax.set_yticks(edges)
+    ax.set_xticklabels([f"{e:g}" for e in edges], rotation=90, fontsize=7)
+    ax.set_yticklabels([f"{e:g}" for e in edges], fontsize=7)
+    ax.minorticks_off()
+    for e in edges:
+        ax.axhline(e, color="w", lw=0.2, alpha=0.4)
+        ax.axvline(e, color="w", lw=0.2, alpha=0.4)
+    ax.set_xlabel(f"reco {axis_label} [GeV/c]")
+    ax.set_ylabel(f"true {axis_label} [GeV/c]")
     ax.set_title(title)
     fig.colorbar(pcm, ax=ax, label="row-normalized P(reco | true)")
     fig.tight_layout()
@@ -116,7 +122,8 @@ def main():
                           r"$p_T$ migration — selected signal")
         plot_migration_1d(mig_pl, binning.PL_EDGES_GEV, r"$p_\parallel$",
                           outdir / "migration_pl.png",
-                          r"$p_\parallel$ migration — selected signal")
+                          r"$p_\parallel$ migration — selected signal",
+                          logscale=True)
 
         diag_pt = np.diag(mig_pt / np.maximum(mig_pt.sum(axis=1, keepdims=True), 1))
         diag_pl = np.diag(mig_pl / np.maximum(mig_pl.sum(axis=1, keepdims=True), 1))

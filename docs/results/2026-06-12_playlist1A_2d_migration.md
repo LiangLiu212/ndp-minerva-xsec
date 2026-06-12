@@ -98,8 +98,9 @@ show precisely the structure those weights correct:
 ### 1D migration matrices (selected signal, row-normalized)
 
 Projections of the 224×224 migration (reshape to (14,16,14,16), sum the other
-axis). Both are strongly diagonal with mostly one-bin spill; p_∥ shows the
-expected mild low-side reconstruction tail at high p_∥.
+axis), drawn on **physical axes** so cell sizes show the real bin widths
+(p_T linear; p_∥ log–log). Both are strongly diagonal with mostly one-bin
+spill; p_∥ shows the expected mild low-side reconstruction tail at high p_∥.
 
 ![pT migration](img/playlist1A_2d/migration_pt.png)
 
