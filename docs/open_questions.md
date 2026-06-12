@@ -171,6 +171,21 @@ To settle at implementation:
 
 ## Resolved
 
+### 2026-06-12 — Full playlist-1A stream: POT ledger (data) + first 2D distributions
+
+`plot_2d_ptpl.py` streamed all 253 data + 41 MC files (0 failures, 395 s,
+8 streams; RunLog 2026_06_12_205116, results/2026_06_12_204441__plot_2d_ptpl/):
+- **Σ POT_Used (data, 253 files) = 8.969e19 ≈ 0.90e20 — reproduces the
+  getdata-page value for 1A exactly at its 2-s.f. precision** (closes the
+  "does the ledger reproduce 0.90e20" item of the Data-files entry).
+  MC: 4.072e20 (MC/data = 4.54).
+- Selection at full-1A scale: data 359,967 / 2,791,649 (99.33% in-grid);
+  MC 1,790,483 selected = 1,786,201 signal + 4,282 background (0.239%,
+  paper says 0.2%). Scaling sanity: paper's 4,105,696 selected at 10.61e20
+  predicts ~347k at 0.897e20 — observed 360k.
+- Migration (selected signal, paper grid): 99.25% fully in-grid;
+  true-in/reco-out 0.47%, true-out/reco-in 0.17%, both-out 0.11%.
+
 ### 2026-06-12 — Reco-selection cross-check vs MAT/MAT-MINERvA source
 
 Every cut and branch of the 6-cut reco selection traced through the C++:
