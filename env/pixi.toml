@@ -1,0 +1,23 @@
+[workspace]
+authors = ["Liang Liu <liangliu@fnal.gov>"]
+channels = ["conda-forge"]
+name = "ndp-genesis-agent"
+platforms = ["linux-aarch64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+python = "3.14.*"
+pip = "*"
+root = ">=6.40.0,<7"
+jq = ">=1.8.1,<2"
+matplotlib = ">=3.10.9,<4"
+uproot = ">=5.7.4,<6"
+numpy = ">=2.4.6,<3"
+awkward = ">=2.9.0,<3"
+xrootd = ">=5.9.2,<6"
+fsspec-xrootd = ">=0.5.2,<0.6"
+
+[pypi-dependencies]
+pdg = "*"
