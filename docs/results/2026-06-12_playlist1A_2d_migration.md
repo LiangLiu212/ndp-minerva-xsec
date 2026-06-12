@@ -106,6 +106,22 @@ spill; p_∥ shows the expected mild low-side reconstruction tail at high p_∥.
 
 ![p|| migration](img/playlist1A_2d/migration_pl.png)
 
+## MC composition: total / signal / background
+
+`plot_mc_components.py` (RunLog 2026_06_12_213748), raw MC counts (no POT
+scaling, unweighted CV). Background = reco-selected ∧ ¬(true ν_μ CC): NC
+hadron fakes + wrong-sign/other CC. In-grid background fraction **0.216 %**
+(3,850 of 1,779,618; 0.239 % including out-of-grid). The 2D map shows its two
+expected components: the NC band at low p_∥ across p_T, and the wrong-sign
+spread toward higher p_T/p_∥. True-ν_μ-CC events outside the truth phase
+space are NOT background (they're acceptance, handled by the efficiency
+denominator); non-beam backgrounds never appear in MC categories (killed by
+the selection).
+
+![MC components 1D](img/playlist1A_2d/mc_components_1d.png)
+
+![MC components 2D](img/playlist1A_2d/mc_components_2d.png)
+
 ## Fig.2-style event-rate panels (multiplier presentation)
 
 `plot_evtrate_panels.py` (RunLog 2026_06_12_211154) replicates the
