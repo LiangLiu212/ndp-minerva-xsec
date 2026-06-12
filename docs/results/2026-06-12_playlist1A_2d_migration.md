@@ -106,11 +106,34 @@ spill; p_∥ shows the expected mild low-side reconstruction tail at high p_∥.
 
 ![p|| migration](img/playlist1A_2d/migration_pl.png)
 
+## Fig.2-style event-rate panels (multiplier presentation)
+
+`plot_evtrate_panels.py` (RunLog 2026_06_12_211154) replicates the
+presentation of the paper's Fig. 2: events / (Δp_T·Δp_∥) in 10⁵ per (GeV/c)²,
+one panel per bin of the other variable, per-panel ×m multipliers sharing one
+y-range. Differences vs the paper, by current pipeline state: data vs **total
+MC, POT-scaled, unweighted CV** (not MnvTunev1) + the MC background component;
+no interaction-channel breakdown yet (needs a re-stream with
+mc_intType / W / Q² truth branches).
+
+Physics read-out at this stage:
+- low-p_T panels: MC overshoots data at the peak (the RPA / low-Q² region the
+  tune suppresses); mid-p_T panels agree; high-p_T panels show data above MC;
+- high-p_∥ panels (10–60 GeV/c): data increasingly above MC — the
+  flux-CV-weight tail effect, up to ~×2 in the 40–60 bin;
+- the background curve is visible only at low p_T × low p_∥ — exactly where
+  the paper localizes the NC-pion contamination (≤10 % locally).
+
+![event rate, pT panels](img/playlist1A_2d/evtrate_pt_panels.png)
+
+![event rate, p|| panels](img/playlist1A_2d/evtrate_pl_panels.png)
+
 ## Reproduce
 
 ```bash
 pixi run python plot_2d_ptpl.py --workers 8 --label playlist1A_full
 pixi run python plot_1d_from_hists.py --hists results/<ts>__plot_2d_ptpl/hists.npz
+pixi run python plot_evtrate_panels.py --hists results/<ts>__plot_2d_ptpl/hists.npz
 ```
 
 (or query `~/log/ndp-minerva-xsec/*.log` with jq for the exact recorded commands)
