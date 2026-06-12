@@ -97,6 +97,78 @@ To settle at implementation:
   (NC / Wrong_Sign) or stores one merged background histogram — separate is
   cheap and preserves the tutorial's breakdown plots.
 
+### 2026-06-12 — Data files (minervame1A)
+
+What we know:
+- Official list `config/playlists/MediumEnergy_FHC_Data_Playlist1A.txt`: **253 files**,
+  one per run, runs 6038 → 10066 — consistent with the published ME1A period
+  (12-Sep-2013 → 14-Jan-2014, runs 6038/31–10066/23; special runs 7xxx/9xxx excluded).
+  URL pattern `root://fndcadoor.fnal.gov:1095/pnfs/.../OpenData/MediumEnergy_FHC/Data/Playlist1A/MasterAnaDev_data_AnaTuple_run<8digits>_Playlist.root`.
+- Golden file run 10066 (last 1A run): 196 MB, 6,304 reco entries,
+  POT_Used 2.049772e17 (streamed 2026-06-12, matches frozen manifest).
+- Access is streaming-only (policy); identity via fingerprints (POT + entry counts).
+
+To settle at implementation:
+- enumerate the trees actually present in a DATA file (expect MasterAnaDev + Meta;
+  is a Truth tree present-but-empty, or absent?);
+- identify the event-timestamp branches (candidates `ev_gps_time_sec`/`_usec`) and
+  validate the per-file time span against the run-periods window;
+- "MC-only" branches physically exist in the data tree filled with dummy values
+  (exploration-repo finding) — confirm the sentinel convention before ever reading
+  one off data;
+- per-file POT ledger over all 253 files: does Σ POT_Used reproduce the published
+  0.90e20 for 1A?
+
+### 2026-06-12 — MC files (StandardMC, Playlist1A)
+
+What we know:
+- Official list `config/playlists/MediumEnergy_FHC_StandardMC_Playlist1A.txt`:
+  **41 files**, runs 110000+, under `MediumEnergy_FHC/MC/StandardMC/Playlist1A/`.
+- Golden file run 110040: 21.6 GB, 186,205 reco + 544,600 Truth entries,
+  POT_Used 9.988797e18. Scaling 41 files × ~20 GB ≈ 600–800 GB total —
+  streaming is mandatory, bulk download impossible locally.
+- StandardMC is GENIE 2.12.6-based (docs); the MnvTunev1 CV weights are NOT
+  pre-applied in the tuples — the analyzer applies them (truth_genie_wgt_* and
+  kinematic truth branches exist for reweighting).
+- Known gotcha (exploration repo): the MC file carries TWO Truth-tree cycles
+  (`Truth;285` live, `Truth;284` stale) — naive key iteration double-counts.
+
+To settle at implementation:
+- verify uproot's cycle handling on the streamed file (must pick the live cycle;
+  assert entry count 544,600 on the golden file);
+- confirm tuple-level provenance (GENIE version / reco pass) from file metadata if
+  present — open question inherited from the exploration repo;
+- per-file POT + entry ledger over all 41 files; MC/data POT ratio for full 1A;
+- confirm whether all 41 MC files are the same size class (affects streaming time
+  estimates for the full-1A pass).
+
+### 2026-06-12 — POT (mechanism + ledger)
+
+What we know (source-confirmed):
+- POT lives in the per-file `Meta` tree; dataset POT = Σ POT_Used over all Meta
+  entries of all files (MacroUtil::CountPOT, MacroUtil.cxx:18-31; POTCounter.cxx:39-91
+  is the general version). Analyses use POT_Used, not POT_Total. Each AnaTuple file
+  must have ≥1 Meta entry (asserted upstream).
+- Golden pair: data 2.049772e17 / MC 9.988797e18 → ratio 0.020521 (matches the
+  frozen manifest; POT_Total differs by 0.001%/0.004%).
+- Usage in the chain: (a) background subtraction scale = POT_data/POT_mc;
+  (b) final normalization 1/(T·POT_data); efficiency is POT-free. The event loop
+  caches POT as TParameter "POTUsed" in its outputs (we will store it in the
+  Stage-3 ingredients file instead).
+- Published per-playlist table (getdata page) sums to **11.12e20** for 1A–1P
+  (the 12.13e20 in the original planning doc was wrong); paper used 10.61e20;
+  the ~5% gap is presumably good-runs accounting since the paper window covers
+  all of 1A–1P (run-periods page).
+
+To settle at implementation:
+- Stage-1 ledger over 253 data + 41 MC files; gates: data sum ≈ 0.90e20 (page
+  value, 2 s.f.) and every file contributes ≥1 Meta entry;
+- at the multi-playlist stage: reconcile 11.12e20 (page) vs paper 10.61e20 —
+  which POT the final comparison uses is a USER decision;
+- confirm the per-batch Meta leaves (POT_Used_batchN) are exposure bookkeeping
+  only (see MINOS-efficiency entry above — its intensity input comes from
+  per-event reco-tree branches instead).
+
 ## Resolved
 
 (none yet)
