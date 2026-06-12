@@ -137,14 +137,20 @@ driver of the low-p_T data/MC overshoot we observe.
 
 | weight | formula source read | inputs in tuples | external file located | implemented |
 |---|---|---|---|---|
-| Flux CV | ✓ | ✓ | ✓ (constraint math pending) | ✗ |
-| Non-res π | ✓ | ✓ (36 genie_wgt families verified) | n/a | ✗ |
-| 2p2h | ✓ | q0/q3 ingredients ✓ | ✓ (fit-mec file) | ✗ |
-| MINOS eff | ✓ (incl. batchPOT) | ✓ (all four branches verified) | table file at inventory | ✗ |
-| RPA | interface ✓ (class internals at implementation) | ✓ | file name at inventory | ✗ |
+| Flux CV | ✓ | ✓ | ✓ | **✓ `xsec/flux.py` (2026-06-12)** — constrained Φ_int = 6.2299e-8 ν/cm²/POT vs paper 6.32e-8 (ratio 0.986, gate ±5%); ν-e constraint pulls PPFX flux ×0.901 overall (per-bin 0.73–0.92); weight envelope 0.75 (peak) → 1.64 (~45 GeV); evaluator matches ROOT TH1::Interpolate to 1e-12; MnvH1D read via TFile::MakeProject (cached `data/flux/mnvh1d_proj/`) |
+| Non-res π | ✓ | ✓ (36 genie_wgt families verified) | n/a | **✓ `xsec/weights.py`** — 10.2 % of selected events tagged, mean 0.942 |
+| 2p2h | ✓ | q0/q3 ingredients ✓ | ✓ (fit-mec txt: norm 10.58, μ=(0.254,0.508), σ=(0.057,0.129), ρ=0.875) | **✓** — 3.4 % MEC weighted, mean 1.025; w(μ)=1+norm |
+| MINOS eff | ✓ (incl. batchPOT) | ✓ (all four branches verified) | n/a — hardcoded polynomial curves (MinosMuonEfficiencyCorrection.cxx), not a table | **✓** — mean 0.984; anchors reproduced exactly; batch-POT units (1e12) verified on data |
+| RPA | ✓ (weightRPA.cxx:30-129 fully traced) | ✓ | ✓ (outNievesRPAratio-nu{12C,16O,56Fe,208Pb} per-Z, plain TH2D — uproot-readable) | **✓** — 15.2 % QE-on-nuclei weighted, mean 0.979; manual-lookup parity at 1e-12 |
 
-Implementation order (weights stage): unpack tarball → inventory →
-`xsec/flux.py` (constrainer + CV weight + Φ_int gate) → `xsec/weights.py`
-(non-res π, 2p2h, RPA, MINOS eff) → per-weighter hand-trace validation vs the
-C++ formulas → weighted re-stream of playlist 1A → gates: normalization gap
-moves from ≈−9 % toward |<3 %|, p_∥ tail flattens, low-p_T overshoot shrinks.
+**End-to-end CV validation (golden pair, 2026-06-12):** truth-only product
+mean 0.827, full reco weight mean 0.814; POT-scaled MC/data moves from 1.061
+(unweighted) to **0.864 ± 0.034 (stat)**. The right anchor is the paper's own
+ancillary tables: integrated **data / MnvTunev1 = 1.118** (205 reported bins,
+median 1.114) → expected weighted MC/data ≈ 0.895. Agreement within ~1σ of the
+golden pair's data statistics. (The exploration repo's old "weights close the
++6 % gap to ~0" expectation was wrong — Tune v1 genuinely underpredicts the
+inclusive data by ~12 %; the gap our weights should and do produce.)
+
+Sharp next test: a weighted full-playlist-1A pass (data stat ±0.17 %) — the
+event-rate ratio shape vs the paper's Fig. 2 panels.

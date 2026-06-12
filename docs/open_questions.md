@@ -24,8 +24,14 @@ confirm they are filled in the open-data MasterAnaDev tuples.
 All four input branches verified present in BOTH open-data tuples
 (data + MC, streamed 2026-06-12): `numi_pot` (double), `batch_structure`
 (int32), `reco_vertex_batch` (int32), `MasterAnaDev_minos_trk_p` (double).
-REMAINING (only): locate the efficiency-table file in the tarball at the
-inventory step.
+
+**FULLY RESOLVED 2026-06-12:** there is no table file — the correction is two
+hardcoded polynomial intensity curves (MinosMuonEfficiencyCorrection.cxx) with
+a per-event parabola through them at the batch POT. Implemented in
+`xsec/weights.py` (`minos_efficiency_weight`); anchor curves reproduced
+exactly; batch-POT units (1e12 POT) verified empirically on the golden data
+file (median lands between the calibration anchors 3.94/8.03). Mean weight on
+selected MC: 0.984.
 
 ### 2026-06-12 — Flux usage 1 (CV): normalization integral Φ_int
 
@@ -179,6 +185,27 @@ To settle at implementation:
   per-event reco-tree branches instead).
 
 ## Resolved
+
+### 2026-06-12 — Flux usages 1+2 IMPLEMENTED (`xsec/flux.py`) — both gates pass
+
+Closes the two "Flux usage (CV)" entries above:
+- **MnvHistoConstrainer::ConstrainHisto math reproduced** (MnvFluxConstraint.h:180-310,
+  DocDB 10076): corr(bin) = weighted/unweighted mean of the 1000 Flux-band
+  universes, weights from sorted_NuEConstraint_FHC_RHC_IMD.txt (1000 lines,
+  normalized to N); constrained CV = file CV × corr.
+- **Φ_int gate PASSED**: constrained 0–100 GeV width-integral = 6.2299e-8
+  ν/cm²/POT vs paper 6.32e-8 → ratio 0.986 (gate ±5%). Unconstrained PPFX
+  would be 6.9167e-8 (+9.4%); the constraint pulls ×0.901.
+- **Units confirmed**: file is ν/m²/POT (×1e-4 → ν/cm²/POT matches paper scale).
+- **Interpolation verified**: numpy evaluator ≡ ROOT TH1::Interpolate to 1e-12
+  (clamped linear between centers; bin content >75 GeV; w=1 zero-guard).
+- Weight curve (me1D group): 0.79 @2 GeV → 0.87 @10 → bump 1.09 @15 → dip
+  0.93 @25 → peak 1.61 @50 → 1.10 @60 — explains the unweighted data/MC
+  low-p_∥ ~0.85 and 40–60 GeV ~1.9 patterns.
+- **MnvH1D readability solved**: uproot 5.7 fails on the empty-lat-band map;
+  ROOT TFile::MakeProject generates+compiles the classes from streamer info
+  (cached at data/flux/mnvh1d_proj/), then members (fVertErrorBandMap) are
+  directly accessible. Tarball unpacked to data/flux/ (1.7+1.3 GB).
 
 ### 2026-06-12 — POT ledger over ALL 12 playlists: open data carries the paper's exposure
 

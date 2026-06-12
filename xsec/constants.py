@@ -49,6 +49,12 @@ PZ_MIN_TRUE_MEV = 1500.0  # truth::PZMu >= 1500 MeV/c (runEventLoop.cpp:377)
 # the "<1" in CCInclusiveCuts.h:78-90 is commented-out example code).
 DEAD_MAX_DISCR_PAIRS = 1
 
+# --- MnvTune v1 non-resonant-pion reduction ----------------------------------
+# Flat deflation of GENIE non-res single-pi events (Rodrigues et al. deuterium
+# reanalysis). Provenance: GenieSystematics.h:14 (kNonResPiWeight), applied by
+# GENIEReweighter.h:31-42 when truth_genie_wgt_Rv{n,p}1pi[2] < 1.
+NONRES_PI_WEIGHT = 0.43
+
 # --- beam geometry ----------------------------------------------------------
 # NuMI beam points downward in detector coordinates; true kinematics are
 # evaluated in beam coordinates via RotateX(NUMI_BEAM_ANGLE_RAD).
