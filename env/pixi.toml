@@ -10,6 +10,7 @@ version = "0.1.0"
 [dependencies]
 python = "3.14.*"
 pip = "*"
+pytest = ">=8"
 root = ">=6.40.0,<7"
 jq = ">=1.8.1,<2"
 matplotlib = ">=3.10.9,<4"
