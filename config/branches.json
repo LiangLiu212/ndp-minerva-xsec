@@ -1,6 +1,7 @@
 {
   "_meta": {
     "description": "Curated analysis branch catalog for the CC-inclusive d2sigma/dpT dp|| reproduction. Single source of truth for which AnaTuple branches this analysis uses and why; Step-3 cut code imports its REQUIRED_BRANCHES from the reco_selection role here.",
+    "status": "PROVISIONAL (user note 2026-06-12): names/dtypes/usage are code- and stream-verified, but the prose definitions await confirmation against docs/minerva/branches.md and the vendored Tuple-Documentation CSV; unverified detail claims: minos_trk_qp units (only the sign is load-bearing), vtx[3]/mc_vtx[3]=t.",
     "sources": [
       "exploration repo tools/cc_inclusive_selector.py (certified, 0 mismatches vs Stage B)",
       "exploration repo exploring/dsigma_dpt.py (frozen 1D chain)",
@@ -24,7 +25,7 @@
       "mc_current": {"CC": 1, "NC": 2, "source": "GENIE convention via MINERvA-101 (GetCurrent()==2 -> NC background); verify on tuples at Step 3"},
       "nu_mu_pdg": {"value": "from pdg API at runtime (api.get_particle_by_name('nu_mu').mcid)", "note": "never hardcoded in analysis code"},
       "momentum_units": "MeV/c in tuples; analysis reports GeV/c (divide by 1000)",
-      "beam_rotation": "true kinematics rotated by NUMI beam angle (constant lives in config/constants.py at Step 3, provenance: dsigma_dpt.py NUMI_BEAM_ANGLE_RAD=-0.05887)"
+      "beam_rotation": "true kinematics rotated by NUMI beam angle (constant lives in xsec/constants.py, provenance: dsigma_dpt.py NUMI_BEAM_ANGLE_RAD=-0.05887)"
     }
   },
   "branches": [

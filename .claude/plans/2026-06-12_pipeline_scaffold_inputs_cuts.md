@@ -24,7 +24,7 @@ Decisions captured:
   `add_outdir`, `default_outdir`; JSON logs to `~/log/<project>/<ts>.log`.
 - **All physics constants from external databases, never hardcoded**: PDG IDs,
   masses, widths, charges via the official `pdg` PyPI package (v2026.0, local DB).
-  MINERvA-specific constants (fiducial z, apothem, nPlanes…) in `config/constants.py`
+  MINERvA-specific constants (fiducial z, apothem, nPlanes…) in `xsec/constants.py`
   with provenance comments (NSFDefaults.h / TargetUtils / paper).
 - Environment: parent pixi workspace `/home/feanor/ndp-genesis-agent/pixi.toml`,
   auto-discovered (this repo has no own pixi.toml).
@@ -136,7 +136,7 @@ Vectorized uproot/awkward, arrays in / boolean masks out, no I/O inside:
    ZRange [5980,8422] mm, Apothem 850 mm, θ_μ<20°, isMinosMatchTrack==1,
    deadtime≤1, minos_trk_qp<0 (MINOS-match guard ordering preserved);
    `REQUIRED_BRANCHES` imported from `config/branches.json` (role
-   `reco_selection`). Constants from `config/constants.py`.
+   `reco_selection`). Constants from `xsec/constants.py`.
 3. `xsec/signal.py` — truth signal (mc_incoming==ν_μ && mc_current==CC) and
    phase space (z, apothem, θ≤20°, p_z≥1.5 GeV) for the efficiency denominator.
 4. `tests/` — synthetic per-cut boundary tests + golden parity gate **streaming the
