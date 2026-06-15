@@ -66,6 +66,67 @@ def migration_matrix(true_ids, reco_ids, weights=None):
     return m
 
 
+# ---------------------------------------------------------------------------
+# Count-conserving flat slots (for unfolding) — under/overflow included.
+#
+# Raw np.digitize gives, per axis: 0 = underflow, 1..N = measurement bins,
+# N+1 = overflow. p_T underflow (slot ipt=0) is physically impossible
+# (p_T >= 0, and PT_EDGES[0] = 0), but is kept for a uniform scheme and
+# asserted empty by callers. p_parallel underflow IS reachable (reco p_par
+# can be < 1.5 GeV/c — there is no reco p_z cut).
+#
+# Flat slot = ipt * N_PL_SLOTS + ipl, with ipt in 0..15, ipl in 0..17.
+# The 224 measurement cells are the subset {ipt in 1..14, ipl in 1..16};
+# MEAS_SLOTS maps each GlobalID to its flat slot. Migrations in slot space
+# are oriented [reco_slot, true_slot] to match the D'Agostini unfolder.
+# ---------------------------------------------------------------------------
+N_PT_SLOTS = N_PT + 2   # 16: underflow + 14 bins + overflow
+N_PL_SLOTS = N_PL + 2   # 18: underflow + 16 bins + overflow
+N_SLOTS = N_PT_SLOTS * N_PL_SLOTS   # 288
+
+
+def slot_ids(pt_gev, pl_gev):
+    """Flat slot per event in [0, N_SLOTS) — never drops (count-conserving)."""
+    ipt = np.digitize(np.asarray(pt_gev, dtype=np.float64), PT_EDGES_GEV)  # 0..15
+    ipl = np.digitize(np.asarray(pl_gev, dtype=np.float64), PL_EDGES_GEV)  # 0..17
+    return ipt * N_PL_SLOTS + ipl
+
+
+def _meas_slots():
+    gids = np.arange(N_CELLS)
+    pt_bin = gids // N_PL + 1   # 1..14
+    pl_bin = gids % N_PL + 1    # 1..16
+    return pt_bin * N_PL_SLOTS + pl_bin
+
+
+MEAS_SLOTS = _meas_slots()   # length 224: GlobalID -> flat slot
+
+
+def to_measurement(slot_vec):
+    """Extract the 224 measurement cells (GlobalID order) from a slot vector."""
+    return np.asarray(slot_vec)[MEAS_SLOTS]
+
+
+def hist_slots(pt_gev, pl_gev, weights=None):
+    """Length-N_SLOTS histogram over flat slots; conserves all entries."""
+    edges = np.arange(N_SLOTS + 1) - 0.5
+    h, _ = np.histogram(slot_ids(pt_gev, pl_gev), bins=edges, weights=weights)
+    return h
+
+
+def migration_slots(reco_slots, true_slots, weights=None):
+    """(N_SLOTS, N_SLOTS) migration M[reco_slot, true_slot], no drops.
+
+    Oriented [reco, true] for the D'Agostini unfolder: response is the
+    column-normalization over true, and M.sum(axis=0) (over reco) gives the
+    efficiency numerator per true slot — free, because nothing is dropped.
+    """
+    edges = np.arange(N_SLOTS + 1) - 0.5
+    m, _, _ = np.histogram2d(np.asarray(reco_slots), np.asarray(true_slots),
+                             bins=[edges, edges], weights=weights)
+    return m
+
+
 def parse_bin_mapping(path):
     """Parse anc/bin_mapping.txt -> list of row dicts (224 rows)."""
     rows = []
