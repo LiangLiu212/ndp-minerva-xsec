@@ -149,6 +149,25 @@ def test_minos_momentum_clamp():
     assert w_low[0] == w_min[0]
 
 
+def test_genie_knob_ratio():
+    # 7-elem knob [-3,-2,-1,CV,+1,+2,+3] sigma; CV at idx 3
+    knob = np.array([[0.90, 0.92, 0.95, 1.0, 1.06, 1.12, 1.20],
+                     [1.0, 1.0, 1.0, 2.0, 3.0, 4.0, 5.0]])
+    assert np.allclose(weights.genie_knob_ratio(knob, +1), [1.06, 1.5])
+    assert np.allclose(weights.genie_knob_ratio(knob, -1), [0.95, 0.5])
+    # CV entry 0 -> ratio 1 (guarded)
+    zero = np.array([[1.0, 1.0, 1.0, 0.0, 2.0, 1.0, 1.0]])
+    assert weights.genie_knob_ratio(zero, +1)[0] == 1.0
+
+
+def test_genie_knob_ratio_jagged():
+    # uproot may hand back an object (jagged) array; _knob_element handles it
+    knob = np.empty(2, dtype=object)
+    knob[0] = np.array([0.9, 0.92, 0.95, 1.0, 1.06, 1.12, 1.2])
+    knob[1] = np.array([1.0, 1.0, 1.0, 2.0, 3.0, 4.0, 5.0])
+    assert np.allclose(weights.genie_knob_ratio(knob, +1), [1.06, 1.5])
+
+
 @pytest.mark.network
 def test_batch_pot_units_in_real_data():
     """Stream the golden data file's beam branches: the batch POT must land

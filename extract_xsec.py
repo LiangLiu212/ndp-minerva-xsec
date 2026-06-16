@@ -59,6 +59,23 @@ def extract(data_reco, bkg, migration, eff_num, eff_denom,
     return xsec_cell / areas, np.sqrt(xsec_var) / areas
 
 
+def extract_per_universe(univ_bkg, univ_migration, univ_eff_num, univ_eff_denom,
+                         data_reco, pot_data, pot_mc, flux_integral_m2, n_nucleons,
+                         n_iter=10, flux_m2_per_universe=None):
+    """Run the full chain once per universe (M4); data is shared across
+    universes. The MC ingredient stacks are (n_univ, n_slots). Returns
+    (n_univ, 224) cross sections. flux_m2_per_universe optionally overrides
+    the flux integral per universe (the flux systematic)."""
+    n_univ = np.asarray(univ_migration).shape[0]
+    out = np.zeros((n_univ, binning.N_CELLS))
+    for u in range(n_univ):
+        fm = flux_integral_m2 if flux_m2_per_universe is None else flux_m2_per_universe[u]
+        out[u], _ = extract(data_reco, univ_bkg[u], univ_migration[u],
+                            univ_eff_num[u], univ_eff_denom[u], pot_data, pot_mc,
+                            fm, n_nucleons, n_iter=n_iter)
+    return out
+
+
 def main():
     parser = make_parser("Extract the absolute 2D cross section from an "
                          "ingredients.npz (bkg-sub -> unfold -> eff -> normalize).")

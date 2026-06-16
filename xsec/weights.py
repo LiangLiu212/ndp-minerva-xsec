@@ -40,6 +40,23 @@ def _knob_element(arr, idx=2):
     return a[:, idx].astype(np.float64)
 
 
+# GENIE knob arrays are 7-element: [-3,-2,-1,CV,+1,+2,+3] sigma at idx 0..6.
+GENIE_CV_INDEX = 3
+
+
+def genie_knob_ratio(knob_array, sigma):
+    """Universe weight ratio to CV for a GENIE knob at ±`sigma` (M4 vertical).
+
+    Reads the stored knob weight at index GENIE_CV_INDEX+sigma and divides by
+    the CV entry (idx 3) — the per-event multiplier that turns the CV weight
+    into the systematic universe (GenieUniverse, GenieSystematics.cxx:421-422).
+    sigma is typically +1 or -1. Ratio is 1 where the CV entry is 0.
+    """
+    cv = _knob_element(knob_array, GENIE_CV_INDEX)
+    sh = _knob_element(knob_array, GENIE_CV_INDEX + sigma)
+    return np.divide(sh, cv, out=np.ones_like(sh), where=cv != 0)
+
+
 def nonres_pi_weight(rvn1pi, rvp1pi):
     """w = 0.43 for GENIE-tagged non-res single-pi events, else 1.
 
