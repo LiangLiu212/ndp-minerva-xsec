@@ -131,6 +131,43 @@ class FluxCV:
         self._con_real = self.cv_constrained[1:-1]
         self._gen_real = self.cv_generated[1:-1]
         self._rew_real = cv_rew[1:-1]
+        # retain the raw PPFX universes + nu-e constraint weights for the flux
+        # systematic (M4): the constraint enters CalcCovMx as universe weights
+        # (CorrectFluxUniv -> SetUnivWgt), so the constrained flux covariance is
+        # the WEIGHTED sample covariance of the raw universes.
+        self._universes = unis            # (n_univ, n_bins+2), raw PPFX
+        self._constraint_weights = w      # (n_univ,)
+
+    def universe_integrals(self, emin_gev=0.0, emax_gev=100.0):
+        """Per-universe flux integrals Φ_u (n_univ,) in ν/m²/POT, same width
+        convention as integral()."""
+        widths = np.diff(self.edges)
+        lo = max(np.digitize(emin_gev, self.edges) - 1, 0)
+        hi = min(np.digitize(emax_gev, self.edges) - 1, len(widths) - 1)
+        real = self._universes[:, 1:-1]                      # drop under/overflow
+        return (real[:, lo:hi + 1] * widths[lo:hi + 1]).sum(axis=1)
+
+    def flux_norm_uncertainty(self, emin_gev=0.0, emax_gev=100.0, constrained=True):
+        """Fractional flux-normalization uncertainty δΦ/Φ from the universe
+        spread of the integrated flux. constrained=True applies the ν-e
+        constraint weights (CalcCovMx weighted covariance); False = raw PPFX."""
+        phi = self.universe_integrals(emin_gev, emax_gev)
+        w = self._constraint_weights if constrained else np.ones_like(phi)
+        mean = (w * phi).sum() / w.sum()
+        var = (w * (phi - mean) ** 2).sum() / w.sum()
+        return float(np.sqrt(var) / mean)
+
+    def universe_weight_ratios(self, enu_gev):
+        """(n_univ, n_events) flux-universe weight ratios to the CV flux:
+        U_u(Enu) / Φ_constrained(Enu). Multiply the CV event weight by a row
+        to get that universe's event weight."""
+        enu = np.asarray(enu_gev, dtype=np.float64)
+        cv = self._evaluate(self._con_real, enu)
+        ratios = np.empty((self._universes.shape[0], enu.size))
+        for u in range(self._universes.shape[0]):
+            num = self._evaluate(self._universes[u, 1:-1], enu)
+            ratios[u] = np.divide(num, cv, out=np.ones_like(num), where=cv != 0)
+        return ratios
 
     def _evaluate(self, contents_real, enu_gev):
         """TH1::Interpolate equivalent (linear between bin centers, clamped),

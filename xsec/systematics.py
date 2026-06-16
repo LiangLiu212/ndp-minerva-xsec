@@ -37,6 +37,18 @@ def pair_covariance(plus, minus):
     return np.outer(h, h)
 
 
+def normalization_covariance(sigma_cv, frac):
+    """Fully-correlated normalization covariance: outer(σ·frac, σ·frac).
+
+    Leading-order model for a normalization-dominant systematic (e.g. the flux,
+    whose per-cell uncertainty the paper reports as a near-flat ~4 %). `frac` is
+    the fractional normalization uncertainty (a scalar). The per-cell shape
+    (de-correlation) part requires the full per-universe propagation.
+    """
+    v = np.asarray(sigma_cv, np.float64) * float(frac)
+    return np.outer(v, v)
+
+
 def total_covariance(group_covs, cov_stat=None):
     """Σ group covariances (+ optional statistical covariance)."""
     tot = np.zeros_like(np.asarray(next(iter(group_covs)), np.float64))

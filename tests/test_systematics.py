@@ -42,6 +42,14 @@ def test_total_covariance_is_sum():
     assert np.allclose(sx.total_covariance([a, b]), a + b)
 
 
+def test_normalization_covariance():
+    sigma = np.array([10.0, 20.0])
+    cov = sx.normalization_covariance(sigma, 0.04)      # 4% normalization
+    # diagonal fractional error == frac; fully correlated
+    assert np.allclose(sx.fractional_error(cov, sigma), 0.04)
+    assert np.allclose(sx.correlation_matrix(cov), 1.0)
+
+
 def test_fractional_error_and_correlation():
     cov = np.array([[4.0, 1.0], [1.0, 9.0]])
     frac = sx.fractional_error(cov, np.array([2.0, 3.0]))

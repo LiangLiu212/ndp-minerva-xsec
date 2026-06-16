@@ -74,6 +74,27 @@ def test_cv_weight_matches_root_interpolate(fx):
         assert abs(w - expect) <= 1e-12 * max(1.0, abs(expect)), f"Enu={e}"
 
 
+def test_universe_integrals_and_constraint(fx):
+    phi = fx.universe_integrals(0.0, 100.0)
+    assert phi.shape == (fx.n_universes,) and (phi > 0).all()
+    raw = fx.flux_norm_uncertainty(0.0, 100.0, constrained=False)
+    con = fx.flux_norm_uncertainty(0.0, 100.0, constrained=True)
+    # the nu-e constraint reduces the PPFX spread to the paper's <4%
+    assert 0.07 < raw < 0.09           # raw PPFX ~7.6%
+    assert con < 0.04                  # constrained <4% (paper)
+    assert con < raw
+
+
+def test_universe_weight_ratios_center_on_cv(fx):
+    enu = np.array([3.0, 6.0, 10.0, 20.0])
+    ratios = fx.universe_weight_ratios(enu)          # (n_univ, n_events)
+    assert ratios.shape == (fx.n_universes, 4)
+    # the constraint-weighted mean ratio is ~1 (universes scatter about CV)
+    w = fx._constraint_weights
+    wmean = (w[:, None] * ratios).sum(0) / w.sum()
+    assert np.allclose(wmean, 1.0, atol=0.05)
+
+
 def test_cv_weight_zero_guard(fx):
     # far outside any populated bin the clamped interpolation still returns
     # finite content, but a synthetic zero must give weight 1
