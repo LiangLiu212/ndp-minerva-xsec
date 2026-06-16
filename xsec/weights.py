@@ -101,6 +101,42 @@ class TwoP2HWeight:
         return np.where(applies, 1.0 + self.gaussian2d(q0, q3), 1.0)
 
 
+# 2p2h systematic variations (Universe2p2h modes 1/2/3, MnvTuneSystematics.cxx
+# :40-60): each a separate fit (different MEC pair selection), gated on the
+# struck nucleon. mc_targetNucleon - 2000000200 in {0,2} = nn/pp, == 1 = np.
+TWOP2H_VARIATION_FILES = {
+    1: "fit-mec-2d-nn-only-noScaleDown-penalty00300-best-fit.txt",  # nn/pp only
+    2: "fit-mec-2d-np-only-noScaleDown-penalty02000-best-fit.txt",  # np only
+    3: "fit-qe-gaussian-noScaleDown-penalty02000-best-fit.txt",     # QE->2p2h
+}
+
+
+@lru_cache(maxsize=4)
+def _twop2h_variation(mode):
+    return TwoP2HWeight(REWEIGHT_DIR / TWOP2H_VARIATION_FILES[mode])
+
+
+def twop2h_variation_weight(q0_gev, q3_gev, mc_intType, mc_targetZ,
+                            mc_targetNucleon, mode):
+    """2p2h systematic universe weight (mode 1=nn/pp, 2=np, 3=QE->2p2h).
+
+    Same 1+Gaussian form with the mode's fit parameters, gated to the mode's
+    pair type (modes 1,2 act on MEC; mode 3 acts on CCQE instead).
+    """
+    q0 = np.asarray(q0_gev, np.float64)
+    q3 = np.asarray(q3_gev, np.float64)
+    nuc = np.asarray(mc_targetNucleon) - 2000000200
+    it, z = np.asarray(mc_intType), np.asarray(mc_targetZ)
+    g = _twop2h_variation(mode).gaussian2d(q0, q3)
+    if mode == 1:
+        applies = (it == INT_TYPE_MEC) & (z >= 2) & ((nuc == 0) | (nuc == 2))
+    elif mode == 2:
+        applies = (it == INT_TYPE_MEC) & (z >= 2) & (nuc == 1)
+    else:                                   # mode 3: QE -> 2p2h
+        applies = (it == INT_TYPE_QE) & (z >= 2)
+    return np.where(applies, 1.0 + g, 1.0)
+
+
 # ---------------------------------------------------------------------------
 # #5 RPA suppression — RPAReweighter (CV), weightRPA::getWeightInternal
 # ---------------------------------------------------------------------------
@@ -221,6 +257,30 @@ def minos_efficiency_weight(minos_trk_p_mev, numi_pot, batch_structure,
     b = (x1 * corr_lo - x2 * corr_hi) / det
     pot = batch_pot(numi_pot, batch_structure, reco_vertex_batch)
     return 1.0 + a * pot + b * pot * pot
+
+
+# MINOS-efficiency uncertainty (MinosMuonEfficiencyCorrection::GetCorrectionErr,
+# neutrino): theta-dependent (degrees, clamped [0,40]) + 1 % overall, quadrature.
+MINOS_ERR_THETA = (0.99079, -4.24729e-4, 7.20874e-5)   # a - b·θ - c·θ²
+MINOS_ERR_OVERALL = 0.01
+MINOS_THETA_MIN_DEG, MINOS_THETA_MAX_DEG = 0.0, 40.0
+
+
+def minos_efficiency_error(theta_mu_deg):
+    """Fractional MINOS-efficiency uncertainty vs muon angle (degrees)."""
+    th = np.clip(np.asarray(theta_mu_deg, np.float64),
+                 MINOS_THETA_MIN_DEG, MINOS_THETA_MAX_DEG)
+    a, b, c = MINOS_ERR_THETA
+    theta_dep = 1.0 - (a - b * th - c * th * th)
+    return np.sqrt(MINOS_ERR_OVERALL ** 2 + theta_dep ** 2)
+
+
+def minos_efficiency_universe(minos_trk_p_mev, numi_pot, batch_structure,
+                              reco_vertex_batch, theta_mu_deg, sigma):
+    """MINOS-efficiency ±`sigma` universe weight = CV × (1 + sigma·err)."""
+    cv = minos_efficiency_weight(minos_trk_p_mev, numi_pot, batch_structure,
+                                 reco_vertex_batch)
+    return cv * (1.0 + sigma * minos_efficiency_error(theta_mu_deg))
 
 
 # ---------------------------------------------------------------------------

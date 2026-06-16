@@ -120,6 +120,38 @@ def test_rpa_matches_manual_lookup():
 
 
 # ------------------------------------------------------------ MINOS eff (#4)
+@needs_files
+def test_twop2h_variation_gating_and_files():
+    q0 = np.array([0.254, 0.254, 0.254, 0.254])
+    q3 = np.array([0.508, 0.508, 0.508, 0.508])
+    it = np.array([8, 8, 8, 1])                 # MEC, MEC, MEC, QE
+    z = np.array([6, 6, 6, 6])
+    nuc = np.array([2000000200, 2000000201, 2000000202, 2000000200])  # nn, np, pp, -
+    w1 = weights.twop2h_variation_weight(q0, q3, it, z, nuc, 1)   # nn/pp only
+    assert w1[0] != 1.0 and w1[2] != 1.0 and w1[1] == 1.0 and w1[3] == 1.0
+    w2 = weights.twop2h_variation_weight(q0, q3, it, z, nuc, 2)   # np only
+    assert w2[1] != 1.0 and w2[0] == 1.0
+    w3 = weights.twop2h_variation_weight(q0, q3, it, z, nuc, 3)   # QE->2p2h
+    assert w3[3] != 1.0 and w3[0] == 1.0        # acts on QE row only
+
+
+def test_minos_efficiency_error_and_universe():
+    # theta-dependent fractional error, ~1-3%, rises with angle
+    err0 = weights.minos_efficiency_error(np.array([0.0]))[0]
+    err20 = weights.minos_efficiency_error(np.array([20.0]))[0]
+    assert 0.005 < err0 < 0.05 and err20 > err0
+    # clamp beyond 40 deg
+    assert weights.minos_efficiency_error(np.array([50.0]))[0] == \
+           weights.minos_efficiency_error(np.array([40.0]))[0]
+    # ±sigma universe brackets the CV
+    args = (np.array([3000.0]), np.array([180.0]), np.array([0]), np.array([0]))
+    cv = weights.minos_efficiency_weight(*args)
+    up = weights.minos_efficiency_universe(*args, np.array([10.0]), +1)
+    dn = weights.minos_efficiency_universe(*args, np.array([10.0]), -1)
+    assert dn[0] < cv[0] < up[0]
+    assert np.isclose((up[0] + dn[0]) / 2, cv[0])
+
+
 def test_batch_pot_divisors():
     pot = np.full(6, 60.0)
     bs = np.array([0, 3, -1, 1, 1, 2])
