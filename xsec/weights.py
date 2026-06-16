@@ -137,6 +137,22 @@ def twop2h_variation_weight(q0_gev, q3_gev, mc_intType, mc_targetZ,
     return np.where(applies, 1.0 + g, 1.0)
 
 
+def twop2h_variation_ratio(q0_gev, q3_gev, mc_intType, mc_targetZ,
+                           mc_targetNucleon, w2p2h_cv, mode):
+    """Per-event weight ratio (variation / CV) for one 2p2h universe (M4 vertical).
+
+    A 2p2h universe swaps the CV low-recoil weight for the mode's variation
+    (Universe2p2h::GetLowRecoil2p2hWeight, MnvTuneSystematics.cxx:18-61), so its
+    full event weight is the CV stack × (variation / CV). Multiplying this ratio
+    onto reco_cv_weight reproduces that swap. The CV 2p2h weight is 1+Gaussian
+    (≥1) or 1, never 0, so the where-guard is only a formality.
+    """
+    var = twop2h_variation_weight(q0_gev, q3_gev, mc_intType, mc_targetZ,
+                                  mc_targetNucleon, mode)
+    cv = w2p2h_cv.weight(q0_gev, q3_gev, mc_intType, mc_targetZ)
+    return np.divide(var, cv, out=np.ones_like(var), where=cv != 0)
+
+
 # ---------------------------------------------------------------------------
 # #5 RPA suppression — RPAReweighter (CV), weightRPA::getWeightInternal
 # ---------------------------------------------------------------------------
@@ -281,6 +297,21 @@ def minos_efficiency_universe(minos_trk_p_mev, numi_pot, batch_structure,
     cv = minos_efficiency_weight(minos_trk_p_mev, numi_pot, batch_structure,
                                  reco_vertex_batch)
     return cv * (1.0 + sigma * minos_efficiency_error(theta_mu_deg))
+
+
+def minos_efficiency_ratio(minos_trk_p_mev, numi_pot, batch_structure,
+                           reco_vertex_batch, theta_mu_deg, sigma):
+    """MINOS-efficiency universe weight ratio to CV (MinosEfficiencyUniverse::
+    GetWeightRatioToCV, MinosEfficiencySystematics.cxx:72-114).
+
+    The C++ adds the error to the weight (CV + nσ·err), so the ratio is
+    1 + nσ·err/CV — *not* 1 + nσ·err. The two differ by the CV (~0.98), so
+    this matches the source exactly where `minos_efficiency_universe` (CV ×
+    (1+nσ·err)) is only approximate. Use this to ride the vertical universe."""
+    cv = minos_efficiency_weight(minos_trk_p_mev, numi_pot, batch_structure,
+                                 reco_vertex_batch)
+    err = minos_efficiency_error(theta_mu_deg)
+    return 1.0 + sigma * err / cv
 
 
 # ---------------------------------------------------------------------------

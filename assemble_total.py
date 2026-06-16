@@ -37,9 +37,12 @@ def main():
     parser = make_parser("Assemble Cov_total and compare to published cov_total.")
     parser.add_argument("--ingredients", required=True)
     parser.add_argument("--xsec", required=True)
-    parser.add_argument("--energyscale", required=True)
+    parser.add_argument("--energyscale", default=None)
+    parser.add_argument("--muon", default=None,
+                        help="cov_muon.npz (full muon-reco group; supersedes --energyscale)")
     parser.add_argument("--stat-cov", required=True)
     parser.add_argument("--genie", required=True)
+    parser.add_argument("--twop2h", default=None)
     parser.add_argument("--flux-frac", type=float, default=0.0323)
     parser.add_argument("--published", default="config/published.json")
     parser.add_argument("--playlist", default="minervame1A")
@@ -61,13 +64,18 @@ def main():
         # flux (normalization model, S2)
         cov_flux = sx.normalization_covariance(sig, args.flux_frac)
 
-        # energy scale (S4)
-        es = np.load(args.energyscale)
-        sp, _ = extract(ing["data_reco"], es["bkg_plus"], es["migration_plus"],
-                        eff_num=ing["eff_num"], eff_denom=ing["eff_denom"], **kw)
-        sm, _ = extract(ing["data_reco"], es["bkg_minus"], es["migration_minus"],
-                        eff_num=ing["eff_num"], eff_denom=ing["eff_denom"], **kw)
-        cov_es = sx.pair_covariance(sp, sm)
+        # muon reconstruction: prefer the full group (assemble_muon: energy
+        # scale MINERvA⊕MINOS + MINOS-eff + beam angle + resolution), else fall
+        # back to the flat S4 energy-scale pair.
+        if args.muon:
+            cov_es = np.load(args.muon)["cov_muon"]
+        else:
+            es = np.load(args.energyscale)
+            sp, _ = extract(ing["data_reco"], es["bkg_plus"], es["migration_plus"],
+                            eff_num=ing["eff_num"], eff_denom=ing["eff_denom"], **kw)
+            sm, _ = extract(ing["data_reco"], es["bkg_minus"], es["migration_minus"],
+                            eff_num=ing["eff_num"], eff_denom=ing["eff_denom"], **kw)
+            cov_es = sx.pair_covariance(sp, sm)
 
         # stat (S3)
         cov_stat = np.load(args.stat_cov)["cov_stat"]
@@ -84,7 +92,22 @@ def main():
                               eff_num=mm.sum(0), eff_denom=g["eff_denom"][2 * i + 1], **kw)
             cov_genie += sx.pair_covariance(sp_i, sm_i)
 
-        cov_total = sx.total_covariance([cov_flux, cov_es, cov_genie], cov_stat)
+        muon_key = "muon_reco" if args.muon else "energy_scale"
+        groups = {"flux": cov_flux, muon_key: cov_es, "genie": cov_genie}
+
+        # 2p2h (S5): three vertical universes (nn/pp, np, QE->2p2h). Covariance =
+        # sample covariance about the universe mean (CalcCovMx, fUseSpreadError
+        # =false for a >1-universe band) -> systematics.sample_covariance.
+        if args.twop2h:
+            g2 = np.load(args.twop2h)
+            sig2 = np.empty((len(g2["modes"]), binning.N_CELLS))
+            for i in range(len(g2["modes"])):
+                m2 = g2["migration"][i]
+                sig2[i], _ = extract(ing["data_reco"], g2["bkg"][i], m2,
+                                     eff_num=m2.sum(0), eff_denom=g2["eff_denom"][i], **kw)
+            groups["twop2h"] = sx.sample_covariance(sig2)
+
+        cov_total = sx.total_covariance(list(groups.values()), cov_stat)
 
         pub = json.loads(Path(args.published).read_text())
         anc = load_anc_cov(Path(pub["anc_dir"]) /
@@ -94,30 +117,38 @@ def main():
         ancf = sx.fractional_error(anc, sig)
         # the anc total is full-dataset; scale our stat down to compare totals
         # fairly, OR report the systematic-only comparison too.
-        cov_sys = sx.total_covariance([cov_flux, cov_es, cov_genie])
+        cov_sys = sx.total_covariance(list(groups.values()))
         ours_sys = sx.fractional_error(cov_sys, sig)
 
-        np.savez(outdir / "cov_total.npz", cov_total=cov_total, cov_flux=cov_flux,
-                 cov_energyscale=cov_es, cov_genie=cov_genie, cov_stat=cov_stat,
-                 frac_total=ours, frac_anc=ancf)
+        save = {"cov_total": cov_total, "cov_flux": cov_flux, "cov_energyscale": cov_es,
+                "cov_genie": cov_genie, "cov_stat": cov_stat, "frac_total": ours,
+                "frac_anc": ancf}
+        if "twop2h" in groups:
+            save["cov_twop2h"] = groups["twop2h"]
+        np.savez(outdir / "cov_total.npz", **save)
 
         def med(a, m=rep):
             return float(np.median(a[m]))
         r = np.divide(ours, ancf, out=np.zeros_like(ours), where=ancf > 1e-3)
+        gfm = {k: med(sx.fractional_error(c, sig)) for k, c in groups.items()}
+        gfm["stat_1A"] = med(sx.fractional_error(cov_stat, sig))
+        # build the still-missing list from what these groups actually cover
+        missing_items = []
+        if "twop2h" not in groups:
+            missing_items.append("2p2h")
+        missing_items.append("RPA")
+        if "muon_reco" not in groups:   # the flat energyscale omits these muon bands
+            missing_items += ["MINOS-eff", "beam angle", "muon resolution"]
+        missing_items += ["Geant-hadron", "flux shape", "normalization band"]
+        missing = ", ".join(missing_items)
         summary = {
-            "groups_frac_median": {
-                "flux": med(sx.fractional_error(cov_flux, sig)),
-                "energy_scale": med(sx.fractional_error(cov_es, sig)),
-                "genie": med(sx.fractional_error(cov_genie, sig)),
-                "stat_1A": med(sx.fractional_error(cov_stat, sig)),
-            },
+            "groups_frac_median": gfm,
             "total_frac_median_ours": med(ours),
             "systematic_only_frac_median_ours": med(ours_sys),
             "total_frac_median_anc": med(ancf),
             "ours_over_anc_median": float(np.median(r[r > 0])),
             "note": "ours total includes 1A stat (~4.7%, larger than full-dataset); "
-                    "missing groups: 2p2h, RPA, MINOS-eff, Geant-hadron, beam angle, "
-                    "muon resolution, and the flux shape term.",
+                    "missing groups: " + missing + ".",
         }
         (outdir / "summary.json").write_text(json.dumps(summary, indent=2))
 

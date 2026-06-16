@@ -135,6 +135,28 @@ def test_twop2h_variation_gating_and_files():
     assert w3[3] != 1.0 and w3[0] == 1.0        # acts on QE row only
 
 
+@needs_files
+def test_twop2h_variation_ratio_swaps_cv():
+    """The universe weight is CV_stack × (variation / CV) — the ratio swaps the
+    CV 2p2h factor for the mode's variation (MnvTuneSystematics.cxx:18-61)."""
+    w2p2h = weights.TwoP2HWeight()
+    q0 = np.array([0.254, 0.254, 0.254])
+    q3 = np.array([0.508, 0.508, 0.508])
+    it = np.array([8, 8, 1])                              # MEC nn, MEC np, QE
+    z = np.array([6, 6, 6])
+    nuc = np.array([2000000200, 2000000201, 2000000200])  # nn, np, -
+    cv = w2p2h.weight(q0, q3, it, z)
+    for mode in (1, 2, 3):
+        var = weights.twop2h_variation_weight(q0, q3, it, z, nuc, mode)
+        ratio = weights.twop2h_variation_ratio(q0, q3, it, z, nuc, w2p2h, mode)
+        assert np.allclose(ratio, var / cv)
+    # QE row: CV 2p2h is 1, so the mode-3 ratio is the bare QE variation (>1);
+    # an MEC row under mode 3 has variation off (1.0) -> ratio 1/cv < 1.
+    r3 = weights.twop2h_variation_ratio(q0, q3, it, z, nuc, w2p2h, 3)
+    assert cv[2] == 1.0 and r3[2] > 1.0
+    assert r3[0] < 1.0
+
+
 def test_minos_efficiency_error_and_universe():
     # theta-dependent fractional error, ~1-3%, rises with angle
     err0 = weights.minos_efficiency_error(np.array([0.0]))[0]
