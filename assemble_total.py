@@ -44,6 +44,9 @@ def main():
     parser.add_argument("--genie", required=True)
     parser.add_argument("--twop2h", default=None)
     parser.add_argument("--rpa", default=None, help="rpa_universes.npz")
+    parser.add_argument("--geniervx1pi", default=None, help="geniervx1pi_universes.npz")
+    parser.add_argument("--flux", default=None,
+                        help="cov_flux.npz (shape-resolved; supersedes the --flux-frac model)")
     parser.add_argument("--flux-frac", type=float, default=0.0323)
     parser.add_argument("--published", default="config/published.json")
     parser.add_argument("--playlist", default="minervame1A")
@@ -62,8 +65,12 @@ def main():
               flux_integral_m2=flux_m2, n_nucleons=n_nuc)
 
     with RunLog(__file__, "assemble Cov_total", inputs=args_to_inputs(args)) as log:
-        # flux (normalization model, S2)
-        cov_flux = sx.normalization_covariance(sig, args.flux_frac)
+        # flux: prefer the shape-resolved PPFX covariance (assemble_flux), else
+        # the S2 normalization model (flat --flux-frac).
+        if args.flux:
+            cov_flux = np.load(args.flux)["cov_flux"]
+        else:
+            cov_flux = sx.normalization_covariance(sig, args.flux_frac)
 
         # muon reconstruction: prefer the full group (assemble_muon: energy
         # scale MINERvA⊕MINOS + MINOS-eff + beam angle + resolution), else fall
@@ -121,6 +128,21 @@ def main():
             groups["rpa"] = (sx.pair_covariance(sr[0], sr[1])
                              + sx.pair_covariance(sr[2], sr[3]))
 
+        # GenieRvx1pi (non-res-pi normalization): MAT registers TWO bands
+        # (Rvn1pi, Rvp1pi) that are identical under the reweight, so the group
+        # covariance is their sum = 2 × pair (flagged; a physics choice).
+        cov_grvx_1band = None
+        if args.geniervx1pi:
+            gp = np.load(args.geniervx1pi)
+            sp_g, _ = extract(ing["data_reco"], gp["bkg"][0], gp["migration"][0],
+                              eff_num=gp["migration"][0].sum(0),
+                              eff_denom=gp["eff_denom"][0], **kw)
+            sm_g, _ = extract(ing["data_reco"], gp["bkg"][1], gp["migration"][1],
+                              eff_num=gp["migration"][1].sum(0),
+                              eff_denom=gp["eff_denom"][1], **kw)
+            cov_grvx_1band = sx.pair_covariance(sp_g, sm_g)
+            groups["geniervx1pi"] = 2.0 * cov_grvx_1band
+
         cov_total = sx.total_covariance(list(groups.values()), cov_stat)
 
         pub = json.loads(Path(args.published).read_text())
@@ -141,6 +163,8 @@ def main():
             save["cov_twop2h"] = groups["twop2h"]
         if "rpa" in groups:
             save["cov_rpa"] = groups["rpa"]
+        if "geniervx1pi" in groups:
+            save["cov_geniervx1pi"] = groups["geniervx1pi"]
         np.savez(outdir / "cov_total.npz", **save)
 
         def med(a, m=rep):
@@ -156,8 +180,12 @@ def main():
             missing_items.append("RPA")
         if "muon_reco" not in groups:   # the flat energyscale omits these muon bands
             missing_items += ["MINOS-eff", "beam angle", "muon resolution"]
-        missing_items += ["GenieRvx1pi (non-res 1pi)", "geant4/response (hadron)",
-                          "flux shape", "normalization band"]
+        if "geniervx1pi" not in groups:
+            missing_items.append("GenieRvx1pi (non-res 1pi)")
+        missing_items.append("geant4/response (hadron)")
+        if not args.flux:
+            missing_items.append("flux shape")
+        missing_items.append("normalization band")
         missing = ", ".join(missing_items)
         summary = {
             "groups_frac_median": gfm,
@@ -168,6 +196,11 @@ def main():
             "note": "ours total includes 1A stat (~4.7%, larger than full-dataset); "
                     "missing groups: " + missing + ".",
         }
+        if cov_grvx_1band is not None:
+            summary["geniervx1pi_2band_over_1band"] = "group is 2x the single +-1sigma pair " \
+                "(MAT Rvn1pi == Rvp1pi under the non-res-pi reweight)"
+            summary["geniervx1pi_1band_frac_median"] = med(
+                sx.fractional_error(cov_grvx_1band, sig))
         (outdir / "summary.json").write_text(json.dumps(summary, indent=2))
 
         fig, ax = plt.subplots(figsize=(5.5, 5.5))

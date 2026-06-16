@@ -95,6 +95,14 @@ def test_universe_weight_ratios_center_on_cv(fx):
     assert np.allclose(wmean, 1.0, atol=0.05)
 
 
+def test_universe_ratio_matches_matrix(fx):
+    # the memory-light single-universe accessor == the matrix row
+    enu = np.array([3.0, 6.0, 10.0, 20.0, 55.0])
+    matrix = fx.universe_weight_ratios(enu)
+    for u in (0, 1, 17, fx.n_universes - 1):
+        assert np.allclose(fx.universe_ratio(u, enu), matrix[u])
+
+
 def test_cv_weight_zero_guard(fx):
     # far outside any populated bin the clamped interpolation still returns
     # finite content, but a synthetic zero must give weight 1

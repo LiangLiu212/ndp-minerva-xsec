@@ -29,6 +29,20 @@ def test_nonres_pi_truth_table():
     assert w.tolist() == [NONRES_PI_WEIGHT, NONRES_PI_WEIGHT, 1.0, NONRES_PI_WEIGHT]
 
 
+def test_nonres_pi_variation_ratio():
+    seven = lambda v2: [1.0, 1.0, v2, 1.0, 1.0, 1.0, 1.0]
+    rvn = np.array([seven(0.6), seven(1.0), seven(1.0)])   # tagged, untagged, untagged
+    rvp = np.array([seven(1.0), seven(0.4), seven(1.0)])   # untagged, tagged, untagged
+    f = 0.04 / 0.43
+    rp = weights.nonres_pi_variation_ratio(rvn, rvp, +1.)
+    rm = weights.nonres_pi_variation_ratio(rvn, rvp, -1.)
+    assert np.allclose(rp, [1 + f, 1 + f, 1.0])
+    assert np.allclose(rm, [1 - f, 1 - f, 1.0])
+    # CV × ratio reproduces the 0.43 ± 0.04 weight on tagged events
+    assert np.isclose(NONRES_PI_WEIGHT * rp[0], 0.47)
+    assert np.isclose(NONRES_PI_WEIGHT * rm[0], 0.39)
+
+
 # ----------------------------------------------------------------- 2p2h (#3)
 @needs_files
 def test_2p2h_params_parsed():

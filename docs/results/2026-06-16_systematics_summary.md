@@ -12,9 +12,9 @@ Paper §9 names **three categories** — Flux, Detector, Interaction model — w
 | Fig 8 curve | paper category | our status | ours (1A, median/cell) | target |
 |---|---|---|---|---|
 | **Muon Reconstruction** | Detector | ✅ done | **3.79 %** | dominant; Fig 8 bulk 3–5 % |
-| Flux | Flux | ✅ normalization; shape deferred | 3.23 % | anc `cov_flux` ~4.0 % |
+| Flux | Flux | ✅ shape-resolved (100 PPFX univ) | 3.56 % | anc 4.08 %, off-diag 0.85 |
 | Statistical | — | ✅ toys (1A) | 4.70 % | anc `cov_stat` (scaled) 0.90 |
-| Models (interaction) | Interaction model | ◑ GENIE+2p2h+RPA; GenieRvx1pi missing | 1.2 % | Fig 8 ~2–3 % |
+| Models (interaction) | Interaction model | ✅ GENIE+2p2h+RPA+GenieRvx1pi | 1.2 % | Fig 8 ~2–3 % (see note) |
 | Normalization | Flux | ❌ not built | — | ~1.4 % |
 | Hadronic Response | Detector | ❌ not built | — | ~1 % |
 
@@ -22,7 +22,7 @@ Paper §9 names **three categories** — Flux, Detector, Interaction model — w
 
 | group | ours | anc | metric |
 |---|---|---|---|
-| Flux normalization | 3.23 % | 4.01 % | within ~19 % (norm model; shape deferred) |
+| Flux (shape-resolved, 100 PPFX univ) | 3.56 % | 4.08 % | median 0.88; **off-diagonal corr 0.85** |
 | Statistical (1A toys) | 4.70 % | 5.33 % (scaled to 1A) | 0.90 |
 | **Muon energy scale** (MINERvA ⊕ MINOS) | 3.07 % | 3.55 % | **median per-cell ratio 0.99** (was 0.84) |
 
@@ -42,6 +42,7 @@ correlation, largest at the spectrum edges. See
 | GENIE (56 universes) | 1.19 % | small for inclusive (knobs cancel in ratios) |
 | 2p2h low-recoil tune (3 universes) | 0.31 % | near-pure shape; integrated σ unchanged |
 | RPA (4 universes: HighQ2/LowQ2) | 0.10 % | negligible for inclusive; integrated σ unchanged |
+| GenieRvx1pi (non-res π, ±9.3% on tagged) | 0.03 % | negligible; 2× from 2 identical MAT bands |
 | MINOS efficiency | 1.37 % | exact `GetWeightRatioToCV` |
 | Beam angle X / Y | 0.34 / 0.30 % | re-applies the 20° cut |
 | Muon resolution / angle resolution | ~0.1 % | negligible, as predicted |
@@ -70,13 +71,14 @@ the gate for a clean `cov_total` validation.
 
 ## Remaining
 
-1. **GenieRvx1pi** — non-resonant single-π normalization (confirmed a separate
-   band in `GetStandardSystematics`); the likely Fig 8 "Models" residual.
-2. **geant4 + response** — Geant-hadron + calorimetric response (the Fig 8
+1. **geant4 + response** — Geant-hadron + calorimetric response (the Fig 8
    "Hadronic Response" curve, ~1 %), and a **Normalization** band (~1.4 %).
-3. **Flux shape** term (per-cell de-correlation; PPFX universes already loaded).
-4. **MINOS-band flux-weight correlation** (closes the energy-scale edge deficit).
-5. **Full-12-playlist combine** — shrinks 1A stat 4.7 % → ~1.4 %; the gate for
+2. **"New" GENIE systematics** — the deuterium-fit MaRES⊗NormCCRES covariance
+   band + the FaCCQE z-expansion (`GenieMaNormResCovUniverse`/`GenieFaCCQEUniverse`),
+   which replace the simple knobs in newer MAT — the likely Fig 8 "Models"
+   residual to ~2–3 % (the four standard interaction-model bands are only ~1.2 %).
+3. **MINOS-band flux-weight correlation** (closes the energy-scale edge deficit).
+4. **Full-12-playlist combine** — shrinks 1A stat 4.7 % → ~1.4 %; the gate for
    validating `cov_total` cleanly.
 
 ## Per-stage detail

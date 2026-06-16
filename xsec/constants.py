@@ -54,6 +54,10 @@ DEAD_MAX_DISCR_PAIRS = 1
 # reanalysis). Provenance: GenieSystematics.h:14 (kNonResPiWeight), applied by
 # GENIEReweighter.h:31-42 when truth_genie_wgt_Rv{n,p}1pi[2] < 1.
 NONRES_PI_WEIGHT = 0.43
+# Uncertainty on the reduction (the GenieRvx1pi systematic, reweight-on branch):
+# the weight varies 0.43 ± 0.04, i.e. ±0.04/0.43 fractional on tagged events.
+# Provenance: GenieSystematics.h:15 (kNonResPiWeightShift).
+NONRES_PI_WEIGHT_SHIFT = 0.04
 
 # --- beam geometry ----------------------------------------------------------
 # NuMI beam points downward in detector coordinates; true kinematics are

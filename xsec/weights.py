@@ -18,7 +18,8 @@ from pathlib import Path
 import numpy as np
 import uproot
 
-from .constants import CC_CURRENT, NONRES_PI_WEIGHT, NU_MU_PDG
+from .constants import (CC_CURRENT, NONRES_PI_WEIGHT, NONRES_PI_WEIGHT_SHIFT,
+                        NU_MU_PDG)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 REWEIGHT_DIR = REPO_ROOT / "data" / "flux" / "MParamFiles" / "data" / "Reweight"
@@ -65,6 +66,20 @@ def nonres_pi_weight(rvn1pi, rvp1pi):
     """
     tagged = (_knob_element(rvn1pi) < 1.0) | (_knob_element(rvp1pi) < 1.0)
     return np.where(tagged, NONRES_PI_WEIGHT, 1.0)
+
+
+def nonres_pi_variation_ratio(rvn1pi, rvp1pi, sigma):
+    """GenieRvx1pi universe weight ratio to CV (GenieRvx1piUniverse::
+    GetWeightRatioToCV, reweight-on branch, GenieSystematics.cxx:674-687).
+
+    With the MnvTune non-res-pi reweight applied (our case), the band is a flat
+    1 ± kNonResPiWeightShift/kNonResPiWeight (= 1 ± 0.04/0.43, ≈±9.3 %) on the
+    tagged events (IsNonResPi = Rv{n,p}1pi[2] < 1) and 1 elsewhere (the GENIE
+    knob is identity for untagged events). `sigma` is ±1.
+    """
+    tagged = (_knob_element(rvn1pi) < 1.0) | (_knob_element(rvp1pi) < 1.0)
+    shift = sigma * NONRES_PI_WEIGHT_SHIFT / NONRES_PI_WEIGHT
+    return np.where(tagged, 1.0 + shift, 1.0)
 
 
 # ---------------------------------------------------------------------------

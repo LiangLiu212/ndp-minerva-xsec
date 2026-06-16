@@ -137,6 +137,7 @@ class FluxCV:
         # the WEIGHTED sample covariance of the raw universes.
         self._universes = unis            # (n_univ, n_bins+2), raw PPFX
         self._constraint_weights = w      # (n_univ,)
+        self.constraint_weights = w       # public: SetUnivWgt for CalcCovMx
 
     def universe_integrals(self, emin_gev=0.0, emax_gev=100.0):
         """Per-universe flux integrals Φ_u (n_univ,) in ν/m²/POT, same width
@@ -168,6 +169,16 @@ class FluxCV:
             num = self._evaluate(self._universes[u, 1:-1], enu)
             ratios[u] = np.divide(num, cv, out=np.ones_like(num), where=cv != 0)
         return ratios
+
+    def universe_ratio(self, u, enu_gev):
+        """Flux weight ratio U_u(Enu)/Φ_constrained(Enu) for a SINGLE universe u
+        — the memory-light per-universe form of universe_weight_ratios (the flux
+        systematic pass loops 100-1000 universes over the 544k-event Truth tree,
+        so the full (n_univ, n_events) matrix is avoided)."""
+        enu = np.asarray(enu_gev, dtype=np.float64)
+        cv = self._evaluate(self._con_real, enu)
+        num = self._evaluate(self._universes[u, 1:-1], enu)
+        return np.divide(num, cv, out=np.ones_like(num), where=cv != 0)
 
     def _evaluate(self, contents_real, enu_gev):
         """TH1::Interpolate equivalent (linear between bin centers, clamped),
