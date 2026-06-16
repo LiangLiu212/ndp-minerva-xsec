@@ -14,7 +14,7 @@ Paper §9 names **three categories** — Flux, Detector, Interaction model — w
 | **Muon Reconstruction** | Detector | ✅ done | **3.79 %** | dominant; Fig 8 bulk 3–5 % |
 | Flux | Flux | ✅ normalization; shape deferred | 3.23 % | anc `cov_flux` ~4.0 % |
 | Statistical | — | ✅ toys (1A) | 4.70 % | anc `cov_stat` (scaled) 0.90 |
-| Models (interaction) | Interaction model | ◑ GENIE+2p2h; RPA missing | 1.2 % | Fig 8 ~2–3 % |
+| Models (interaction) | Interaction model | ◑ GENIE+2p2h+RPA; GenieRvx1pi missing | 1.2 % | Fig 8 ~2–3 % |
 | Normalization | Flux | ❌ not built | — | ~1.4 % |
 | Hadronic Response | Detector | ❌ not built | — | ~1 % |
 
@@ -41,6 +41,7 @@ correlation, largest at the spectrum edges. See
 |---|---|---|
 | GENIE (56 universes) | 1.19 % | small for inclusive (knobs cancel in ratios) |
 | 2p2h low-recoil tune (3 universes) | 0.31 % | near-pure shape; integrated σ unchanged |
+| RPA (4 universes: HighQ2/LowQ2) | 0.10 % | negligible for inclusive; integrated σ unchanged |
 | MINOS efficiency | 1.37 % | exact `GetWeightRatioToCV` |
 | Beam angle X / Y | 0.34 / 0.30 % | re-applies the 20° cut |
 | Muon resolution / angle resolution | ~0.1 % | negligible, as predicted |
@@ -69,9 +70,11 @@ the gate for a clean `cov_total` validation.
 
 ## Remaining
 
-1. **RPA** Valencia hi/lo-Q² variation modes (CV `RPAWeight` done to parity 1e-12).
-2. **Flux shape** term (per-cell de-correlation; PPFX universes already loaded).
-3. **Geant-hadron** response (~1 %) and a **normalization** band (~1.4 %).
+1. **GenieRvx1pi** — non-resonant single-π normalization (confirmed a separate
+   band in `GetStandardSystematics`); the likely Fig 8 "Models" residual.
+2. **geant4 + response** — Geant-hadron + calorimetric response (the Fig 8
+   "Hadronic Response" curve, ~1 %), and a **Normalization** band (~1.4 %).
+3. **Flux shape** term (per-cell de-correlation; PPFX universes already loaded).
 4. **MINOS-band flux-weight correlation** (closes the energy-scale edge deficit).
 5. **Full-12-playlist combine** — shrinks 1A stat 4.7 % → ~1.4 %; the gate for
    validating `cov_total` cleanly.

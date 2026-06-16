@@ -188,14 +188,16 @@ class RPAWeight:
     def _load(self, fname):
         with uproot.open(REWEIGHT_DIR / fname) as f:
             rel = f["hrelratio"].values(flow=True)          # (3002, 3002): [q3bin, q0bin]
+            nonrel = f["hnonrelratio"].values(flow=True)    # non-relativistic 2D ratio
             q2vals = f["hQ2relratio"].values(flow=True)     # (10002,)
+            q2nonrel = f["hQ2nonrelratio"].values(flow=True)
             q2edges = f["hQ2relratio"].axis(0).edges()
-        return rel, q2vals, q2edges
+        return rel, nonrel, q2vals, q2nonrel, q2edges
 
     def _weight_one_z(self, q0, q3, z):
         fname = RPA_FILE_NU.get(int(z), RPA_FILE_NU[6])
         offset = RPA_Q0_OFFSET_NU.get(int(z), RPA_Q0_OFFSET_DEFAULT)
-        rel, q2vals, q2edges = self._load(fname)
+        rel, _nonrel, q2vals, _q2nonrel, q2edges = self._load(fname)
         nx = rel.shape[0] - 2  # 3000
 
         q3bin = (q3 * 1000.0).astype(np.int64)
@@ -228,6 +230,80 @@ class RPAWeight:
         for zval in np.unique(z[gate]):
             m = gate & (z == zval)
             out[m] = self._weight_one_z(q0[m], q3[m], zval)
+        return out
+
+    def _weights_one_z(self, q0, q3, z):
+        """Full RPA error-band array per event (weightRPA::getWeightInternal with
+        the weights[5] out-param, weightRPA.cxx:55-235), returned as
+        (cv, lowq2_p, lowq2_m, highq2_p, highq2_m):
+          cv          = weights[0] = relativistic ratio (== _weight_one_z);
+          lowq2_p/m   = weights[1]/[2] = suppression band, ±25 % of (1−cv) when
+                        cv<1 (muon-capture uncertainty), else cv;
+          highq2_p/m  = weights[3]/[4] = enhancement band, cv ± 0.6·(ext−cv) with
+                        the documented traps, ext = non-relativistic ratio.
+        """
+        fname = RPA_FILE_NU.get(int(z), RPA_FILE_NU[6])
+        offset = RPA_Q0_OFFSET_NU.get(int(z), RPA_Q0_OFFSET_DEFAULT)
+        rel, nonrel, q2vals, q2nonrel, q2edges = self._load(fname)
+        nx = rel.shape[0] - 2
+
+        q3bin = (q3 * 1000.0).astype(np.int64)
+        q0bin = (q0 * 1000.0).astype(np.int64)
+        q0bin = np.where(q0 >= 3.0, nx - 1, q0bin)
+        q3bin = np.where(q3 >= 3.0, nx - 1, q3bin)
+        q0bin = np.where(q0 < 0.018, 18 + offset, q0bin)
+        jrow = np.clip(q0bin - offset, 0, nx + 1)
+        icol = np.clip(q3bin, 0, nx + 1)
+        icol2 = np.clip(q3bin + 150, 0, nx + 1)
+        q2 = q3 * q3 - q0 * q0
+        mid = (q2 > 3.0) & (q2 < 9.0)
+        q2idx = np.clip(np.digitize(q2, q2edges), 0, len(q2vals) - 1)
+
+        def lookup(hist2d, q1vals):           # CV-style relativistic OR non-rel
+            w = hist2d[icol, jrow]
+            w = np.where(w <= 0.001, 1.0, w)
+            redo = (q0 < 0.15) & (w > 0.9)
+            w = np.where(redo, hist2d[icol2, jrow], w)
+            w = np.where(q2 >= 9.0, 1.0, w)
+            if mid.any():
+                w = np.where(mid, q1vals[q2idx], w)
+            return np.where((w >= 0.001) & (w <= 2.0), w, 1.0)
+
+        cv = lookup(rel, q2vals)
+        # LowQ2 suppression band (weights[1],[2])
+        supp = cv < 1.0
+        lq_p = np.where(supp, cv + 0.25 * (1.0 - cv), cv)
+        lq_m = np.where(supp, cv - 0.25 * (1.0 - cv), cv)
+        # HighQ2 enhancement band (weights[3],[4]) from the non-relativistic ratio
+        ext = lookup(nonrel, q2nonrel)
+        r2nr = 0.6
+        enh_p = cv + r2nr * (ext - cv)
+        enh_p = np.where(q2 < 0.9, enh_p + 1.5 * (0.9 - q2) * (ext - enh_p), enh_p)
+        enh_p = np.minimum(enh_p, ext)                       # don't exceed nonrel limit
+        enh_p = np.maximum(enh_p, cv + 0.03)                 # >= 3 % above cv
+        enh_m = cv - r2nr * (ext - cv)
+        enh_m = np.minimum(enh_m, cv - 0.03)                 # <= 3 % below cv
+        enh_m = np.where((q2 > 1.0) & (enh_m < 1.0), 1.0, enh_m)
+        return cv, lq_p, lq_m, enh_p, enh_m
+
+    def variation_ratio(self, q0_gev, q3_gev, mc_intType, mc_targetZ, band, sign):
+        """Universe weight ratio (variation/CV) for an RPA band — the factor that
+        turns the CV stack into the systematic universe (RPAUniverse, variations
+        1-4 -> weightRPA HighQ2/LowQ2 ±). `band` in {'HighQ2','LowQ2'}, `sign` ±1.
+        1.0 outside the QE / Z>=6 gate (and where the CV weight is 0)."""
+        q0 = np.asarray(q0_gev, np.float64)
+        q3 = np.asarray(q3_gev, np.float64)
+        z = np.asarray(mc_targetZ)
+        out = np.ones_like(q0)
+        gate = (np.asarray(mc_intType) == INT_TYPE_QE) & (z >= 6)
+        for zval in np.unique(z[gate]):
+            m = gate & (z == zval)
+            cv, lq_p, lq_m, hq_p, hq_m = self._weights_one_z(q0[m], q3[m], int(zval))
+            if band == "HighQ2":
+                var = hq_p if sign > 0 else hq_m
+            else:
+                var = lq_p if sign > 0 else lq_m
+            out[m] = np.divide(var, cv, out=np.ones_like(var), where=cv != 0)
         return out
 
 

@@ -119,6 +119,65 @@ def test_rpa_matches_manual_lookup():
         assert abs(g - manual(q0, q3)) < 1e-12, (q0, q3, g, manual(q0, q3))
 
 
+@needs_files
+def test_rpa_variation_bands_manual_lookup():
+    """Parity for the 4 RPA error bands vs a hand replication of
+    weightRPA.cxx:134-235 (suppression ±25 %, enhancement via the non-rel ratio)."""
+    import uproot
+    rpa = weights.RPAWeight()
+    f = uproot.open(weights.REWEIGHT_DIR / "outNievesRPAratio-nu12C-20GeV-20170202.root")
+    rel = f["hrelratio"].values(flow=True)
+    nonrel = f["hnonrelratio"].values(flow=True)
+    q2rel = f["hQ2relratio"].values(flow=True)
+    q2nonrel = f["hQ2nonrelratio"].values(flow=True)
+    q2e = f["hQ2relratio"].axis(0).edges()
+    off = weights.RPA_Q0_OFFSET_NU[6]
+    nx = 3000
+
+    def look(hist, q1, q0, q3):
+        q3b = int(q3 * 1000) if q3 < 3.0 else nx - 1
+        q0b = (18 + off) if q0 < 0.018 else (int(q0 * 1000) if q0 < 3.0 else nx - 1)
+        jrow = min(max(q0b - off, 0), nx + 1)
+        w = hist[min(q3b, nx + 1), jrow]
+        if w <= 0.001:
+            w = 1.0
+        if q0 < 0.15 and w > 0.9:
+            w = hist[min(q3b + 150, nx + 1), jrow]
+        q2 = q3 * q3 - q0 * q0
+        if q2 >= 9.0:
+            w = 1.0
+        elif q2 > 3.0:
+            w = q1[min(np.digitize(q2, q2e), len(q1) - 1)]
+        return w if 0.001 <= w <= 2.0 else 1.0
+
+    pts = [(0.05, 0.3), (0.12, 0.5), (0.08, 0.35), (0.30, 0.90), (0.50, 1.20)]
+    for q0, q3 in pts:
+        cv = look(rel, q2rel, q0, q3)
+        ext = look(nonrel, q2nonrel, q0, q3)
+        q2 = q3 * q3 - q0 * q0
+        elp = cv + 0.25 * (1 - cv) if cv < 1.0 else cv
+        elm = cv - 0.25 * (1 - cv) if cv < 1.0 else cv
+        ep = cv + 0.6 * (ext - cv)
+        if q2 < 0.9:
+            ep += 1.5 * (0.9 - q2) * (ext - ep)
+        ep = min(ep, ext); ep = max(ep, cv + 0.03)
+        em = cv - 0.6 * (ext - cv); em = min(em, cv - 0.03)
+        if q2 > 1.0 and em < 1.0:
+            em = 1.0
+        g = rpa._weights_one_z(np.array([q0]), np.array([q3]), 6)
+        for k, exp in enumerate((cv, elp, elm, ep, em)):
+            assert abs(g[k][0] - exp) < 1e-9, (q0, q3, k, g[k][0], exp)
+
+    # CV from the band routine equals the standalone CV path
+    q0s = np.array([p[0] for p in pts]); q3s = np.array([p[1] for p in pts])
+    cvs = rpa._weights_one_z(q0s, q3s, 6)[0]
+    assert np.allclose(cvs, rpa._weight_one_z(q0s, q3s, 6), atol=1e-12)
+    # ratio is 1 outside the QE/Z>=6 gate
+    r = rpa.variation_ratio(np.array([0.1]), np.array([0.4]),
+                            np.array([2]), np.array([6]), "HighQ2", 1)
+    assert r[0] == 1.0
+
+
 # ------------------------------------------------------------ MINOS eff (#4)
 @needs_files
 def test_twop2h_variation_gating_and_files():

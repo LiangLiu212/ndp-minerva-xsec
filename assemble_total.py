@@ -43,6 +43,7 @@ def main():
     parser.add_argument("--stat-cov", required=True)
     parser.add_argument("--genie", required=True)
     parser.add_argument("--twop2h", default=None)
+    parser.add_argument("--rpa", default=None, help="rpa_universes.npz")
     parser.add_argument("--flux-frac", type=float, default=0.0323)
     parser.add_argument("--published", default="config/published.json")
     parser.add_argument("--playlist", default="minervame1A")
@@ -107,6 +108,19 @@ def main():
                                      eff_num=m2.sum(0), eff_denom=g2["eff_denom"][i], **kw)
             groups["twop2h"] = sx.sample_covariance(sig2)
 
+        # RPA (S5): two ±1σ pairs — HighQ2 (enhancement) and LowQ2 (suppression);
+        # each a 2-universe band -> pair_covariance (GetRPASystematicsMap).
+        if args.rpa:
+            gr = np.load(args.rpa)
+            sr = np.empty((len(gr["universes"]), binning.N_CELLS))
+            for i in range(len(gr["universes"])):
+                mr = gr["migration"][i]
+                sr[i], _ = extract(ing["data_reco"], gr["bkg"][i], mr,
+                                   eff_num=mr.sum(0), eff_denom=gr["eff_denom"][i], **kw)
+            # order: HighQ2_p, HighQ2_m, LowQ2_p, LowQ2_m
+            groups["rpa"] = (sx.pair_covariance(sr[0], sr[1])
+                             + sx.pair_covariance(sr[2], sr[3]))
+
         cov_total = sx.total_covariance(list(groups.values()), cov_stat)
 
         pub = json.loads(Path(args.published).read_text())
@@ -125,6 +139,8 @@ def main():
                 "frac_anc": ancf}
         if "twop2h" in groups:
             save["cov_twop2h"] = groups["twop2h"]
+        if "rpa" in groups:
+            save["cov_rpa"] = groups["rpa"]
         np.savez(outdir / "cov_total.npz", **save)
 
         def med(a, m=rep):
@@ -136,10 +152,12 @@ def main():
         missing_items = []
         if "twop2h" not in groups:
             missing_items.append("2p2h")
-        missing_items.append("RPA")
+        if "rpa" not in groups:
+            missing_items.append("RPA")
         if "muon_reco" not in groups:   # the flat energyscale omits these muon bands
             missing_items += ["MINOS-eff", "beam angle", "muon resolution"]
-        missing_items += ["Geant-hadron", "flux shape", "normalization band"]
+        missing_items += ["GenieRvx1pi (non-res 1pi)", "geant4/response (hadron)",
+                          "flux shape", "normalization band"]
         missing = ", ".join(missing_items)
         summary = {
             "groups_frac_median": gfm,
