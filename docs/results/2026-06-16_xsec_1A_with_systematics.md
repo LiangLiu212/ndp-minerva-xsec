@@ -38,6 +38,24 @@ comparison is **systematic-only: 5.54 % vs 6.26 % = 88.5 %**. After the
 12-playlist combine the total would be ≈ √(5.54² + 1.4²) ≈ 5.7 %, below the
 published 6.83 %, with the remaining small bands closing the rest.
 
+## 2D comparison vs published (Fig 13 format)
+
+The extracted d²σ/dp_T dp_∥ overlaid on the published `data_result`, in the
+paper's Fig-13 multi-panel format (per-panel ×multiplier for visual stacking;
+grey **inner tick = statistical**, **outer tick = total** uncertainty). Black =
+1A (this work); red = published.
+
+**p_T panels, one per p_∥ slice:**
+![1A vs published, p_T view](img/xsec_1A/fig13_pt_view.png)
+
+**p_∥ panels, one per p_T slice:**
+![1A vs published, p_∥ view](img/xsec_1A/fig13_pl_view.png)
+
+The 1A points track the published curve across all slices (integrated 0.9987,
+per-cell median 0.988). Our outer (total) bars are visibly larger in the sparse
+high-p_∥ / high-p_T panels — that is the inflated **1A statistical** band, which
+the 12-playlist combine shrinks; the systematic core (muon reco, flux) matches.
+
 ## Validation status
 
 - **Anc-validated (all 3 dedicated files):** flux shape (0.88 + off-diag 0.85),
