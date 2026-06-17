@@ -56,6 +56,33 @@ per-cell median 0.988). Our outer (total) bars are visibly larger in the sparse
 high-p_∥ / high-p_T panels — that is the inflated **1A statistical** band, which
 the 12-playlist combine shrinks; the systematic core (muon reco, flux) matches.
 
+## Per-cell uncertainty breakdown (Fig 8 format)
+
+The full budget per (p_T, p_∥) cell, in the paper's Fig-8 small-multiple layout —
+a fractional-uncertainty curve for each component. Six of the paper's seven curves
+are built; **Hadronic Response** is not yet (omitted), and **Normalization** is the
+exact flat **1.4 %** band (target-nucleon count, fully correlated). Per-cell medians
+over the 205 reported cells: Total 7.64 %, Statistical (1A) 4.70 %, Flux 3.56 %,
+Muon Reconstruction 3.79 %, Models 1.34 %, Normalization 1.40 %.
+
+**p_T panels (one per p_T bin), x = p_∥ (log):**
+![Fig-8 fractional uncertainty, p_T view](img/total_1A/fig8_errors_pt.png)
+
+**p_∥ panels (one per p_∥ bin), x = p_T:**
+![Fig-8 fractional uncertainty, p_∥ view](img/total_1A/fig8_errors_pz.png)
+
+Reads correctly against the published Fig 8: **muon reconstruction** (orange) is
+the dominant shaped term with the characteristic **rise at the muon-momentum-peak
+edges** (high-p_∥ in low-p_T panels; high-p_T in the mid-p_∥ panels); **flux**
+(purple) sits flat at ~3.5 %; **models** (red) stay low ~1 %; and the acceptance
+gaps reproduce (e.g. the `1.5 < p_∥ < 2.0` panel stops early in p_T). The black
+**Total** and grey **Statistical** ride high and spiky only because of the inflated
+**1A statistical** band — the same 1A-scale caveat as above; the shaped systematics
+are already at the right magnitude.
+
+Source: `fig8_uncertainties.py --cov <cov_total.npz> --xsec <xsec.npz>` (RunLog
+`~/log/ndp-minerva-xsec/2026_06_17_033048.log`).
+
 ## Validation status
 
 - **Anc-validated (all 3 dedicated files):** flux shape (0.88 + off-diag 0.85),
