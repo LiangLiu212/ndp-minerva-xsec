@@ -46,11 +46,11 @@ def test_nuhepmc_roundtrip():
     from ndp.adapters.nuhepmc import read_nuhepmc
     d = Path(tempfile.mkdtemp()); f = d / "toy.hepmc"
     ri = pyhepmc.GenRunInfo()
-    ri.attributes["NuHepMC.ProcessInfo[251].Name"] = pyhepmc.StringAttribute("QESpectralCC1p0pi")
-    ri.attributes["NuHepMC.ProcessInfo[452].Name"] = pyhepmc.StringAttribute("RES_Spectral_Func")
-    ri.attributes["NuHepMC.Units.CrossSection.Unit"] = pyhepmc.StringAttribute("pb")
-    ri.attributes["NuHepMC.Units.CrossSection.TargetScale"] = pyhepmc.StringAttribute("PerAtom")
-    ri.attributes["NuHepMC.FluxAveragedTotalCrossSection"] = pyhepmc.DoubleAttribute(1.2e5)   # pb / C12 atom
+    ri.attributes["NuHepMC.ProcessInfo[251].Name"] = "QESpectralCC1p0pi"
+    ri.attributes["NuHepMC.ProcessInfo[452].Name"] = "RES_Spectral_Func"
+    ri.attributes["NuHepMC.Units.CrossSection.Unit"] = "pb"
+    ri.attributes["NuHepMC.Units.CrossSection.TargetScale"] = "PerAtom"
+    ri.attributes["NuHepMC.FluxAveragedTotalCrossSection"] = 1.2e5   # pb / C12 atom
     ri.weight_names = ["CV"]
     with pyhepmc.open(str(f), "w") as out:
         for pid, lep_pdg in ((251, 13), (452, 13)):
@@ -63,7 +63,7 @@ def test_nuhepmc_roundtrip():
             for p in (mu, pr):
                 v.add_particle_out(p)
             evt.add_vertex(v); evt.weights = [1.0]
-            evt.attributes["signal_process_id"] = pyhepmc.IntAttribute(pid)
+            evt.attributes["signal_process_id"] = pid
             out.write(evt)
     t = read_nuhepmc(f)
     assert t.n == 2 and list(t["int_type"]) == [1, 2] and list(t["nu_pdg"]) == [14, 14] and list(t["target_A"]) == [12, 12]

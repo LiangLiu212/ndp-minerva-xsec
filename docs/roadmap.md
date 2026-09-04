@@ -14,6 +14,7 @@ generator truth into detector reconstruction with a surrogate model, and compare
 | data | reco-level open data (844 selected / 835 in grid, 2.05e17 POT) and the 2106.16210 release + covariance through the certified benchmark engine (Tune v1 row 33.03 reproduced) | `runs/2026-09-04_MINERvA_Tune_v1_shipped__*_2` |
 | orchestration | `ndp run` → manifest-backed run dir, report, figures; CLI; agent skill; 24 tests | `ndp/pipeline.py`, `tests/` |
 | environment | pixi project (conda-forge) with ROOT 6.40, GCC 15.2, GSL/log4cpp/libxml2/LHAPDF 6 and an in-repository GENIE R-3_06_02 (Pythia6 via ROOTEGPythia6); the pipeline drives it through `external/genie_env.json` (12k-event check: data/pred 1.065, same σ_avg as the spack build) | `pixi.toml`, `scripts/`, `runs/2026-09-04_genie_G18_02a_inrepo_12k__*` |
+| generators | NuWro 25.11.1, GiBUU release 2025 (patch 5) + buuinput, ACHILLES v0.3.1 (e02d266) built in the same pixi environment (`pixi run build-generators`), smoke-tested, and readable through the `external` model formats `nuwro_root` / `gibuu_finalevents` / `nuhepmc` | `scripts/build_*.sh`, `ndp/adapters/`, `tests/test_generator_adapters.py` |
 
 First results (me1A slice, statistical errors only, see the run directories for every number):
 
