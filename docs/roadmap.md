@@ -48,6 +48,9 @@ number. The folded comparison has ~35 % statistical error per cell at this expos
    release-manifest kind for the 44-bin covariance, the reco E_avail estimator (exploration repo
    feasibility probe), then the hadronic surrogate.
 6. **Theory → generator, richer.** GENIE Reweight knobs as a model kind; custom-tune runs through
-   `gxmlpath` (supported, untested); NuWro/GiBUU adapters (the user's nc1p workspace has both).
+   `gxmlpath` (supported, untested). NuWro, GiBUU 2025 and ACHILLES are built in the pixi
+   environment and their outputs are readable (`external` model formats); what is missing are
+   *runners* (`kind: nuwro | gibuu | achilles` that write the card, run on the channel flux and
+   target, and normalise) mirroring `ndp/theory/generator.py`.
 7. **Housekeeping.** Push the repository, `pixi install` when approved, pytest in CI, a `runs/`
    index generator.

@@ -17,6 +17,9 @@ Decisions the physicist owns and the platform has not settled. Format:
 
 - [ ] 2026-09-04 | genie | **Spline knots/energy for generated sets.** `make-splines` defaults to 100 log-spaced knots to 100 GeV per nuclide (CVMFS sets use 250 knots to 1 TeV). Enough for the ME flux? The G18_10a_02_11b set is being generated with these defaults. | `scripts/make_splines.sh`
 
+- [ ] 2026-09-04 | adapters | **NuWro cross-section units.** `event.weight` (σ_tot in cm², written on every saved event) is taken as *per nucleon*; confirm against NuWro's `totals.txt` / documentation before absolute comparisons. | `ndp/adapters/nuwro_root.py`
+- [ ] 2026-09-04 | adapters | **GiBUU perweight normalisation.** Weights are assumed to sum, per run, to σ_tot in 1e-38 cm²/nucleon (so ÷ n_runs); the adapter records the last row of `neutrino_absorption_cross_section_ALL.dat` next to the file for a cross-check but does not yet enforce agreement. Also: MINERvA-ME flux card for GiBUU (`nuExp`) not yet written. | `ndp/adapters/gibuu_finalevents.py`
+
 ## Resolved
 
 - [x] 2026-09-04 | genie | Are GENIE `-t` target-mix weights number or mass fractions? → mass fractions: `GMCJDriver` uses them as density-weighted path lengths and divides by A (`InteractionProbability`), consistent with the H₂O `[0.8888],[0.1111]` convention. Recorded in `docs/decisions.md`.

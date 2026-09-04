@@ -11,8 +11,10 @@ A model YAML has a `kind` and kind-specific fields:
                           fields: base (a model spec or 'reference_mc'), weight_expr | weight_module
   kind: genie             run GENIE with the channel flux and target mix
                           fields: tune, generator_list, n_events, n_jobs, seed, gxmlpath, ...
-  kind: external          a truth sample provided by the theorist
-                          fields: path, format (ndp_npz | genie_gst), sigma_per_nucleon_cm2 (optional)
+  kind: external          a truth sample provided by the theorist or by another generator
+                          fields: path, format (ndp_npz | genie_gst | gibuu_finalevents | nuhepmc |
+                          nuwro_root), sigma_per_nucleon_cm2 (optional override), target_Z/target_A
+                          (gibuu_finalevents)
 
 `realize(spec, channel, ctx)` returns a `Prediction`: a TruthTable (absolute or
 POT-normalised) and/or a d2sigma vector in the paper's cell basis.
@@ -205,8 +207,17 @@ def _external(spec, channel, ctx) -> Prediction:
     elif fmt == "genie_gst":
         from ..adapters.genie_gst import read_gst
         t = read_gst(path)
+    elif fmt == "gibuu_finalevents":
+        from ..adapters.gibuu_finalevents import read_finalevents
+        t = read_finalevents(path, target_Z=int(p["target_Z"]), target_A=int(p["target_A"]), n_runs=p.get("n_runs"))
+    elif fmt == "nuhepmc":
+        from ..adapters.nuhepmc import read_nuhepmc
+        t = read_nuhepmc(path)
+    elif fmt == "nuwro_root":
+        from ..adapters.nuwro_root import read_nuwro
+        t = read_nuwro(path)
     else:
-        raise ValueError(f"unknown external format {fmt!r}")
+        raise ValueError(f"unknown external format {fmt!r} (ndp_npz | genie_gst | gibuu_finalevents | nuhepmc | nuwro_root)")
     if "sigma_per_nucleon_cm2" in p:
         t.meta["norm"] = Normalization(kind="xsec_per_nucleon",
                                        xsec_per_unit_weight=float(p["sigma_per_nucleon_cm2"]) / float(t["weight"].sum()),

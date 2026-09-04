@@ -79,9 +79,19 @@ response and only the statistical error of the small open-data slice. They answe
 questions; the platform reports both and never merges them into one verdict.
 
 ## Bringing your own events
-Save a `TruthTable` (`TruthTable.save`) or point an `external` model at a GENIE `gst` file. Quote
-`sigma_per_nucleon_cm2` (the flux-averaged total for the events in the file) to enable absolute
-comparisons. A new generator needs only an adapter that fills the required columns.
+Save a `TruthTable` (`TruthTable.save`) or point an `external` model at a generator file:
+
+| `format` | reader | normalisation it derives |
+|---|---|---|
+| `genie_gst` | `adapters/genie_gst.py` | none (quote `sigma_per_nucleon_cm2`) |
+| `nuwro_root` | `adapters/nuwro_root.py` (PyROOT + `event1.so`) | `event.weight` = σ_tot [cm²], taken per nucleon |
+| `gibuu_finalevents` | `adapters/gibuu_finalevents.py` | perweight in 1e-38 cm²/nucleon, ÷ n_runs |
+| `nuhepmc` | `adapters/nuhepmc.py` (pyhepmc) | G.C.4 flux-averaged total, unit + PerAtom/A → cm²/nucleon |
+
+Process labels are mapped onto the NDP codes (QE, RES, DIS, COH, MEC); the generator's own code
+is kept in an extra column (`gibuu_production_id`, `process_id`, `nuwro_dyn`). Quote
+`sigma_per_nucleon_cm2` in the model spec to override a derived normalisation. A new generator
+needs only an adapter that fills the required columns.
 
 ## Adding a channel
 1. Write `channels/<name>.yaml` (copy the MINERvA one; mark every physics field's status).

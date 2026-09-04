@@ -62,8 +62,21 @@ pixi run make-splines -- --tune <tune>   # cross-section splines for a (custom) 
 pixi run test                # platform tests under pixi's pytest
 ```
 
-Everything GENIE-related lives under `external/` (gitignored, rebuildable from the scripts in
-`scripts/`). `ndp.yaml`'s `genie_env_json` points at the snapshot, so `kind: genie` models run on
+The other generators build the same way, into the same environment:
+
+```bash
+pixi run build-nuwro         # NuWro (GitHub master, 25.11.1 at the time of writing) with ROOTEGPythia6
+pixi run build-gibuu         # GiBUU release 2025 + buuinput (hepforge tarballs; GIBUU_TARBALLS=<dir> reuses local copies)
+pixi run build-achilles      # ACHILLES v0.3.1 (CMake; HDF5/zlib from pixi, the rest fetched by CPM)
+pixi run build-generators    # all four
+pixi run test-generators     # NuWro / GiBUU / ACHILLES smoke runs (GENIE: test-genie)
+```
+
+`activate.sh` exports `NUWRO`, `GIBUU`, `GIBUU_INPUT`, `ACHILLES` and puts every binary on `PATH`.
+Their outputs enter the pipeline through the `external` model kind: `format: nuwro_root`
+(`treeout`), `format: gibuu_finalevents` (`FinalEvents.dat`, needs `target_Z`/`target_A`) and
+`format: nuhepmc` (ACHILLES / any NuHepMC file). Everything under `external/` is gitignored and
+rebuildable from `scripts/`. `ndp.yaml`'s `genie_env_json` points at the snapshot, so `kind: genie` models run on
 the in-repo build; `genie_splines` names the cross-section splines (the CVMFS `G18_02a_00_000` set
 by default when mounted). A custom tune directory goes in via a model's `gxmlpath`. Any other GENIE
 install works the same way: point `genie_env_json` at a snapshot of its environment.
