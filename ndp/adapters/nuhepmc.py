@@ -1,5 +1,7 @@
 """NuHepMC (HepMC3) adapter — ACHILLES and any NuHepMC-compliant generator -> TruthTable.
 
+Momenta are converted from the file's declared unit (ACHILLES writes MeV) to GeV.
+
 Uses pyhepmc. Beam = status 4, target = status 20 (or 11), final state = status 1. The process
 ID (event attribute `signal_process_id`, NuHepMC E.C.1) is mapped through the run's
 `NuHepMC.ProcessInfo[<id>].Name` text (QE / MEC|2p2h / RES / DIS / COH) with the NuHepMC ranges
@@ -71,13 +73,15 @@ def read_nuhepmc(path: str | Path, entry_stop: int | None = None) -> TruthTable:
             tpdg = tgt[0].pid if tgt else 0
             A = (tpdg // 10) % 1000 if tpdg > 1000000000 else (1 if tpdg in (2212, 2112) else 0)
             Z = (tpdg // 10000) % 1000 if tpdg > 1000000000 else (1 if tpdg == 2212 else 0)
+            # HepMC files declare their momentum unit per event; the table is in GeV
+            u = 1e-3 if str(getattr(evt, "momentum_unit", "GEV")).upper().endswith("MEV") else 1.0
             k = nu.momentum
-            rows["nu_pdg"].append(nupid); rows["E_nu"].append(k.e)
+            rows["nu_pdg"].append(nupid); rows["E_nu"].append(k.e * u)
             if lep is not None:
                 kp = lep.momentum
-                q0, qx, qy, qz = k.e - kp.e, k.px - kp.px, k.py - kp.py, k.pz - kp.pz
+                q0, qx, qy, qz = (k.e - kp.e) * u, (k.px - kp.px) * u, (k.py - kp.py) * u, (k.pz - kp.pz) * u
                 Q2 = max(qx * qx + qy * qy + qz * qz - q0 * q0, 0.0)
-                rows["lep_pdg"].append(lep.pid); rows["lep_px"].append(kp.px); rows["lep_py"].append(kp.py); rows["lep_pz"].append(kp.pz); rows["lep_E"].append(kp.e)
+                rows["lep_pdg"].append(lep.pid); rows["lep_px"].append(kp.px * u); rows["lep_py"].append(kp.py * u); rows["lep_pz"].append(kp.pz * u); rows["lep_E"].append(kp.e * u)
                 rows["Q2"].append(Q2); rows["W"].append(np.sqrt(max(M_N ** 2 + 2 * M_N * q0 - Q2, 0.0)))
             else:
                 for kk in ("lep_pdg", "lep_px", "lep_py", "lep_pz", "lep_E", "Q2", "W"):
@@ -88,7 +92,7 @@ def read_nuhepmc(path: str | Path, entry_stop: int | None = None) -> TruthTable:
             for p in final:
                 if p is lep:
                     continue
-                fs["pdg"].append(p.pid); fs["E"].append(p.momentum.e); fs["px"].append(p.momentum.px); fs["py"].append(p.momentum.py); fs["pz"].append(p.momentum.pz)
+                fs["pdg"].append(p.pid); fs["E"].append(p.momentum.e * u); fs["px"].append(p.momentum.px * u); fs["py"].append(p.momentum.py * u); fs["pz"].append(p.momentum.pz * u)
             offsets.append(len(fs["pdg"]))
             try:
                 xs = evt.cross_section

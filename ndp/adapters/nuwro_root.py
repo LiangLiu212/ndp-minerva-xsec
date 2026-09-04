@@ -40,7 +40,8 @@ def read_nuwro(path: str | Path, entry_stop: int | None = None, event1_so: str |
         it = 1 if e.flag.qel else 2 if e.flag.res else 3 if e.flag.dis else 4 if e.flag.coh else 5 if e.flag.mec else 0
         rows["int_type"].append(it); rows["nuwro_dyn"].append(int(e.dyn))
         rows["target_Z"].append(int(e.par.nucleus_p)); rows["target_A"].append(int(e.par.nucleus_p + e.par.nucleus_n))
-        rows["Q2"].append(e.q2() * MEV * MEV if hasattr(e, "q2") else 0.0)
+        # NuWro's event::q2() is the four-momentum transfer squared t = (k - k')^2 < 0; Q2 = -t
+        rows["Q2"].append(max(-e.q2() * MEV * MEV, 0.0) if hasattr(e, "q2") else 0.0)
         rows["W"].append(e.W() * MEV if hasattr(e, "W") else 0.0)
         rows["weight"].append(1.0); xsecs.append(float(e.weight))
         for p in e.post:
