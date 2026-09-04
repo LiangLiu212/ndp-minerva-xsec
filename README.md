@@ -58,6 +58,7 @@ pixi run build-pythia6       # ROOTEGPythia6: Pythia6 + ROOT's TPythia6 interfac
 pixi run build-genie         # GENIE Generator $GENIE_VERSION (default R-3_06_02) built in external/genie/Generator
 pixi run snapshot-genie-env  # -> external/genie_env.json, the environment the pipeline hands to gevgen/gntpc
 pixi run test-genie          # 50-event gevgen + gntpc smoke test
+pixi run make-splines -- --tune <tune>   # cross-section splines for a (custom) tune, one gmkspl per nuclide
 pixi run test                # platform tests under pixi's pytest
 ```
 

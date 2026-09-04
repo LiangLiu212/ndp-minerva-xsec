@@ -14,7 +14,8 @@ genie = env.get("GENIE", "")
 version = subprocess.run(["git", "-C", genie, "describe", "--tags", "--always"], capture_output=True, text=True).stdout.strip() if genie else ""
 try:
     banner = subprocess.run(["gevgen", "-h"], env=env, capture_output=True, text=True, timeout=120)
-    ok = "gevgen" in (banner.stdout + banner.stderr)
+    text = banner.stdout + banner.stderr
+    ok = "Syntax" in text and "error while loading shared libraries" not in text
 except Exception:
     ok = False
 doc = {"created": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "genie_version": version, "genie_dir": genie,

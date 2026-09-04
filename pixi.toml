@@ -42,11 +42,13 @@ libxml2 = ">=2.12"
 log4cpp = ">=1.1.4"
 gsl = ">=2.7"
 lhapdf = ">=6.5"
+libnsl = ">=2.0"          # GENIE's Make.include links -lnsl; libnsl.so.3 is not on EL9 hosts
 
 [tasks]
 build-pythia6 = { cmd = "scripts/build_pythia6.sh", description = "Build ROOTEGPythia6 (Pythia6 + TPythia6) into external/ROOTEGPythia6/install" }
 build-genie = { cmd = "scripts/build_genie.sh", depends-on = ["build-pythia6"], description = "Clone + configure + build GENIE Generator ($GENIE_VERSION) in external/genie/Generator" }
 snapshot-genie-env = { cmd = "python scripts/snapshot_genie_env.py external/genie_env.json", description = "Dump the activated GENIE environment for the platform's generator runner" }
 test-genie = { cmd = "scripts/test_genie.sh", description = "gevgen/gntpc smoke test of the in-repo GENIE" }
+make-splines = { cmd = "scripts/make_splines.sh", description = "Cross-section splines for a tune: gmkspl per nuclide in parallel + gspladd (pass -- --tune <name> ...)" }
 test = { cmd = "python -m pytest tests/ -q", description = "Platform test suite" }
 channels = "python -m ndp channels"

@@ -2,5 +2,8 @@
 # NDP_MINERVA_REPO / NDP_DATA_DIR / NDP_GENIE_ENV / NDP_GENIE_SPLINES. See ndp/config.py.
 minerva_repo: /exp/dune/data/users/liangliu/ndp-dev/ndp-minerva-data-release-exploration
 data_dir: /exp/dune/data/users/liangliu/minerva-open-data
-genie_env_json: /exp/dune/data/users/liangliu/genie-dev/genie-agent/config/env/genie_v3_6_2.json
+# in-repository GENIE (pixi run build-genie && pixi run snapshot-genie-env); the spack install's
+# genie-agent snapshot is a drop-in alternative:
+#   /exp/dune/data/users/liangliu/genie-dev/genie-agent/config/env/genie_v3_6_2.json
+genie_env_json: external/genie_env.json
 genie_splines: /cvmfs/larsoft.opensciencegrid.org/products/genie_xsec/v3_06_00/NULL/G1802a00000-k250-e1000/data/gxspl-NUsmall.xml
