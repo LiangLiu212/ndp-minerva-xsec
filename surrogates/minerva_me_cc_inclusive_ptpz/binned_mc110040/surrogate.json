@@ -1,0 +1,84 @@
+{
+  "kind": "binned_response",
+  "binning": {
+    "x_name": "lep_pT",
+    "y_name": "lep_pz",
+    "x_edges": [
+      0.0,
+      0.075,
+      0.15,
+      0.25,
+      0.325,
+      0.4,
+      0.475,
+      0.55,
+      0.7,
+      0.85,
+      1.0,
+      1.25,
+      1.5,
+      2.5,
+      4.5
+    ],
+    "y_edges": [
+      1.5,
+      2.0,
+      2.5,
+      3.0,
+      3.5,
+      4.0,
+      4.5,
+      5.0,
+      6.0,
+      7.0,
+      8.0,
+      9.0,
+      10.0,
+      15.0,
+      20.0,
+      40.0,
+      60.0
+    ],
+    "formula": "ix*n_y + iy"
+  },
+  "meta": {
+    "channel": "minerva_me_cc_inclusive_ptpz",
+    "built": "2026-09-04T20:37:15+0000",
+    "training_mc": {
+      "path": "/exp/dune/data/users/liangliu/minerva-open-data/MasterAnaDev_mc_AnaTuple_run00110040_Playlist.root",
+      "size_bytes": 21594091620,
+      "mtime": 1788552532,
+      "fingerprint": "sha256(head1MiB+tail1MiB)",
+      "sha256_partial": "0ead3d541c76be4dc35910ad76611a82441d5dd60aa7453faeb24f19e184ccb3"
+    },
+    "pot_mc": 9.988796749584837e+18,
+    "generator": "GENIE 2.12.6 (MINERvA Open Data StandardMC; unconfirmed tag)",
+    "selection": "minerva_cc_inclusive_v1",
+    "phase_space": {
+      "frame": "beam",
+      "frame_status": "platform default backed by evidence (docs/decisions.md 2026-09-04): the reco muon_thetaX/Y are beam-relative, and the beam-frame truth gives a pT reco-true core width of 0.061 GeV versus 0.278 GeV in the detector frame on MC run 110040 (same-cell fraction 0.40 vs 0.10). The audited run 2026-06-19 used the detector frame; set frame: detector to reproduce it.\n",
+      "vertex": {
+        "z_min_mm": 5980.0,
+        "z_max_mm": 8422.0,
+        "apothem_mm": 850.0
+      },
+      "theta_max_deg": 20.0,
+      "pz_min_gev": 1.5,
+      "status": "decided"
+    },
+    "signal": {
+      "nu_pdg": [
+        14
+      ],
+      "current": "CC",
+      "status": "decided"
+    },
+    "n_den": 65700.0,
+    "n_num": 42339.0,
+    "n_migration": 42144.0,
+    "n_num_reco_out_of_grid": 195.0,
+    "n_feedin_true_out_of_grid": 3.0,
+    "n_bkg_total_in_reco_grid": 1217.0,
+    "response_convention": "P[reco, true] = M/num (column sums <= 1); bkg = non-signal + out-of-phase-space signal, per POT"
+  }
+}

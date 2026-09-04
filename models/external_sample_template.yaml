@@ -1,0 +1,9 @@
+# A theorist-supplied truth sample. Formats: ndp_npz (TruthTable.save) or genie_gst.
+# Give sigma_per_nucleon_cm2 (flux-averaged total for the events in the file) for absolute
+# comparisons; without it only the POT-free shape can be used.
+name: my_external_sample
+kind: external
+path: xxx/path/to/sample.gst.root
+format: genie_gst
+sigma_per_nucleon_cm2: xxx
+description: Replace xxx values; see docs/architecture.md "Bringing your own events".

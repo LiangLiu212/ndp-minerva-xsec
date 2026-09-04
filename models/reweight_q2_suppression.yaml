@@ -1,0 +1,7 @@
+# A smooth kinematic modification: RPA-like low-Q2 suppression of quasi-elastic events.
+name: qe_lowq2_suppression
+kind: reweight
+base: reference_mc
+weight_expr: "where(int_type == QE, 1.0 - 0.3*exp(-Q2/0.2), 1.0)"
+description: QE events suppressed by 30% at Q2 -> 0, recovering at Q2 ~ 0.2 GeV^2 (toy RPA shape).
+author: platform example

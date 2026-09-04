@@ -1,0 +1,6 @@
+# The experiment's own truth-level MC (MINERvA Open Data StandardMC, GENIE 2.12.6 CV, unweighted) as the model.
+# POT-normalised: the folded comparison uses the POT ratio; the unfolded one needs the channel's Phi and N_nucleons.
+name: reference_mc_genie2126
+kind: reference_mc
+description: MINERvA StandardMC truth (run 110040) pushed through the surrogate — the platform's closure test.
+author: platform example

@@ -1,0 +1,16 @@
+# Run GENIE on the channel's flux and target composition. The platform writes the flux TH1D,
+# runs gevgen (n_jobs in parallel) + gntpc through the genie-agent environment snapshot, and
+# normalises with the flux-averaged total cross section from the spline file.
+name: genie_G18_02a_00_000
+kind: genie
+tune: G18_02a_00_000
+generator_list: CC
+n_events: 180000
+n_jobs: 6
+seed: 20260904
+run_number: 1
+e_min: 0.0
+e_max: 100.0
+# target_mix defaults to the channel's tracker composition (mass fractions); override here if needed.
+description: GENIE v3.6.2 G18_02a_00_000 CC on the MINERvA tracker composition with the published ME FHC flux.
+author: platform example

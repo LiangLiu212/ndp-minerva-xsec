@@ -1,0 +1,74 @@
+# Channel: MINERvA ME FHC inclusive CC numu, double-differential in muon (pT, p_parallel)
+# Data reference: arXiv:2106.16210 (Phys.Rev.D 104, 092007). Every physics value below
+# is either taken from that paper's data release or from a decision already logged in the
+# MINERvA exploration repo (docs/decisions.md, 2026-06-09 / 2026-06-19). `status` marks
+# values the physicist has ratified ("decided") versus platform defaults ("default").
+name: minerva_me_cc_inclusive_ptpz
+experiment: MINERvA
+description: >
+  Inclusive charged-current numu scattering on the MINERvA scintillator tracker (CH),
+  medium-energy NuMI FHC beam, reported as d2sigma/dpT dp_parallel of the muon.
+
+signal:                      # truth-level signal definition
+  nu_pdg: [14]
+  current: CC
+  status: decided            # = MINERvA-101 signal definition (mc_incoming==14 && mc_current==1)
+
+phase_space:                 # true phase space = MINERvA-101 isEfficiencyDenom (analysis_recipe.md §2.2)
+  frame: beam                # true lepton rotated about x by MinervaUnits::numi_beam_angle_rad (-0.05887), as MAT does
+  frame_status: >
+    platform default backed by evidence (docs/decisions.md 2026-09-04): the reco muon_thetaX/Y are
+    beam-relative, and the beam-frame truth gives a pT reco-true core width of 0.061 GeV versus
+    0.278 GeV in the detector frame on MC run 110040 (same-cell fraction 0.40 vs 0.10).
+    The audited run 2026-06-19 used the detector frame; set frame: detector to reproduce it.
+  vertex: {z_min_mm: 5980.0, z_max_mm: 8422.0, apothem_mm: 850.0}
+  theta_max_deg: 20.0
+  pz_min_gev: 1.5
+  status: decided
+
+binning:                     # published 16 x 14 grid, arXiv:2106.16210 anc/bin_mapping.txt + exact analysis edges
+  x: {observable: lep_pT, units: GeV/c,
+      edges: [0.0, 0.075, 0.15, 0.25, 0.325, 0.4, 0.475, 0.55, 0.7, 0.85, 1.0, 1.25, 1.5, 2.5, 4.5]}
+  y: {observable: lep_pz, units: GeV/c,
+      edges: [1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 15.0, 20.0, 40.0, 60.0]}
+  global_cell_formula: "ipt*n_pz + ipz"    # the paper's GlobalID linearisation (p_parallel inner)
+  status: decided            # docs/decisions.md 2026-06-19
+
+selection:                   # reconstruction-level selection applied to data and MC
+  name: minerva_cc_inclusive_v1
+  cuts: [ZRange, Apothem, MaxMuonAngle, HasMINOSMatch, NoDeadtime, IsNeutrino]
+  source: ndp-minerva-data-release-exploration/tools/cc_inclusive_selector.py (certified vs the MINERvA-101 anchor)
+  reco_observables: {lep_pT: "||leptonE||/1000*sin(theta3d)", lep_pz: "||leptonE||/1000*cos(theta3d)"}
+
+data:
+  paper_manifest: "2106.16210"                     # benchmark/papers/<id>.yaml in the MINERvA repo
+  reco_data_files: ["MasterAnaDev_data_AnaTuple_run00010066_Playlist.root"]   # relative to site data_dir
+  reco_mc_files:   ["MasterAnaDev_mc_AnaTuple_run00110040_Playlist.root"]
+  playlist: minervame1A
+  mc_generator: "GENIE 2.12.6 (Open Data StandardMC; tune tag not embedded in the tuple — open question)"
+  pot_status: "read from the Meta tree at run time, never typed in"
+
+normalization:
+  # Integrated flux and nucleon count used to turn N_true into a per-nucleon cross section
+  # (and back). Both are the values the 2D reproduction run adopted, logged 2026-06-09.
+  phi_per_pot_cm2: 6.32e-8          # nu/cm^2/POT, 0-100 GeV, nu-e constrained; arXiv:2106.16210
+  phi_frac_unc: 0.039
+  n_nucleons: 3.23e+30              # tracker fiducial, TargetUtils (nPlanes=108) -> 3.235e30, paper 3.23e30
+  n_nucleons_frac_unc: 0.014
+  flux_table: resources/flux/arXiv2110.13372_supplemental.txt   # Table I: nu_mu/m^2/1e5 POT/GeV, 0-100 GeV (ME FHC)
+  flux_table_note: >
+    Published ME FHC flux shape (arXiv:2110.13372 Table I, two-decimal precision -> tail above
+    ~50 GeV truncated). Used to drive generator runs and as a cross-check of phi_per_pot_cm2.
+  target_mix_mass_fractions:        # tracker composition by mass, arXiv:2110.13372 Sec. 1
+    1000060120: 0.8851   # C12
+    1000010010: 0.0818   # H1
+    1000080160: 0.0250   # O16
+    1000220480: 0.0047   # Ti48
+    1000170350: 0.0020   # Cl35
+    1000130270: 0.0007   # Al27
+    1000140280: 0.0007   # Si28
+  status: decided (phi, n_nucleons) / default (flux_table, target_mix)
+
+surrogate:
+  default: surrogates/minerva_me_cc_inclusive_ptpz/binned_mc110040    # built by `ndp surrogate build`
+  fallback: surrogates/minerva_me_cc_inclusive_ptpz/binned_from_run_2026-06-19

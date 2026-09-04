@@ -1,0 +1,33 @@
+# Channel: MINERvA ME FHC inclusive CC numu at low three-momentum transfer,
+# d2sigma/dE_avail dq3 — arXiv:2110.13372 (Phys.Rev.D 106, 032001).
+# STATUS: draft. The truth side is fully specified (E_avail, q3 are in ndp.channels.observables).
+# The data side is NOT wired: the release ships one supplemental text file (44 bins + 44x44
+# covariance) rather than a linearised-2D anc/ directory, so it needs a new benchmark manifest
+# kind, and the reconstruction-level E_avail estimator is an open question in the MINERvA repo
+# (runs/2026-06-25_eavail_q3_feasibility). No surrogate exists yet. Listed so the extension
+# path is concrete, not to be run.
+name: minerva_me_lowrecoil_eavail_q3
+experiment: MINERvA
+status: draft
+description: Inclusive CC numu at q3 < 1.2 GeV, reported vs true available energy and true q3.
+signal: {nu_pdg: [14], current: CC, status: decided}
+phase_space:
+  frame: detector
+  vertex: {z_min_mm: 5980.0, z_max_mm: 8422.0, apothem_mm: 850.0}
+  theta_max_deg: 20.0
+  p_min_gev: 1.5
+  p_max_gev: 20.0
+  status: default (paper Sec. 3; vertex fiducial assumed identical to the inclusive analysis)
+binning:
+  x: {observable: E_avail, units: GeV, edges: [0.0, 0.04, 0.08, 0.12, 0.16, 0.2, 0.24, 0.28, 0.32, 0.36, 0.4]}
+  y: {observable: q3, units: GeV, edges: [0.0, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.2]}
+  global_cell_formula: "ix*n_y + iy"
+  status: open  # placeholder edges — take the exact edges from the supplemental Table II before use
+selection: {name: minerva_cc_inclusive_v1, status: "paper adds 1.5 < p_mu < 20 GeV and a reco q3 < 1.2 GeV window"}
+data:
+  supplemental_file: resources/flux/arXiv2110.13372_supplemental.txt
+  paper_manifest: null
+normalization:
+  n_nucleons: 3.115e30
+  flux_table: resources/flux/arXiv2110.13372_supplemental.txt
+surrogate: {}

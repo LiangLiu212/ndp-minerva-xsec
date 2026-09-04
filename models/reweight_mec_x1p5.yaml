@@ -1,0 +1,10 @@
+# A theorist's modification expressed as per-event weights on the reference MC.
+# Namespace inside weight_expr: every truth column (E_nu, Q2, W, int_type, target_A, ...), every
+# observable (lep_pT, lep_pz, q0, q3, E_avail, ...), the codes QE RES DIS COH MEC, and numpy
+# (where, exp, log, sqrt, clip, ...). Weights must be >= 0 and finite.
+name: mec_x1p5
+kind: reweight
+base: reference_mc
+weight_expr: "where(int_type == MEC, 1.5, 1.0)"
+description: Reference MC with the 2p2h/MEC contribution scaled by 1.5 (a toy of the low-recoil enhancement).
+author: platform example

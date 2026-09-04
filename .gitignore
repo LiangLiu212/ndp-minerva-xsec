@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.pixi/
+runs/*
+!runs/README.md
+surrogates/*/*/arrays.npz
+*.ghep.root
+*.gst.root
+*.ghep.status
+input-flux.root

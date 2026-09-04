@@ -1,0 +1,6 @@
+# A generator curve shipped with the paper release, scored as a model (unfolded space only).
+name: MINERvA_Tune_v1_shipped
+kind: shipped_curve
+curve: "MINERvA Tune v1"          # any `models[].name` in benchmark/papers/2106.16210.yaml
+description: The paper's own central-value tune, as released. Reproduces the benchmark scorecard row (chi2_total/ndf ~ 33.0).
+author: platform example
