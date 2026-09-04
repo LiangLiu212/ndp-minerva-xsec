@@ -37,5 +37,15 @@ if [ -z "${GENIEXSECFILE:-}" ] && [ -f "$_cvmfs_spl" ]; then
 fi
 unset _cvmfs_spl
 
-export PATH="$GENIE/bin:$ROOTEGPythia6_ROOT/bin:$PATH"
-export LD_LIBRARY_PATH="$GENIE/lib:$ROOTEGPythia6_ROOT/lib:$CONDA_PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+# NuWro (in-place build; data/ found through $NUWRO; event1.so lives in bin/)
+export NUWRO="$NDP_EXTERNAL/nuwro"
+# GiBUU release 2025 (binary objects/GiBUU.x; job cards set path_to_input = $GIBUU_INPUT)
+export GIBUU="$NDP_EXTERNAL/gibuu/release2025"
+export GIBUU_INPUT="$NDP_EXTERNAL/gibuu/buuinput"
+# ACHILLES (CMake install prefix; data in share/Achilles)
+export ACHILLES_VERSION="${ACHILLES_VERSION:-v0.3.1}"
+export ACHILLES="$NDP_EXTERNAL/achilles/install"
+export ACHILLES_SRC="$NDP_EXTERNAL/achilles/Achilles"
+
+export PATH="$GENIE/bin:$ROOTEGPythia6_ROOT/bin:$NUWRO/bin:$GIBUU/objects:$ACHILLES/bin:$PATH"
+export LD_LIBRARY_PATH="$GENIE/lib:$ROOTEGPythia6_ROOT/lib:$NUWRO/bin:$ACHILLES/lib:$ACHILLES/lib64:$CONDA_PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"

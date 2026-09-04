@@ -1,0 +1,79 @@
+!--------------------------------------------------------- -*- fortran -*- ----
+! NDP smoke-test job card: numu CC on C12, BNB flux shape, 100 ensembles.
+! Copied from the nc1p workspace's verified GiBUU-2025 card with target C12 and __GIBUU_INPUT__
+! substituted at run time (scripts/test_generators.sh). Not a physics configuration.
+!------------------------------------------------------------------------------
+&neutrino_induced
+      process_ID      =  2      ! 2:CC, 3:NC, -2:antiCC, -3:antiNC
+      flavor_ID       =  2      ! 1:electron, 2:muon, 3:tau
+      nuXsectionMode  = 16      ! 16: EXP_dSigmaMC (flux-integrated)
+      nuExp           = 21      ! 21: BNB numu (smoke test only; MINERvA-ME cards come with the adapter)
+      includeQE       = T
+      includeDELTA    = T
+      includeRES      = T
+      include1pi      = T
+      includeDIS      = T
+      include2p2hQE   = T
+      include2pi      = T
+      printAbsorptionXS = T
+/
+&target
+      Z=6
+      A=12
+      densitySwitch_Static=2
+      fermiMotion=.true.
+/
+&initDensity
+      densitySwitch=2
+/
+&initPauli
+      pauliSwitch=2
+/
+&input
+      eventtype=5
+      numEnsembles=100
+      numTimeSteps=150
+      delta_T=0.2
+      fullensemble=.true.
+      localEnsemble=.true.
+      num_runs_SameEnergy=1
+      num_Energies=1
+      printParticleVectors=.false.
+      freezeRealParticles=.true.
+      LRF_equals_CALC_frame=.true.
+      path_to_input='__GIBUU_INPUT__'
+      version = 2025
+/
+&nl_SigmaMC
+      enu=1.0
+/
+&width_Baryon
+      mediumSwitch=.false.
+      mediumSwitch_Delta=.false.
+      mediumSwitch_coll=.false.
+/
+&spectralFunction
+      nuclwidth=0.001
+/
+&baryonPotential
+      EQS_Type=5
+      DeltaPot=1
+/
+&insertion
+      minimumEnergy=0.005
+/
+&neutrinoAnalysis
+      outputEvents=.true.
+      include_W_dist=.false.
+      DoOutChannels = .true.
+      ZeroPion_analysis=.false.
+      detailed_diff_output=.false.
+      kineticEnergyDetectionThreshold_nucleon=0.
+      kineticEnergyDetectionThreshold_chargedpion=0.
+      kineticEnergyDetectionThreshold_neutralpion=0.
+      applyCuts = 2
+      reconstruct_neutrino_energy=.false.
+      specificEvent_analysis=.false.
+/
+&EventOutput
+/

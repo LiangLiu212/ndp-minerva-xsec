@@ -43,12 +43,29 @@ log4cpp = ">=1.1.4"
 gsl = ">=2.7"
 lhapdf = ">=6.5"
 libnsl = ">=2.0"          # GENIE's Make.include links -lnsl; libnsl.so.3 is not on EL9 hosts
+# --- NuWro (ROOT + ROOTEGPythia6 + gfortran: covered above) ---
+# --- GiBUU (gfortran, bzip2 for the compressed buuinput tables) ---
+bzip2 = ">=1.0"
+# --- ACHILLES (CMake; CPM fetches the rest unless found locally) ---
+hdf5 = ">=1.14"
+zlib = ">=1.2"
+hepmc3 = ">=3.2.5"
+fmt = ">=10"
+spdlog = ">=1.12"
+yaml-cpp = ">=0.8"
+highfive = ">=2.9"
+pyhepmc = ">=2.13"          # read ACHILLES / NuHepMC output from Python
 
 [tasks]
 build-pythia6 = { cmd = "scripts/build_pythia6.sh", description = "Build ROOTEGPythia6 (Pythia6 + TPythia6) into external/ROOTEGPythia6/install" }
 build-genie = { cmd = "scripts/build_genie.sh", depends-on = ["build-pythia6"], description = "Clone + configure + build GENIE Generator ($GENIE_VERSION) in external/genie/Generator" }
-snapshot-genie-env = { cmd = "python scripts/snapshot_genie_env.py external/genie_env.json", description = "Dump the activated GENIE environment for the platform's generator runner" }
+snapshot-genie-env = { cmd = "python scripts/snapshot_genie_env.py external/genie_env.json", description = "Dump the activated environment (GENIE, NuWro, GiBUU, ACHILLES on PATH) for the platform's generator runners" }
 test-genie = { cmd = "scripts/test_genie.sh", description = "gevgen/gntpc smoke test of the in-repo GENIE" }
+build-nuwro = { cmd = "scripts/build_nuwro.sh", depends-on = ["build-pythia6"], description = "Clone + build NuWro (master) in external/nuwro" }
+build-gibuu = { cmd = "scripts/build_gibuu.sh", description = "Fetch GiBUU release2025 + buuinput2025 and build GiBUU.x in external/gibuu" }
+build-achilles = { cmd = "scripts/build_achilles.sh", description = "Clone + CMake-build ACHILLES $ACHILLES_VERSION into external/achilles" }
+build-generators = { depends-on = ["build-genie", "build-nuwro", "build-gibuu", "build-achilles"], description = "Build every generator" }
+test-generators = { cmd = "scripts/test_generators.sh", description = "Smoke tests: NuWro, GiBUU, ACHILLES (GENIE has test-genie)" }
 make-splines = { cmd = "scripts/make_splines.sh", description = "Cross-section splines for a tune: gmkspl per nuclide in parallel + gspladd (pass -- --tune <name> ...)" }
 test = { cmd = "python -m pytest tests/ -q", description = "Platform test suite" }
 channels = "python -m ndp channels"
