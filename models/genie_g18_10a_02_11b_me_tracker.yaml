@@ -1,6 +1,8 @@
 # A second GENIE tune through the same pipeline: G18_10a_02_11b (the SBN/MicroBooNE-family
-# tune: local Fermi gas, Valencia MEC, Berger-Sehgal RES/COH, hN FSI). Uses the matching CVMFS
-# spline set (v3_06_02_sbn2 product; tune header G18_10a_02_11b) instead of the site default.
+# tune: local Fermi gas, Valencia MEC, Berger-Sehgal RES/COH, hN FSI). Splines are generated
+# with the in-repo GENIE (`pixi run make-splines -- --tune G18_10a_02_11b`): the CVMFS
+# v3_06_02_sbn2 G18_10a_02_11b set lacks Cl35 (one of the tracker nuclides) and was made with an
+# SBN pre-release, so it is not used here.
 name: genie_G18_10a_02_11b
 kind: genie
 tune: G18_10a_02_11b
@@ -11,6 +13,6 @@ seed: 20260905
 run_number: 1
 e_min: 0.0
 e_max: 100.0
-splines: /cvmfs/larsoft.opensciencegrid.org/products/genie_xsec/v3_06_02_sbn2/NULL/G1810a0211b-k250-e1000/data/gxspl-NUsmall.xml
+splines: external/splines/G18_10a_02_11b_CC_nu14_e100_n100.xml   # relative to the repo root
 description: GENIE R-3_06_02 (in-repo pixi build) G18_10a_02_11b CC on the MINERvA tracker composition with the published ME FHC flux.
 author: platform example

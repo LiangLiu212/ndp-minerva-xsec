@@ -86,6 +86,8 @@ def generate(spec: GenieSpec, flux_edges: np.ndarray, flux_density: np.ndarray, 
     """
     env_json = spec.env_json or (str(site_cfg.genie_env_json) if site_cfg and site_cfg.genie_env_json else None)
     splines = spec.splines or (str(site_cfg.genie_splines) if site_cfg and site_cfg.genie_splines else None)
+    if splines and not Path(splines).is_absolute() and site_cfg is not None:
+        splines = str(site_cfg.repo_root / splines)
     if not env_json or not Path(env_json).exists():
         raise FileNotFoundError("no GENIE environment snapshot (spec.env_json / site genie_env_json)")
     if not splines or not Path(splines).exists():
@@ -99,6 +101,13 @@ def generate(spec: GenieSpec, flux_edges: np.ndarray, flux_density: np.ndarray, 
         t.meta["cache_hit"] = True
         return t
     out.mkdir(parents=True, exist_ok=True)
+    missing = splmod.check_spline_coverage(splines, spec.nu_pdg, list(spec.target_mix))
+    if missing:
+        raise ValueError(f"spline file {splines} has no nu={spec.nu_pdg} splines for target(s) {missing}; "
+                         f"generate them (pixi run make-splines -- --tune {spec.tune}) or drop them from target_mix")
+    spl_tune = splmod.spline_tune_name(splines)
+    if spl_tune and spl_tune != spec.tune:
+        raise ValueError(f"spline file is for tune {spl_tune!r} but the model asks for {spec.tune!r}")
     env = load_genie_env(env_json)
     if spec.gxmlpath:
         env["GXMLPATH"] = spec.gxmlpath + (":" + env["GXMLPATH"] if env.get("GXMLPATH") else "")
@@ -148,7 +157,7 @@ def generate(spec: GenieSpec, flux_edges: np.ndarray, flux_density: np.ndarray, 
         "generator": f"GENIE {spec.tune} ({spec.generator_list})", "genie_spec": spec.to_dict(),
         "genie_env_json": env_json, "splines": splines, "flux_source": flux_source,
         "sigma_flux_avg_per_nucleon_cm2": sigma_avg, "n_generated": n_gen,
-        "n_splines_used": {str(k): v["n_splines"] for k, v in spl.items()},
+        "n_splines_used": {str(k): v["n_splines"] for k, v in spl.items()}, "spline_tune": spl_tune,
         "norm": Normalization(kind="xsec_per_nucleon", xsec_per_unit_weight=sigma_avg / float(t["weight"].sum()),
                               notes="sigma_avg from spline file x flux table; events unweighted").to_dict(),
         "genie_logs": logs, "source": str(out),

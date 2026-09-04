@@ -94,3 +94,35 @@ def flux_averaged_per_nucleon(E: np.ndarray, sigma: np.ndarray, flux_edges: np.n
     def sig(e):
         return np.interp(e, E, sigma, left=0.0, right=sigma[-1])
     return flux_average(flux_edges, flux_density, sig, e_min=e_min, e_max=e_max)
+
+
+def check_spline_coverage(xml_path: str | Path, nu_pdg: int, targets: list[int], chunk: int = 1 << 24) -> list[int]:
+    """Return the target PDGs for which the spline file holds no `nu:<pdg>;tgt:<t>;` entry.
+
+    A streaming byte search (a few seconds on a 500 MB file), run before launching gevgen:
+    GENIE aborts with `Assertion fUseSplines failed` when any nuclide of a target mix has no
+    splines for the tune, and says nothing about which one.
+    """
+    needles = {int(t): f"nu:{nu_pdg};tgt:{int(t)};".encode() for t in targets}
+    found = set()
+    with open(xml_path, "rb") as fh:
+        carry = b""
+        while True:
+            block = fh.read(chunk)
+            if not block:
+                break
+            data = carry + block
+            for t, n in needles.items():
+                if t not in found and n in data:
+                    found.add(t)
+            if len(found) == len(needles):
+                break
+            carry = data[-64:]
+    return [t for t in needles if t not in found]
+
+
+def spline_tune_name(xml_path: str | Path) -> str | None:
+    """The `<genie_tune name="...">` header of a spline file (first 4 kB), or None."""
+    head = Path(xml_path).open("rb").read(4096).decode(errors="ignore")
+    m = re.search(r'genie_tune name="([^"]+)"', head)
+    return m.group(1) if m else None

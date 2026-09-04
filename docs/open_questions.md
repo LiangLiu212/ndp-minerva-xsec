@@ -15,6 +15,8 @@ Decisions the physicist owns and the platform has not settled. Format:
 - [ ] 2026-09-04 | low-recoil channel | `channels/minerva_me_lowrecoil_eavail_q3.yaml` is a draft: exact bin edges from the supplemental Table II, the reco E_avail estimator (exploration repo open question `[~]`), and a manifest kind for the 44-bin release are all needed before it can run. | `channels/`
 - [ ] 2026-09-04 | data | The open-data MC generator tag (GENIE 2.12.6 + which tune) is not embedded in the tuple (exploration repo open question). Affects how the `reference_mc` model should be labelled. | `ndp/adapters/minerva_anatuple.py`
 
+- [ ] 2026-09-04 | genie | **Spline knots/energy for generated sets.** `make-splines` defaults to 100 log-spaced knots to 100 GeV per nuclide (CVMFS sets use 250 knots to 1 TeV). Enough for the ME flux? The G18_10a_02_11b set is being generated with these defaults. | `scripts/make_splines.sh`
+
 ## Resolved
 
 - [x] 2026-09-04 | genie | Are GENIE `-t` target-mix weights number or mass fractions? → mass fractions: `GMCJDriver` uses them as density-weighted path lengths and divides by A (`InteractionProbability`), consistent with the H₂O `[0.8888],[0.1111]` convention. Recorded in `docs/decisions.md`.
