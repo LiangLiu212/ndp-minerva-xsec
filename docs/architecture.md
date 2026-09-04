@@ -63,7 +63,10 @@ is 6.27e-8 vs the 6.32e-8 quoted, the difference being the table's two-decimal t
 
 ### GENIE runs (`ndp/theory/generator.py`)
 `gevgen -f flux.root,flux -t <mass-fraction mix> --cross-sections <splines> --tune …` in `n_jobs`
-parallel processes through a genie-agent environment snapshot, then `gntpc -f gst`. Target-mix
+parallel processes through an environment snapshot (`ndp.yaml: genie_env_json`), then
+`gntpc -f gst`. The default snapshot is the in-repository GENIE built by `pixi run build-genie`
+(`external/genie/Generator`, R-3_06_02, Pythia6 via ROOTEGPythia6, LHAPDF 6, conda-forge ROOT);
+a snapshot of any other installation (e.g. a genie-agent `config/env/*.json`) is a drop-in. Target-mix
 weights are mass fractions (GENIE's `GMCJDriver` treats them as density-weighted path lengths and
 divides by A). Normalisation: σ_avg/nucleon = ∫Φ(E) Σ_i (w_i/A_i) σ_i(E) dE / ∫Φ dE with σ_i the
 summed CC splines of each nuclide. Productions are cached by spec fingerprint.

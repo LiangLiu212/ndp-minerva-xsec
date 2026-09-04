@@ -81,6 +81,9 @@ def load_site_config(path: str | Path | None = None) -> SiteConfig:
     for key, env in _ENV_KEYS.items():
         val = os.environ.get(env) or raw.get(key)
         if val:
-            setattr(sc, key, Path(os.path.expandvars(os.path.expanduser(str(val)))))
+            p = Path(os.path.expandvars(os.path.expanduser(str(val))))
+            if not p.is_absolute():          # relative site paths are relative to the repository
+                p = REPO_ROOT / p
+            setattr(sc, key, p)
     sc.extra = {k: v for k, v in raw.items() if k not in _ENV_KEYS}
     return sc

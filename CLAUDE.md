@@ -20,9 +20,11 @@ a result is believable); you run the machinery and report faithfully.
 - **Surrogates are learned from paired MC and certified by closure.** A rebuilt surrogate must
   fold the training MC's truth back onto its own reco counts exactly
   (`tests/test_minerva_certification.py`). Say which surrogate a run used.
-- **No silent environment changes.** `pixi.toml` describes the environment; do not `pip install`
-  or `pixi install` without asking. The default Python here has no pytest; use
-  `python tests/run_tests.py`.
+- **The environment is `pixi.toml`.** `pixi install` builds it; `pixi run build-pythia6` /
+  `build-genie` / `snapshot-genie-env` produce the in-repo GENIE under `external/`. Do not
+  `pip install` into other environments or edit `external/genie/Generator` sources by hand —
+  patches belong in `scripts/build_genie.sh` so a rebuild reproduces them. Outside pixi the default
+  Python has no pytest; use `python tests/run_tests.py`.
 - **Upstream stays upstream.** The MINERvA exploration repo (`ndp.yaml: minerva_repo`) is read,
   imported and cited, never edited from here. Findings that concern it (e.g. the truth-frame
   finding in `docs/decisions.md`) are reported to the user, who owns that repo.
@@ -47,7 +49,8 @@ python -m ndp models                         # example model specs (validated)
 python -m ndp run models/<m>.yaml --channel minerva_me_cc_inclusive_ptpz
 python -m ndp surrogate build --channel minerva_me_cc_inclusive_ptpz --source mc --kind all
 python -m ndp data status                    # are the AnaTuples / caches present
-python tests/run_tests.py                    # or: python -m pytest tests/
+python tests/run_tests.py                    # or, inside pixi: pixi run test
+pixi run build-genie && pixi run snapshot-genie-env   # (re)build the in-repo GENIE
 ```
 
 Site paths (data, MINERvA repo, GENIE environment, splines) are in `ndp.yaml`; see

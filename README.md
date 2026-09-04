@@ -34,8 +34,8 @@ cat runs/<the new run dir>/report.md
 ```
 
 Requirements: Python ≥ 3.10 with numpy, PyYAML, uproot, awkward, matplotlib (scipy optional;
-pytest for the tests, or use `python tests/run_tests.py`). `pixi.toml` pins an environment if you
-want one. Site paths are in `ndp.yaml` (or `NDP_*` environment variables, see `ndp/config.py`):
+pytest for the tests, or use `python tests/run_tests.py`). Site paths are in `ndp.yaml` (or
+`NDP_*` environment variables, see `ndp/config.py`):
 
 - `minerva_repo` — the `ndp-minerva-data-release-exploration` checkout (paper releases, the
   `benchmark/` χ² engine, the certified selection tool). Read-only from here.
@@ -45,6 +45,27 @@ want one. Site paths are in `ndp.yaml` (or `NDP_*` environment variables, see `n
   tables the surrogate builder reads; build them once with the snippet in `docs/architecture.md`.
 - `genie_env_json` — a genie-agent environment snapshot for a GENIE installation.
 - `genie_splines` — a GENIE cross-section spline XML covering the channel's nuclides.
+
+## Environment and the in-repository GENIE
+
+`pixi.toml` describes the complete environment from conda-forge — the Python stack plus ROOT,
+GCC/gfortran, GSL, log4cpp, libxml2 and LHAPDF 6 — and `activate.sh` exports the GENIE variables
+whenever you `pixi shell` or `pixi run`:
+
+```bash
+pixi install                 # ~3 GB under .pixi/
+pixi run build-pythia6       # ROOTEGPythia6: Pythia6 + ROOT's TPythia6 interface (conda ROOT ships neither)
+pixi run build-genie         # GENIE Generator $GENIE_VERSION (default R-3_06_02) built in external/genie/Generator
+pixi run snapshot-genie-env  # -> external/genie_env.json, the environment the pipeline hands to gevgen/gntpc
+pixi run test-genie          # 50-event gevgen + gntpc smoke test
+pixi run test                # platform tests under pixi's pytest
+```
+
+Everything GENIE-related lives under `external/` (gitignored, rebuildable from the scripts in
+`scripts/`). `ndp.yaml`'s `genie_env_json` points at the snapshot, so `kind: genie` models run on
+the in-repo build; `genie_splines` names the cross-section splines (the CVMFS `G18_02a_00_000` set
+by default when mounted). A custom tune directory goes in via a model's `gxmlpath`. Any other GENIE
+install works the same way: point `genie_env_json` at a snapshot of its environment.
 
 ## Writing a model
 

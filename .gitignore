@@ -8,3 +8,4 @@ runs/*
 *.gst.root
 *.ghep.status
 input-flux.root
+external/
