@@ -86,3 +86,4 @@ fingerprints, versions and git state.
 - `docs/open_questions.md` — what the physicist still has to decide
 - `docs/roadmap.md` — done / next
 - `CLAUDE.md`, `.claude/skills/ndp-model/` — how the coding agent operates the platform
+- `archive/ndp-minerva-xsec/` — the earlier pure-Python 2106.16210 cross-section reproduction with systematics (history preserved; see `archive/README.md`)

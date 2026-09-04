@@ -1,0 +1,43 @@
+{
+  "_meta": {
+    "name": "me1A_single_pair",
+    "description": "Golden single-run pair from minervame1A: the files the certified selection counts (844 data / 43643 MC) and the frozen 1D dsigma/dpT result were derived on.",
+    "access": "xrootd-streaming-only (policy 2026-06-12: AnaTuples are never copied to local disk)",
+    "source_lists": [
+      "config/playlists/MediumEnergy_FHC_Data_Playlist1A.txt",
+      "config/playlists/MediumEnergy_FHC_StandardMC_Playlist1A.txt"
+    ],
+    "expected_reference": "exploration repo runs/2026-06-09_dsigma_dpt/manifest.json (frozen) + values streamed 2026-06-12",
+    "fingerprint_policy": "floats compared with rtol 1e-6, integers exact"
+  },
+  "playlist": "minervame1A",
+  "files": [
+    {
+      "role": "data",
+      "run": 10066,
+      "url": "root://fndcadoor.fnal.gov:1095/pnfs/fnal.gov/usr/minerva/persistent/OpenData/MediumEnergy_FHC/Data/Playlist1A/MasterAnaDev_data_AnaTuple_run00010066_Playlist.root",
+      "expected": {
+        "trees": ["MasterAnaDev", "Meta"],
+        "meta_entries": 1,
+        "pot_used": 2.049772e17,
+        "pot_total": 2.049775e17,
+        "reco_entries": 6304
+      },
+      "size_bytes_ref": 196118266
+    },
+    {
+      "role": "mc",
+      "run": 110040,
+      "url": "root://fndcadoor.fnal.gov:1095/pnfs/fnal.gov/usr/minerva/persistent/OpenData/MediumEnergy_FHC/MC/StandardMC/Playlist1A/MasterAnaDev_mc_AnaTuple_run00110040_Playlist.root",
+      "expected": {
+        "trees": ["MasterAnaDev", "Truth", "Meta"],
+        "meta_entries": 1,
+        "pot_used": 9.988797e18,
+        "pot_total": 9.989205e18,
+        "reco_entries": 186205,
+        "truth_entries": 544600
+      },
+      "size_bytes_ref": null
+    }
+  ]
+}

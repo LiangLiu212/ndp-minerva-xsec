@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "description": "Pointer to the published arXiv:2106.16210 answer key (vendored in the exploration repo; referenced, not duplicated).",
+    "paper": "arXiv:2106.16210v4 / PRD 105, 092001 (2022)"
+  },
+  "anc_dir": "/home/feanor/ndp-genesis-agent/ndp-minerva-data-release-exploration/papers/minerva/2106.16210/anc",
+  "key_files": {
+    "bin_mapping": "bin_mapping.txt",
+    "data_result_2d": "data_result_ptpl_2D_minerva_inclusive_6GeV.txt",
+    "cov_total": "cov_ptpl_minerva_inclusive_6GeV_total.txt",
+    "cov_stat": "cov_ptpl_minerva_inclusive_6GeV_stat.txt",
+    "cov_flux": "cov_ptpl_minerva_inclusive_6GeV_flux.txt",
+    "cov_energyscale": "cov_ptpl_minerva_inclusive_6GeV_energyscale.txt"
+  },
+  "conventions": {
+    "grid": "16 p_parallel bins x 14 p_T bins = 224 cells; 205 reported, 19 zero (high-pT/low-p|| corner)",
+    "units": "absolute cm^2/(GeV/c)^2 per nucleon, divided by bin width",
+    "global_id": "gid = (pt_bin-1)*16 + (pl_bin-1)"
+  },
+  "reference_scalars": {
+    "pot_e20": 10.61,
+    "flux_integral_nu_per_cm2_per_pot": 6.32e-8,
+    "flux_integral_range_gev": [0, 100],
+    "n_nucleons": 3.23e30
+  }
+}

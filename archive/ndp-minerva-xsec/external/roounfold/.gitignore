@@ -1,0 +1,6 @@
+# build artifacts (regenerate with build_roounfold.sh)
+libRooUnfoldMin.so
+roounfold_dict.cxx
+*_rdict.pcm
+*.o
+*.d
