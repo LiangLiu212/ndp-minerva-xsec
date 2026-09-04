@@ -25,6 +25,10 @@ First results (me1A slice, statistical errors only, see the run directories for 
 | reference MC, MEC × 1.5 | 132.7 / — | +8.2 % | 209.1/204 | 0.917 |
 | reference MC, QE low-Q² suppression | 101.9 / — | +4.8 % | 204.5/204 | 0.952 |
 | GENIE 3.6.2 G18_02a_00_000 (absolute) | 240.6 / 22.19 | −4.3 % | 215.6/203 | 1.063 |
+| GENIE 3.6.2 G18_10a_02_11b (absolute, in-repo GENIE + own splines, 60k events) | 207.7 / 11.49 | −9.4 % | 230.0/203 | 1.132 |
+
+Flux-averaged CC cross sections per nucleon from the spline files: G18_02a 4.49e-38 cm², G18_10a 4.32e-38 cm²
+(the latter from splines generated in-repo with 100 knots to 100 GeV).
 
 The paper-covariance-only χ² of the truth-sample models is inflated by their own MC statistics
 (1/500 of the paper's exposure for the reference MC); the "+model stat" column is the like-for-like
