@@ -4,7 +4,6 @@ __pycache__/
 .pixi/
 runs/*
 !runs/README.md
-surrogates/*/*/arrays.npz
 *.ghep.root
 *.gst.root
 *.ghep.status
