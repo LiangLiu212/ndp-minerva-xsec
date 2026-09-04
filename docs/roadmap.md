@@ -37,9 +37,9 @@ number. The folded comparison has ~35 % statistical error per cell at this expos
    adapters are already vectorised and cache per file.
 3. **Systematics in the surrogate.** Alternative responses from the tuple's flux/GENIE/detector
    weight universes; a covariance for the folded prediction; a MC-stat band on the figures.
-   The archived `archive/ndp-minerva-xsec/` already builds these universes (flux, 56 GENIE knobs,
-   muon energy scale, RPA, 2p2h, MINOS efficiency) and validates them against the release
-   covariances — the natural source to port from.
+   The earlier `ndp-minerva-xsec` code (tag `ndp-minerva-xsec-final` in this repository's history)
+   already builds these universes (flux, 56 GENIE knobs, muon energy scale, RPA, 2p2h, MINOS
+   efficiency) and validates them against the release covariances — the natural source to port from.
 4. **Learned surrogate.** A conditional normalising flow (or diffusion) trained on the same paired
    MC, implementing `SmearingSurrogate`'s interface (`fit`, `sample_reco`, `fold_events`), to carry
    the non-Gaussian tails and to smear on arbitrary binnings.
