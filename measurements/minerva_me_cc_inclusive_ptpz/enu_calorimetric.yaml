@@ -1,0 +1,19 @@
+# A one-dimensional user measurement with a hadronic-side reco observable: the calorimetric
+# neutrino-energy estimator E_mu + E_recoil compared with the true neutrino energy. The reco side
+# is an *expression* over the cached reco columns; the truth side is the E_nu column.
+#
+# CAVEAT (carried into every run's report): MINERvA has several recoil-energy branches and the
+# exploration repo's open question on which is canonical is unresolved (MasterAnaDev_recoil_E,
+# used here, is the CC-inclusive one, == MasterAnaDev_hadron_recoil_CCInc). The surrogate learns
+# whatever this estimator does to the official MC, so the folded comparison is self-consistent,
+# but the estimator itself is an example, not a MINERvA-endorsed E_nu reconstruction.
+name: enu_calorimetric
+channel: minerva_me_cc_inclusive_ptpz
+status: example
+author: ndp-platform example
+description: >
+  1D reco neutrino energy (E_mu + MasterAnaDev_recoil_E) vs true E_nu; forward-folded comparison.
+x: {observable: E_nu, reco: "reco_E_mu + reco_recoil_E", units: GeV, label: "E_nu (calorimetric)", log: false,
+    edges: [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 12.0, 15.0, 20.0, 30.0, 50.0]}
+notes:
+  - "reco E_nu uses MasterAnaDev_recoil_E; which recoil-energy branch is MINERvA-canonical is an open question (exploration repo docs/hadronic_system.md)"

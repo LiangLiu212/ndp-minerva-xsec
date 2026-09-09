@@ -27,12 +27,16 @@ phase_space:                 # true phase space = MINERvA-101 isEfficiencyDenom 
   status: decided
 
 binning:                     # published 16 x 14 grid, arXiv:2106.16210 anc/bin_mapping.txt + exact analysis edges
-  x: {observable: lep_pT, units: GeV/c,
+  # This is the channel's `published` measurement. `reco` names the reconstructed observable the
+  # grid is measured in (ndp.channels.reco_observables); `log` only affects plotting.
+  x: {observable: lep_pT, reco: reco_pT, units: GeV/c, label: "muon p_T",
       edges: [0.0, 0.075, 0.15, 0.25, 0.325, 0.4, 0.475, 0.55, 0.7, 0.85, 1.0, 1.25, 1.5, 2.5, 4.5]}
-  y: {observable: lep_pz, units: GeV/c,
+  y: {observable: lep_pz, reco: reco_pz, units: GeV/c, label: "muon p_||", log: true,
       edges: [1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 15.0, 20.0, 40.0, 60.0]}
   global_cell_formula: "ipt*n_pz + ipz"    # the paper's GlobalID linearisation (p_parallel inner)
   status: decided            # docs/decisions.md 2026-06-19
+# Further measurements on this channel (user-defined observables, folded comparison only) live in
+# measurements/minerva_me_cc_inclusive_ptpz/*.yaml — see `python -m ndp measurements --channel ...`.
 
 selection:                   # reconstruction-level selection applied to data and MC
   name: minerva_cc_inclusive_v1

@@ -1,21 +1,28 @@
 # Neutrino Discovery Platform (NDP)
 
 **A theorist provides a model. The platform turns it into generator-level events, pushes them
-through a learned detector surrogate, and compares them with neutrino-scattering data — in both
-the experiment's unfolded space and the reconstructed-event space — with every physics choice in
-a manifest and every number in a manifest-backed run directory.**
+forward through a detector surrogate learned from the experiment's official MC, and compares them
+with the experiment's reconstructed data — on the experiment's published grid or on any observable
+the analyst defines — with every physics choice in a manifest and every number in a manifest-backed
+run directory. The model is folded to the data; the data are never unfolded here.**
 
 ```
  theory model ──► generator sample ──► detector surrogate ──► comparison with data
- (YAML spec)      (TruthTable)         p(reco | truth)         unfolded: published d²σ + covariance
-                                                               folded:   predicted reco counts vs data
+ (YAML spec)      (TruthTable)         p(reco | truth),        folded:   predicted reco counts vs selected data,
+                                       learned from the                  on the published grid or a user measurement
+                                       official MC             unfolded: published d²σ + covariance (context, where it exists)
 ```
+
+Three inputs play three roles: **data** is what was recorded (reco-level candidates, plus the
+published cross section where one exists); the **official MC** only teaches the surrogate what the
+detector does to true signal; the **theorist's model** is what gets tested.
 
 | stage | what exists today | module |
 |---|---|---|
 | **theory → generator** | GENIE runs (any tune / custom tune dir) on the channel's flux and target mix, absolutely normalised from the spline file; reweighting of a reference MC by a formula or a Python function; external event files; shipped generator curves | `ndp/theory/` |
 | **channel** | signal definition, true phase space, observables, binning, selection, data references, normalisation constants — one YAML per measurement | `channels/`, `ndp/channels/` |
-| **surrogate** | binned response (efficiency × migration + background) and a parametric smearing model, both learned from the experiment's paired truth/reco MC and certified by exact closure | `ndp/surrogate/` |
+| **measurement** | the observable pair a model is compared on — truth side and reco side, each a registry name or an expression — with its binning; the channel's published grid plus any number of user-defined ones (`measurements/<channel>/*.yaml`) | `measurements/`, `ndp/channels/measurements.py` |
+| **surrogate** | binned response (efficiency × migration + background) and a parametric smearing model, learned per measurement from the experiment's paired truth/reco MC and certified by exact closure | `ndp/surrogate/` |
 | **data** | MINERvA Open Data AnaTuples (reco-level data counts) and the published cross-section releases with covariances via the certified MINERvA benchmark engine | `ndp/adapters/`, `ndp/compare/` |
 | **orchestration** | `ndp run model.yaml --channel …` → `runs/<id>/{manifest,scorecard,report,figs}` | `ndp/pipeline.py`, `ndp/cli.py` |
 
@@ -26,12 +33,36 @@ open-data me1A files and the paper's 224-cell grid.
 
 ```bash
 cd ndp-platform
-python -m ndp channels                                   # channels and their status
+python -m ndp channels                                   # channels, their status and measurements
 python -m ndp models                                     # example model specs (validated)
-python -m ndp data status                                # which inputs are present
+python -m ndp data status                                # which inputs / caches are present
 python -m ndp run models/reweight_mec_x1p5.yaml --channel minerva_me_cc_inclusive_ptpz
 cat runs/<the new run dir>/report.md
 ```
+
+### Your own observable (forward folding on a user measurement)
+
+```bash
+python -m ndp data cache --channel minerva_me_cc_inclusive_ptpz          # once: reco/truth tables from the AnaTuples
+python -m ndp measurements --channel minerva_me_cc_inclusive_ptpz         # published + user measurements, surrogate status
+python -m ndp surrogate build --channel minerva_me_cc_inclusive_ptpz --measurement muon_p_theta
+python -m ndp run models/genie_g18_02a_me_tracker.yaml --channel minerva_me_cc_inclusive_ptpz --measurement muon_p_theta
+```
+
+A measurement is a small YAML (`measurements/<channel>/<name>.yaml`):
+
+```yaml
+name: enu_calorimetric
+channel: minerva_me_cc_inclusive_ptpz
+x: {observable: E_nu, reco: "reco_E_mu + reco_recoil_E", units: GeV, edges: [2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 30, 50]}
+# y: {observable: lep_theta_deg, reco: reco_theta_deg, units: deg, edges: [...]}   # omit for 1D
+```
+
+`observable` is a truth quantity (registry name or expression over the truth columns), `reco` a
+reconstructed quantity (registry name or expression over the cached reco columns —
+`python -m ndp data status` shows the cache; `ndp/channels/reco_observables.py` the names). The
+surrogate is learned on exactly this grid from the official MC and certified by closure; the
+comparison is folded only, since nothing was published on it.
 
 Requirements: Python ≥ 3.10 with numpy, PyYAML, uproot, awkward, matplotlib (scipy optional;
 pytest for the tests, or use `python tests/run_tests.py`). Site paths are in `ndp.yaml` (or
@@ -108,10 +139,10 @@ External samples are read from GENIE `gst` files or the platform's `.npz` format
 
 ## What a run tells you
 
-`report.md` gives the model's sample summary, the **unfolded** rows (total χ²/ndf, shape χ²/ndf
-with its profiled α, normalisation offset — beside every generator curve the paper shipped), the
-**folded** result (data/prediction, −2lnL/ndf, Pearson χ²/ndf with MC statistics, which surrogate),
-the figures, and every caveat. `scorecard.json` holds all numbers; `manifest.json` the inputs,
+`report.md` names the measurement, gives the model's sample summary, the **folded** result
+(data/prediction, −2lnL/ndf, Pearson χ²/ndf with MC statistics, which surrogate), then — for the
+published grid — the **unfolded** rows (total χ²/ndf, shape χ²/ndf with its profiled α, normalisation
+offset, beside every generator curve the paper shipped), the figures, and every caveat. `scorecard.json` holds all numbers; `manifest.json` the inputs,
 fingerprints, versions and git state.
 
 ## Documentation

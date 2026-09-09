@@ -1,0 +1,11 @@
+# 1D reco Q^2 from the muon and the calorimetric E_nu (2 E_nu (E_mu - p_mu cos theta) - m_mu^2)
+# against the generator's true Q^2. Same recoil-energy caveat as enu_calorimetric.
+name: q2_calorimetric
+channel: minerva_me_cc_inclusive_ptpz
+status: example
+author: ndp-platform example
+description: 1D reco Q^2 (muon + calorimetric E_nu) vs true Q^2; forward-folded comparison.
+x: {observable: Q2, reco: reco_Q2_calo, units: GeV^2, label: "Q^2", log: true,
+    edges: [0.0125, 0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 3.0, 5.0, 10.0]}
+notes:
+  - "reco Q^2 uses the calorimetric E_nu (E_mu + MasterAnaDev_recoil_E); canonical recoil-energy branch is an open question"

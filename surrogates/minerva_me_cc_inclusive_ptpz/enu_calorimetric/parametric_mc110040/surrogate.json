@@ -1,0 +1,132 @@
+{
+  "kind": "parametric_smearing",
+  "binning": {
+    "x_name": "E_nu",
+    "y_name": "unit",
+    "x_edges": [
+      2.0,
+      3.0,
+      4.0,
+      5.0,
+      6.0,
+      7.0,
+      8.0,
+      9.0,
+      10.0,
+      12.0,
+      15.0,
+      20.0,
+      30.0,
+      50.0
+    ],
+    "y_edges": [
+      0.0,
+      1.0
+    ],
+    "formula": "ix*n_y + iy"
+  },
+  "meta": {
+    "channel": "minerva_me_cc_inclusive_ptpz",
+    "measurement": "enu_calorimetric",
+    "measurement_spec": {
+      "name": "enu_calorimetric",
+      "channel": "minerva_me_cc_inclusive_ptpz",
+      "description": "1D reco neutrino energy (E_mu + MasterAnaDev_recoil_E) vs true E_nu; forward-folded comparison.\n",
+      "author": "ndp-platform example",
+      "status": "example",
+      "release": null,
+      "is_1d": true,
+      "x": {
+        "observable": "E_nu",
+        "reco": "reco_E_mu + reco_recoil_E",
+        "edges": [
+          2.0,
+          3.0,
+          4.0,
+          5.0,
+          6.0,
+          7.0,
+          8.0,
+          9.0,
+          10.0,
+          12.0,
+          15.0,
+          20.0,
+          30.0,
+          50.0
+        ],
+        "units": "GeV",
+        "log": false
+      },
+      "y": {
+        "observable": "unit",
+        "reco": "unit",
+        "edges": [
+          0.0,
+          1.0
+        ],
+        "units": "",
+        "log": false
+      },
+      "global_cell_formula": "ix*n_y + iy",
+      "surrogate": {},
+      "notes": [
+        "reco E_nu uses MasterAnaDev_recoil_E; which recoil-energy branch is MINERvA-canonical is an open question (exploration repo docs/hadronic_system.md)"
+      ],
+      "path": "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/measurements/minerva_me_cc_inclusive_ptpz/enu_calorimetric.yaml"
+    },
+    "built": "2026-09-09T14:49:03+0000",
+    "training_mc": {
+      "path": "/exp/dune/data/users/liangliu/minerva-open-data/MasterAnaDev_mc_AnaTuple_run00110040_Playlist.root",
+      "size_bytes": 21594091620,
+      "mtime": 1788552532,
+      "fingerprint": "sha256(head1MiB+tail1MiB)",
+      "sha256_partial": "0ead3d541c76be4dc35910ad76611a82441d5dd60aa7453faeb24f19e184ccb3"
+    },
+    "pot_mc": 9.988796749584837e+18,
+    "generator": "GENIE 2.12.6 (MINERvA Open Data StandardMC; unconfirmed tag)",
+    "selection": "minerva_cc_inclusive_v1",
+    "phase_space": {
+      "frame": "beam",
+      "frame_status": "platform default backed by evidence (docs/decisions.md 2026-09-04): the reco muon_thetaX/Y are beam-relative, and the beam-frame truth gives a pT reco-true core width of 0.061 GeV versus 0.278 GeV in the detector frame on MC run 110040 (same-cell fraction 0.40 vs 0.10). The audited run 2026-06-19 used the detector frame; set frame: detector to reproduce it.\n",
+      "vertex": {
+        "z_min_mm": 5980.0,
+        "z_max_mm": 8422.0,
+        "apothem_mm": 850.0
+      },
+      "theta_max_deg": 20.0,
+      "pz_min_gev": 1.5,
+      "status": "decided"
+    },
+    "signal": {
+      "nu_pdg": [
+        14
+      ],
+      "current": "CC",
+      "status": "decided"
+    },
+    "training_counts": {
+      "n_den": 65712,
+      "n_num": 42350,
+      "n_bkg": 1293,
+      "n_passed": 43643
+    },
+    "n_den": 65387.0,
+    "n_num": 42177.0,
+    "n_sparse_cells": 0,
+    "min_events": 20,
+    "robust": true,
+    "modes": [
+      "diff",
+      "ratio"
+    ],
+    "global_location": [
+      -0.030978590235077874,
+      1.0
+    ],
+    "global_width": [
+      0.6872058000738472,
+      0.0
+    ]
+  }
+}

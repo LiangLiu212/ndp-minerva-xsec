@@ -11,10 +11,19 @@ Units in the tuple are MeV / MeV^2 / mm; this adapter converts to GeV / GeV^2 / 
 The reconstruction-level selection here is a vectorised transcription of
 `tools/cc_inclusive_selector.py` from the MINERvA exploration repo, cut for cut and
 NaN behaviour included; `parity_vs_tool` certifies the two agree row by row.
+
+`build_cache` writes the per-file .npz tables every other stage reads (`ndp data cache`):
+    truth_<tag>.npz             TruthTable of the Truth tree (MC only)
+    reco_<tag>.npz              reco table: selection + RECO_CACHE_COLUMNS (data and MC)
+    reco_<tag>_truthcols.npz    TruthTable of the reco rows' truth branches (MC only)
+with <tag> = data10066 / mc110040 derived from the file name.
 """
 from __future__ import annotations
 
+import json
 import math
+import re
+import time
 from pathlib import Path
 
 import numpy as np
@@ -23,6 +32,9 @@ from ..events import TruthTable, Normalization
 
 MEV = 1e-3
 MEV2 = 1e-6
+
+#: bump when the cached reco columns change; readers refuse older caches.
+RECO_CACHE_VERSION = 2
 
 # --- selection constants (MINERvA-101 tutorial; mirror of tools/cc_inclusive_selector.py) ----
 Z_MIN, Z_MAX = 5980.0, 8422.0
@@ -36,6 +48,24 @@ CUT_LABELS = ("ZRange", "Apothem", "MaxMuonAngle", "HasMINOSMatch", "NoDeadtime"
 RECO_BRANCHES = ("vtx", "muon_thetaX", "muon_thetaY", "isMinosMatchTrack",
                  "phys_n_dead_discr_pair_upstream_prim_track_proj", "MasterAnaDev_minos_trk_qp",
                  "MasterAnaDev_leptonE")
+#: extra reco branches cached for user-defined observables: (branch, cache column, scale to GeV)
+RECO_EXTRA_BRANCHES = (
+    ("MasterAnaDev_minos_trk_p", "reco_minos_p", MEV),
+    ("MasterAnaDev_recoil_E", "reco_recoil_E", MEV),                       # CC-inclusive recoil (== hadron_recoil_CCInc)
+    ("MasterAnaDev_recoil_passivecorrected", "reco_recoil_E_passive", MEV),  # == hadron_recoil_default
+    ("blob_recoil_E", "reco_recoil_E_calo", MEV),                          # == recoil_E_nopolyline
+    ("recoil_E_polylinecorrected", "reco_recoil_E_polyline", MEV),
+    ("MasterAnaDev_E", "reco_anatool_E_nu", MEV),
+    ("MasterAnaDev_W", "reco_anatool_W", MEV),
+    ("MasterAnaDev_x", "reco_anatool_x", 1.0),
+    ("MasterAnaDev_y", "reco_anatool_y", 1.0),
+    ("MasterAnaDev_visible_E", "reco_visible_E", MEV),
+    ("n_prongs", "reco_n_prongs", 1.0),
+    ("MasterAnaDev_hadron_number", "reco_n_hadron_tracks", 1.0),
+)
+RECO_CACHE_COLUMNS = ("passed", "failing_cut", "reco_p", "reco_theta", "reco_pT", "reco_pz", "reco_E_mu",
+                      "reco_thetaX", "reco_thetaY", "reco_minos_qp", "reco_vtx_x", "reco_vtx_y", "reco_vtx_z",
+                      *[c for _, c, _ in RECO_EXTRA_BRANCHES])
 TRUTH_SCALARS = ("mc_incoming", "mc_current", "mc_intType", "mc_targetZ", "mc_targetA",
                  "mc_incomingE", "mc_Q2", "mc_w", "mc_primaryLepton")
 TRUTH_VECTORS = ("mc_primFSLepton", "mc_vtx")
@@ -44,6 +74,16 @@ TRUTH_FS = ("mc_nFSPart", "mc_FSPartPDG", "mc_FSPartE", "mc_FSPartPx", "mc_FSPar
 #: MINERvA `mc_intType` -> NDP interaction code. MINERvA re-labels GENIE's enum:
 #: 1=QE, 2=RES, 3=DIS, 4=COH, 8=MEC (2p2h); 5-7 are rare electron-scattering / IMD types.
 MINERVA_INT_TYPE = {1: 1, 2: 2, 3: 3, 4: 4, 8: 5}
+
+_TAG = re.compile(r"_(data|mc)_AnaTuple_run0*(\d+)")
+
+
+def cache_tag(filename: str | Path) -> str:
+    """MasterAnaDev_mc_AnaTuple_run00110040_Playlist.root -> 'mc110040' (data -> 'data10066')."""
+    m = _TAG.search(Path(filename).name)
+    if not m:
+        raise ValueError(f"cannot derive a cache tag from {filename!r}")
+    return f"{m.group(1)}{m.group(2)}"
 
 
 def _uproot():
@@ -93,30 +133,62 @@ def cc_inclusive_cutflow(a: dict) -> tuple[np.ndarray, np.ndarray]:
 
 
 def reco_muon_kinematics(a: dict) -> dict:
-    """Reco muon (p, theta, pT, pz) in GeV from MasterAnaDev_leptonE + projected angles."""
+    """Reco muon (p, theta, pT, pz, E) in GeV from MasterAnaDev_leptonE + projected angles."""
     le = a["MasterAnaDev_leptonE"]
     p = np.sqrt(le[:, 0] ** 2 + le[:, 1] ** 2 + le[:, 2] ** 2) * MEV
     th = theta3d(a["muon_thetaX"], a["muon_thetaY"])
-    return {"p": p, "theta": th, "pT": p * np.sin(th), "pz": p * np.cos(th)}
+    return {"p": p, "theta": th, "pT": p * np.sin(th), "pz": p * np.cos(th), "E": le[:, 3] * MEV}
 
 
-def read_reco(path: str | Path, is_mc: bool, entry_stop: int | None = None) -> dict:
+def reco_columns(a: dict) -> dict:
+    """The full cached reco table (RECO_CACHE_COLUMNS) from the raw branch arrays."""
+    passed, failing = cc_inclusive_cutflow(a)
+    k = reco_muon_kinematics(a)
+    vtx = a["vtx"]
+    out = {"passed": passed, "failing_cut": failing, "reco_p": k["p"], "reco_theta": k["theta"], "reco_pT": k["pT"],
+           "reco_pz": k["pz"], "reco_E_mu": k["E"], "reco_thetaX": np.asarray(a["muon_thetaX"], float),
+           "reco_thetaY": np.asarray(a["muon_thetaY"], float), "reco_minos_qp": np.asarray(a["MasterAnaDev_minos_trk_qp"], float),
+           "reco_vtx_x": vtx[:, 0].astype(float), "reco_vtx_y": vtx[:, 1].astype(float), "reco_vtx_z": vtx[:, 2].astype(float)}
+    for branch, col, scale in RECO_EXTRA_BRANCHES:
+        if branch in a:
+            out[col] = np.asarray(a[branch], float) * scale
+    return out
+
+
+def read_reco(path: str | Path, is_mc: bool, entry_stop: int | None = None, extra: bool = True) -> dict:
     """Read the `MasterAnaDev` tree -> dict of arrays with selection + kinematics.
 
-    Keys: `passed`, `failing_cut`, `reco` (dict p/theta/pT/pz), and for MC `truth`
-    (a TruthTable built from the reco rows' truth branches, in GeV).
+    Keys: `passed`, `failing_cut`, `reco` (dict p/theta/pT/pz/E), `columns` (the cache
+    table, see RECO_CACHE_COLUMNS), and for MC `truth` (a TruthTable built from the reco
+    rows' truth branches, in GeV).
     """
     tree = _uproot().open(path)["MasterAnaDev"]
+    keys = set(tree.keys())
     branches = list(RECO_BRANCHES)
+    if extra:
+        branches += [b for b, _, _ in RECO_EXTRA_BRANCHES if b in keys]
     if is_mc:
         branches += list(TRUTH_SCALARS) + list(TRUTH_VECTORS)
     a = tree.arrays(branches, library="np", entry_stop=entry_stop)
-    passed, failing = cc_inclusive_cutflow(a)
-    out = {"n_entries": len(passed), "passed": passed, "failing_cut": failing,
-           "reco": reco_muon_kinematics(a), "path": str(path)}
+    cols = reco_columns(a)
+    out = {"n_entries": len(cols["passed"]), "passed": cols["passed"], "failing_cut": cols["failing_cut"],
+           "reco": reco_muon_kinematics(a), "columns": cols, "path": str(path),
+           "missing_extra_branches": [b for b, _, _ in RECO_EXTRA_BRANCHES if b not in keys]}
     if is_mc:
         out["truth"] = _truth_table_from_arrays(a, source=f"{path}:MasterAnaDev")
     return out
+
+
+def load_reco_cache(path: str | Path, require_version: int | None = RECO_CACHE_VERSION) -> dict:
+    """reco_<tag>.npz -> dict of arrays (+ '__meta__' dict). Older caches raise with the fix."""
+    z = np.load(path, allow_pickle=False)
+    r = {k: z[k] for k in z.files if k != "__meta__"}
+    meta = json.loads(str(z["__meta__"])) if "__meta__" in z.files else {}
+    v = int(meta.get("cache_version", 1))
+    if require_version is not None and v < require_version:
+        raise ValueError(f"{path} is reco-cache version {v} (< {require_version}): rebuild it with `python -m ndp data cache`")
+    r["__meta__"] = meta
+    return r
 
 
 # --------------------------------------------------------------------------------------
@@ -181,6 +253,44 @@ def read_truth(path: str | Path, entry_stop: int | None = None, with_fs: bool = 
     t.meta["n_truth_entries_in_file"] = int(tree.num_entries)
     t.meta["entry_stop"] = entry_stop
     return t
+
+
+# --------------------------------------------------------------------------------------
+# Cache builder (`ndp data cache`)
+# --------------------------------------------------------------------------------------
+def build_cache(path: str | Path, cache_dir: str | Path, is_mc: bool, *, truth: bool = True, reco: bool = True,
+                entry_stop: int | None = None, log=print) -> dict:
+    """Write the .npz tables for one AnaTuple. Returns what was written with timings."""
+    from ..io import cheap_fingerprint
+    path, cache_dir = Path(path), Path(cache_dir)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    tag = cache_tag(path)
+    out: dict = {"tag": tag, "path": str(path), "written": []}
+    if is_mc and truth:
+        t0 = time.time()
+        tt = read_truth(path, entry_stop=entry_stop)
+        p = cache_dir / f"truth_{tag}.npz"
+        tt.save(p); out["written"].append(str(p)); out["truth_s"] = round(time.time() - t0, 1); out["n_truth"] = tt.n
+        log(f"truth {tag}: {tt.n} entries in {out['truth_s']} s -> {p}")
+    if reco:
+        t0 = time.time()
+        r = read_reco(path, is_mc=is_mc, entry_stop=entry_stop)
+        cols = r["columns"]
+        meta = {"cache_version": RECO_CACHE_VERSION, "source": str(path), "tree": "MasterAnaDev", "is_mc": is_mc,
+                "units": "GeV, GeV^2, mm", "selection": "minerva_cc_inclusive_v1 (vectorised cc_inclusive_cutflow)",
+                "columns": list(cols), "branches": {c: b for b, c, _ in RECO_EXTRA_BRANCHES if c in cols},
+                "missing_extra_branches": r["missing_extra_branches"], "entry_stop": entry_stop,
+                "n_entries": int(r["n_entries"]), "n_passed": int(cols["passed"].sum()),
+                "file_fingerprint": cheap_fingerprint(path), "built": time.strftime("%Y-%m-%dT%H:%M:%S")}
+        p = cache_dir / f"reco_{tag}.npz"
+        np.savez_compressed(p, __meta__=json.dumps(meta), **cols)
+        out["written"].append(str(p))
+        if is_mc:
+            p2 = cache_dir / f"reco_{tag}_truthcols.npz"
+            r["truth"].save(p2); out["written"].append(str(p2))
+        out["reco_s"] = round(time.time() - t0, 1); out["n_reco"] = int(r["n_entries"]); out["n_passed"] = int(cols["passed"].sum())
+        log(f"reco {tag}: {r['n_entries']} entries, {out['n_passed']} selected, in {out['reco_s']} s -> {p}")
+    return out
 
 
 # --------------------------------------------------------------------------------------

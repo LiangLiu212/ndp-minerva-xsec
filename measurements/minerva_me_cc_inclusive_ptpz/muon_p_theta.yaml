@@ -1,0 +1,18 @@
+# A user-defined measurement on the MINERvA ME CC-inclusive channel: the muon's momentum and angle
+# instead of the paper's (pT, p||). Nothing here is published, so a model is compared in folded
+# space only: model truth -> surrogate learned on THIS grid from the official MC -> selected data.
+#
+# The edges are an example choice (status: example). An analyst who adopts this measurement owns
+# them: change them, set status: user, and rebuild the surrogate.
+name: muon_p_theta
+channel: minerva_me_cc_inclusive_ptpz
+status: example
+author: ndp-platform example
+description: >
+  Reco muon momentum vs muon angle (beam frame at truth level, as the channel decides), folded
+  comparison of a model with the selected CC-inclusive data.
+x: {observable: lep_p, reco: reco_p, units: GeV/c, label: "muon p", log: true,
+    edges: [1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0, 15.0, 20.0, 30.0, 60.0]}
+y: {observable: lep_theta_deg, reco: reco_theta_deg, units: deg, label: "muon theta",
+    edges: [0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 17.0, 20.0]}
+global_cell_formula: "ix*n_y + iy"

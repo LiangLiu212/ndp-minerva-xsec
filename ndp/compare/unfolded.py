@@ -10,13 +10,13 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..channels import ChannelSpec
+from ..channels import ChannelSpec, Measurement
 from ..events import TruthTable
 from .minerva_bridge import PaperRelease
 
 
-def check_basis(channel: ChannelSpec, rel: PaperRelease) -> None:
-    b = channel.binning
+def check_basis(measurement: Measurement, rel: PaperRelease) -> None:
+    b = measurement.binning
     if b.n_cells != rel.n_cells:
         raise ValueError(f"channel has {b.n_cells} cells, release {rel.n_cells}")
     if rel.pt_edges is not None and (not np.allclose(b.x_edges, rel.pt_edges) or not np.allclose(b.y_edges, rel.pz_edges)):
@@ -26,11 +26,11 @@ def check_basis(channel: ChannelSpec, rel: PaperRelease) -> None:
         raise ValueError(f"channel cell formula {b.formula!r} != release {rel.formula!r}")
 
 
-def xsec_vector_from_truth(channel: ChannelSpec, t: TruthTable, *, phi_per_pot: float | None = None,
-                           n_nucleons: float | None = None) -> dict:
+def xsec_vector_from_truth(channel: ChannelSpec, measurement: Measurement, t: TruthTable, *,
+                           phi_per_pot: float | None = None, n_nucleons: float | None = None) -> dict:
     """d2sigma/(dx dy) per cell [cm^2/GeV^2/nucleon] with its MC-statistical variance."""
-    sumw, sumw2, n_out, mask = channel.truth_cells(t)
-    areas = channel.binning.areas()
+    sumw, sumw2, n_out, mask = measurement.truth_cells(channel, t)
+    areas = measurement.binning.areas()
     norm = t.norm
     if norm.kind == "xsec_per_nucleon":
         scale = float(norm.xsec_per_unit_weight)
@@ -49,11 +49,11 @@ def xsec_vector_from_truth(channel: ChannelSpec, t: TruthTable, *, phi_per_pot: 
             "sigma_total_phase_space_cm2": float(sigma_cell.sum()), "normalisation": how}
 
 
-def score_unfolded(channel: ChannelSpec, rel: PaperRelease, vec: np.ndarray, var: np.ndarray | None,
+def score_unfolded(measurement: Measurement, rel: PaperRelease, vec: np.ndarray, var: np.ndarray | None,
                    label: str) -> dict:
     """Score `vec` against the release. Two rows when the model has MC-stat variance: the
     paper covariance alone (what the shipped curves get) and paper + diag(model stat)."""
-    check_basis(channel, rel)
+    check_basis(measurement, rel)
     rows = []
     s = rel.compare(vec)
     rows.append({"label": label, "denominator": "paper_total", **s})

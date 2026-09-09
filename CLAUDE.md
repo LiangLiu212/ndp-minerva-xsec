@@ -7,19 +7,26 @@ a result is believable); you run the machinery and report faithfully.
 
 ## Operating rules
 
-- **Physics choices live in manifests, not code.** Channel YAMLs (`channels/`) and model YAMLs
-  (`models/`) carry every value that is a physics decision, each with a `status` (decided /
-  default / open). Never change a `decided` value; propose changes to `default` values with
-  evidence; never fill in an `open` value silently — ask, or record it in `docs/open_questions.md`.
+- **Physics choices live in manifests, not code.** Channel YAMLs (`channels/`), measurement YAMLs
+  (`measurements/<channel>/`) and model YAMLs (`models/`) carry every value that is a physics
+  decision, each with a `status` (decided / default / open; measurements: decided / user / example).
+  Never change a `decided` value; propose changes to `default` values with evidence; never fill in
+  an `open` value silently — ask, or record it in `docs/open_questions.md`. Example measurements
+  are illustrations — an analyst who adopts one owns its edges.
+- **Forward folding is the workflow.** Data = what was recorded; official MC = the detector's
+  performance, used only to learn the surrogate; the theorist's model = what is tested, pushed
+  forward through the surrogate into reco space. The platform never unfolds data.
 - **A number without a run directory does not exist.** Every comparison goes through
   `ndp.pipeline.run_model` so it lands in `runs/<id>/` with `manifest.json`, `scorecard.json`,
   `report.md` and figures. Quote from `scorecard.json`, not from memory.
-- **Report both comparison modes side by side** (unfolded: published d²σ + covariance; folded:
-  surrogate-smeared prediction vs reconstructed data). Do not combine χ² values into a verdict;
-  read the shape χ² together with its α, and the folded −2lnL together with the data/pred ratio.
-- **Surrogates are learned from paired MC and certified by closure.** A rebuilt surrogate must
-  fold the training MC's truth back onto its own reco counts exactly
-  (`tests/test_minerva_certification.py`). Say which surrogate a run used.
+- **Report both comparison modes side by side where both exist** (folded: surrogate-smeared
+  prediction vs reconstructed data — always; unfolded: published d²σ + covariance — only on the
+  channel's `published` measurement). Do not combine χ² values into a verdict; read the folded
+  −2lnL together with the data/pred ratio, and the shape χ² together with its α.
+- **Surrogates are learned from paired MC and certified by closure.** One per (channel,
+  measurement); a rebuilt surrogate must fold the training MC's truth back onto its own reco counts
+  exactly (`ndp surrogate build` prints the closure; `tests/test_measurements.py`,
+  `tests/test_minerva_certification.py`). Say which surrogate a run used.
 - **The environment is `pixi.toml`.** `pixi install` builds it; `pixi run build-pythia6` /
   `build-genie` / `snapshot-genie-env` produce the in-repo GENIE under `external/`. Do not
   `pip install` into other environments or edit `external/genie/Generator` sources by hand —
@@ -34,6 +41,7 @@ a result is believable); you run the machinery and report faithfully.
 ```
 ndp/            package (theory/ adapters/ channels/ surrogate/ compare/ pipeline.py cli.py)
 channels/       channel manifests            models/      example model specs
+measurements/   observable pairs + binnings per channel (the published grid is implicit)
 surrogates/     trained detector surrogates  resources/   flux tables etc.
 runs/           run directories (see runs/README.md)
 docs/           architecture, decisions, open_questions, roadmap
@@ -44,11 +52,13 @@ tests/          pytest-style tests + run_tests.py fallback runner
 ## Everyday commands
 
 ```bash
-python -m ndp channels                       # what can be tested
+python -m ndp channels                       # what can be tested (channels + their measurements)
+python -m ndp measurements --channel minerva_me_cc_inclusive_ptpz   # published grid + user observables, surrogate status
 python -m ndp models                         # example model specs (validated)
-python -m ndp run models/<m>.yaml --channel minerva_me_cc_inclusive_ptpz
-python -m ndp surrogate build --channel minerva_me_cc_inclusive_ptpz --source mc --kind all
-python -m ndp data status                    # are the AnaTuples / caches present
+python -m ndp run models/<m>.yaml --channel minerva_me_cc_inclusive_ptpz [--measurement <name>]
+python -m ndp surrogate build --channel minerva_me_cc_inclusive_ptpz [--measurement <name>] --kind all
+python -m ndp data status                    # are the AnaTuples / caches present (and current)
+python -m ndp data cache --channel minerva_me_cc_inclusive_ptpz     # (re)build the truth/reco caches
 python tests/run_tests.py                    # or, inside pixi: pixi run test
 pixi run build-genie && pixi run snapshot-genie-env   # (re)build the in-repo GENIE
 ```

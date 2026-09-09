@@ -48,22 +48,27 @@ def unfolded_projections(rel, vecs: dict, out: Path, title: str, x_label="muon p
     return out
 
 
-def folded_projections(res: dict, out: Path, title: str, x_label="reco muon p_T [GeV/c]", y_label="reco muon p_|| [GeV/c]") -> Path:
-    fig, axes = _ratio_axes(2, (13, 6.5))
-    for k, (axis, lab) in enumerate((("x", x_label), ("y", y_label))):
+def folded_projections(res: dict, out: Path, title: str) -> Path:
+    """Reco-level projections of data (Poisson errors) and the folded model; one panel per axis
+    (one panel for a 1D measurement). Axis labels and log scales come from the measurement."""
+    axes_to_draw = ["x"] if res.get("is_1d") else ["x", "y"]
+    fig, axes = _ratio_axes(len(axes_to_draw), (6.5 * len(axes_to_draw) + 0.5, 6.5))
+    for k, axis in enumerate(axes_to_draw):
         p = res["projections"][axis]
-        edges = np.asarray(p["edges"]); d = np.asarray(p["data"]); m = np.asarray(p["pred"])
+        edges = np.asarray(p["edges"]); d = np.asarray(p["data"]); m = np.asarray(p["pred"]); bk = np.asarray(p.get("bkg", np.zeros_like(m)))
         centres = 0.5 * (edges[:-1] + edges[1:]); widths = np.diff(edges)
         ax, axr = axes[0, k], axes[1, k]
         ax.errorbar(centres, d, xerr=widths / 2, yerr=np.sqrt(d), fmt="o", ms=4, color=DATA_COLOR, label=f"data ({res['n_data_selected']} selected)", capsize=2)
         _step(ax, edges, m, color=MODEL_COLORS[0], lw=1.6, label="model → surrogate (signal + bkg)")
+        if bk.any():
+            _step(ax, edges, bk, color=MODEL_COLORS[4], lw=1.0, ls="--", label="background (from MC, POT-scaled)")
         with np.errstate(invalid="ignore", divide="ignore"):
             _step(axr, edges, np.where(m > 0, d / m, np.nan), color=DATA_COLOR, lw=1.4)
             axr.fill_between(edges, 1 - np.append(np.sqrt(d) / np.where(m > 0, m, np.nan), np.nan),
                              1 + np.append(np.sqrt(d) / np.where(m > 0, m, np.nan), np.nan), step="post", color=DATA_COLOR, alpha=0.15, lw=0)
         axr.axhline(1, color="k", lw=0.8, ls="--"); axr.set_ylim(0.5, 1.5)
-        axr.set_xlabel(lab); ax.set_ylabel("selected events / bin"); axr.set_ylabel("data / model")
-        if axis == "y":
+        axr.set_xlabel(p.get("label", axis)); ax.set_ylabel("selected events / bin"); axr.set_ylabel("data / model")
+        if p.get("log") and edges[0] > 0:
             ax.set_xscale("log"); axr.set_xscale("log")
         ax.legend(fontsize=8)
     g = res["gof"]
@@ -73,13 +78,14 @@ def folded_projections(res: dict, out: Path, title: str, x_label="reco muon p_T 
     return out
 
 
-def cell_ratio_map(binning, num: np.ndarray, den: np.ndarray, out: Path, title: str, vmin=0.5, vmax=1.5) -> Path:
+def cell_ratio_map(binning, num: np.ndarray, den: np.ndarray, out: Path, title: str, x_label: str | None = None,
+                   y_label: str | None = None, vmin=0.5, vmax=1.5) -> Path:
     with np.errstate(invalid="ignore", divide="ignore"):
         r = np.where(den > 0, num / den, np.nan)
     grid = binning.to_grid(r)   # [n_x, n_y]
     fig, ax = plt.subplots(figsize=(7.5, 5.5))
     im = ax.imshow(grid.T, origin="lower", aspect="auto", cmap="coolwarm", vmin=vmin, vmax=vmax)
-    ax.set_xlabel(f"{binning.x_name} bin"); ax.set_ylabel(f"{binning.y_name} bin"); ax.set_title(title)
+    ax.set_xlabel(f"{x_label or binning.x_name} bin"); ax.set_ylabel(f"{y_label or binning.y_name} bin"); ax.set_title(title)
     fig.colorbar(im, ax=ax, label="ratio"); fig.tight_layout(); fig.savefig(out, dpi=120); plt.close(fig)
     return out
 

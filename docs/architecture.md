@@ -1,22 +1,51 @@
 # Architecture
 
-## The pipeline as data contracts
+## The workflow: forward folding
+
+Three ingredients, three roles:
+
+| ingredient | role | where |
+|---|---|---|
+| **experiment data** (MINERvA open-data AnaTuples; the published cross section where one exists) | what reality recorded: selected reconstructed candidates in *any* reco observable the analyst defines; optionally the experiment's unfolded result on its own grid | `ndp/adapters/`, `ndp/compare/` |
+| **experiment official MC** (paired truth ↔ reco) | the detector's performance: what the reconstruction and selection do to true signal. It is used only to *learn a surrogate*; it is never the "model" being tested (except as the `reference_mc` control) | `ndp/surrogate/` |
+| **theorist model** (generator run, reweight, external sample) | the physics hypothesis, as truth-level events | `ndp/theory/` |
+
+The model's truth is pushed **forward** through the surrogate into reconstructed space and compared
+with the data counts there. Nothing is unfolded by the platform: the experiment's unfolded release is
+used only as a second, independent comparison where the measurement is the one they published.
 
 ```
 ModelSpec ──realize()──► Prediction{truth: TruthTable | xsec_vector}
                                 │
-        ChannelSpec ────────────┼─► is_signal / in_phase_space / observables / binning
+        ChannelSpec ────────────┼─► is_signal / in_phase_space / selection / data files / normalisation
+        Measurement ────────────┼─► (x, y) truth observables ↔ (x, y) reco observables, edges, [release]
                                 │
             ┌───────────────────┴──────────────────┐
-   unfolded │                                       │ folded
+     folded │  (primary; any measurement)           │ unfolded  (only where the experiment published this grid)
             ▼                                       ▼
- xsec_vector_from_truth()                 expected_true_cells()  ──► Surrogate.fold() + background()
- (cm²/GeV²/nucleon per cell)              (events per true cell at the data POT)
-            │                                       │
+ expected_true_cells()  ──► Surrogate.fold()    xsec_vector_from_truth()
+ (events per true cell at the data POT)         (cm²/GeV²/nucleon per cell)
+            │  + background()                       │
             ▼                                       ▼
- PaperRelease.compare()                    data_reco_cells() + poisson_gof()
- (MINERvA benchmark engine: total/shape χ², α, norm offset)
+ data_reco_cells() + poisson_gof()              PaperRelease.compare()
+ (−2lnL, Pearson with MC stat, data/pred)       (MINERvA benchmark engine: total/shape χ², α, norm offset)
 ```
+
+### Measurement (`measurements/<channel>/*.yaml`, `ndp/channels/measurements.py`)
+The analyst's choice of observables. Each axis has a **truth** side (a name from
+`ndp/channels/observables.py` or an expression over truth columns + observables, e.g. `"E_nu - lep_E"`)
+and a **reco** side (a name from `ndp/channels/reco_observables.py` or an expression over the cached
+reco columns, e.g. `"reco_E_mu + reco_recoil_E"`), plus edges, units and a plotting flag. Omit `y` for a
+one-dimensional measurement. Every channel has a `published` measurement (its `binning`, with the
+paper's release attached); the rest are folded-only. A measurement is compared with data through a
+surrogate learned *for that measurement* (`ndp surrogate build --measurement <name>`), stored under
+`surrogates/<channel>/<measurement>/`, and certified by closure on the training MC.
+
+### Reco cache (`ndp data cache`)
+The adapter caches, per AnaTuple, the selection result and the reconstructed quantities user
+observables are built from (`RECO_CACHE_COLUMNS` in `adapters/minerva_anatuple.py`: muon p/θ/pT/p∥/E,
+MINOS momentum, the recoil-energy family, the analysis tool's E_ν/W/x/y, visible energy, track
+multiplicities, vertex). Caches carry a version; a stale cache is refused with the rebuild command.
 
 ### TruthTable (`ndp/events.py`)
 Columnar truth events in GeV / GeV² / mm: neutrino, primary lepton 4-momentum, current,
@@ -42,7 +71,10 @@ grid whose cell formula is written exactly as the paper writes it (`ipt*n_pz + i
 
 ### Surrogates (`ndp/surrogate/`)
 `Surrogate.fold(true_cells) -> reco_cells`, `fold_events(x, y, w)`, `background(pot)`, plus
-`save/load` with provenance.
+`save/load` with provenance. One surrogate per (channel, measurement): `ndp/surrogate/build.py`
+assembles the training arrays from the cached MC (denominator from the Truth tree, numerator +
+migration from the reco rows' truth branches, background from every other selected candidate) for
+the measurement's observables and runs the closure check.
 
 - **BinnedResponse**: `reco = P @ (eff · true) + bkg·POT`. `eff[j] = num[j]/den[j]` (den = signal in
   the true phase space from the Truth tree; num = reco-selected signal in the phase space), `P[:, j] =
@@ -93,18 +125,27 @@ is kept in an extra column (`gibuu_production_id`, `process_id`, `nuwro_dyn`). Q
 `sigma_per_nucleon_cm2` in the model spec to override a derived normalisation. A new generator
 needs only an adapter that fills the required columns.
 
+## Adding a measurement (your own observable)
+1. Write `measurements/<channel>/<name>.yaml`: `x` (and optionally `y`) with `observable` (truth) and
+   `reco`, edges, units. Expressions are allowed on both sides; `python -m ndp measurements --channel
+   <channel>` lists what resolves.
+2. If a reco quantity you need is not cached, add its branch to `RECO_EXTRA_BRANCHES` in the adapter,
+   bump `RECO_CACHE_VERSION`, and rebuild with `python -m ndp data cache --channel <channel>`.
+3. `python -m ndp surrogate build --channel <channel> --measurement <name>` (binned + parametric;
+   closure is checked and printed).
+4. `python -m ndp run models/<model>.yaml --channel <channel> --measurement <name>`.
+
 ## Adding a channel
 1. Write `channels/<name>.yaml` (copy the MINERvA one; mark every physics field's status).
-2. If the observables are new, add functions to `observables.py`.
+2. If the observables are new, add functions to `observables.py` / `reco_observables.py`.
 3. If the data release is not a linearised-2D MINERvA-style release, add a manifest kind to the
    benchmark bridge (`ndp/compare/minerva_bridge.py`) — see the low-recoil draft channel.
-4. Build the surrogate from the experiment's paired MC (`ndp surrogate build`), check closure.
+4. Build the caches (`ndp data cache`) and the surrogate (`ndp surrogate build`), check closure.
 
 ## Building the MC caches (MINERvA)
-```python
-from ndp.config import load_site_config; from ndp.adapters import minerva_anatuple as mad
-cfg = load_site_config(); mc = cfg.data_dir / "MasterAnaDev_mc_AnaTuple_run00110040_Playlist.root"
-mad.read_truth(mc).save(cfg.data_dir / "cache/truth_mc110040.npz")
-r = mad.read_reco(mc, is_mc=True)   # -> reco_mc110040.npz (+ _truthcols.npz); data -> reco_data10066.npz
+```bash
+python -m ndp data cache --channel minerva_me_cc_inclusive_ptpz          # data + MC (Truth tree ~15 s, reco ~1 min)
+python -m ndp data status                                                 # cache versions
 ```
-(`ndp/cli.py::_cmd_surrogate_build` lists the exact keys it expects.)
+Files: `truth_<tag>.npz` (TruthTable of the Truth tree), `reco_<tag>.npz` (selection + reco columns,
+versioned), `reco_<tag>_truthcols.npz` (truth branches of the reco rows), `<tag>` = `mc110040` / `data10066`.

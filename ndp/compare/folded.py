@@ -4,9 +4,11 @@
     N_reco[i]   = sum_j P[i,j] eff[j] N_true[j] + background[i]
     data[i]     selected data candidates in reco cell i
 
-Goodness of fit is Poisson: Baker–Cousins -2 ln lambda summed over cells, plus a Pearson
-chi2 with the surrogate's MC-statistical variance added to the denominator. No unfolding,
-no regularisation — the model is pushed through the detector, not the data pulled back.
+The cells are the *measurement's*: any observable pair the analyst declared, at truth level
+for N_true and at reco level for the data. Goodness of fit is Poisson: Baker–Cousins
+-2 ln lambda summed over cells, plus a Pearson chi2 with the surrogate's MC-statistical
+variance added to the denominator. No unfolding, no regularisation — the model is pushed
+through the detector, not the data pulled back (forward folding).
 """
 from __future__ import annotations
 
@@ -14,13 +16,14 @@ from pathlib import Path
 
 import numpy as np
 
-from ..channels import ChannelSpec
+from ..channels import ChannelSpec, Measurement
 from ..events import TruthTable
 from ..surrogate.base import Surrogate
 
 
-def expected_true_cells(channel: ChannelSpec, t: TruthTable, pot_data: float, *, phi_per_pot=None, n_nucleons=None) -> dict:
-    sumw, sumw2, n_out, mask = channel.truth_cells(t)
+def expected_true_cells(channel: ChannelSpec, measurement: Measurement, t: TruthTable, pot_data: float, *,
+                        phi_per_pot=None, n_nucleons=None) -> dict:
+    sumw, sumw2, n_out, mask = measurement.truth_cells(channel, t)
     norm = t.norm
     if norm.kind == "pot":
         scale = pot_data / float(norm.pot)
@@ -36,27 +39,28 @@ def expected_true_cells(channel: ChannelSpec, t: TruthTable, pot_data: float, *,
             "n_signal_in_ps": int(mask.sum()), "n_out_of_grid": n_out}
 
 
-def data_reco_cells(channel: ChannelSpec, cfg, reco_cache: Path | None = None) -> dict:
-    """Selected data candidates in reco cells (from the cached selection or the AnaTuple)."""
-    from ..adapters.minerva_anatuple import read_reco, read_pot
+def data_reco_cells(channel: ChannelSpec, measurement: Measurement, cfg, reco_cache: Path | None = None) -> dict:
+    """Selected data candidates in the measurement's reco cells (from the cache or the AnaTuple)."""
+    from ..adapters.minerva_anatuple import read_reco, read_pot, cache_tag, load_reco_cache
     data_dir = cfg.require("data_dir")
     files = channel.data["reco_data_files"]
-    cells = np.zeros(channel.binning.n_cells)
+    cells = np.zeros(measurement.binning.n_cells)
     n_sel = n_out = 0
     pot = 0.0
+    sources = []
     for fn in files:
         path = data_dir / fn
-        cache = (reco_cache or data_dir / "cache") / f"reco_{Path(fn).stem.replace('MasterAnaDev_data_AnaTuple_run000', 'data')}.npz"
+        cache = (reco_cache or data_dir / "cache") / f"reco_{cache_tag(fn)}.npz"
         if cache.exists():
-            z = np.load(cache)
-            passed, pT, pz = z["passed"], z["reco_pT"], z["reco_pz"]
+            r = load_reco_cache(cache); sources.append(str(cache))
         else:
-            r = read_reco(path, is_mc=False)
-            passed, pT, pz = r["passed"], r["reco"]["pT"], r["reco"]["pz"]
-        h, _, out = channel.binning.histogram(pT[passed], pz[passed])
+            r = read_reco(path, is_mc=False)["columns"]; sources.append(str(path))
+        passed = np.asarray(r["passed"], bool)
+        x, y = measurement.reco_observables(r)
+        h, _, out = measurement.binning.histogram(x[passed], y[passed])
         cells += h; n_sel += int(passed.sum()); n_out += out
         pot += read_pot(path)["pot_used"]
-    return {"cells": cells, "n_selected": n_sel, "n_out_of_grid": n_out, "pot": pot, "files": files}
+    return {"cells": cells, "n_selected": n_sel, "n_out_of_grid": n_out, "pot": pot, "files": files, "sources": sources}
 
 
 def poisson_gof(data: np.ndarray, pred: np.ndarray, var_mc: np.ndarray | None = None) -> dict:
@@ -75,29 +79,39 @@ def poisson_gof(data: np.ndarray, pred: np.ndarray, var_mc: np.ndarray | None = 
             "data_in_cells_with_zero_prediction": dropped}
 
 
-def compare_folded(channel: ChannelSpec, t: TruthTable, surrogate: Surrogate, data: dict, *,
+def compare_folded(channel: ChannelSpec, measurement: Measurement, t: TruthTable, surrogate: Surrogate, data: dict, *,
                    phi_per_pot=None, n_nucleons=None, use_events: bool = False, rng=None) -> dict:
-    exp = expected_true_cells(channel, t, data["pot"], phi_per_pot=phi_per_pot, n_nucleons=n_nucleons)
+    if surrogate.binning != measurement.binning:
+        raise ValueError(f"surrogate was built on a different grid ({surrogate.binning.x_name} x {surrogate.binning.y_name}, "
+                         f"{surrogate.binning.n_cells} cells) than measurement {measurement.name} ({measurement.binning.n_cells} cells)")
+    exp = expected_true_cells(channel, measurement, t, data["pot"], phi_per_pot=phi_per_pot, n_nucleons=n_nucleons)
     if use_events and hasattr(surrogate, "sample_reco"):
         mask = channel.in_phase_space(t) & channel.is_signal(t)
-        x, y = channel.observables(t)
+        x, y = measurement.truth_observables(channel, t)
         pred_sig = surrogate.fold_events(x[mask], y[mask], t["weight"][mask] * exp["scale"], rng)
+        folding = "event-level smearing of the truth events"
     else:
         pred_sig = surrogate.fold(exp["N_true"])
+        folding = "true cells x response"
     bkg = surrogate.background(data["pot"])
     pred = pred_sig + bkg
     var_mc = surrogate.fold_variance(exp["N_true"])
     gof = poisson_gof(data["cells"], pred, var_mc)
-    b = channel.binning
-    return {
+    b = measurement.binning
+    out = {
         "pred_cells": pred, "pred_signal_cells": pred_sig, "bkg_cells": bkg, "data_cells": data["cells"],
         "var_mc_cells": var_mc, "N_true_cells": exp["N_true"], "expected": {k: v for k, v in exp.items() if k not in ("N_true", "var")},
+        "folding": folding,
         "totals": {"data": float(data["cells"].sum()), "pred": float(pred.sum()), "pred_signal": float(pred_sig.sum()),
                    "bkg": float(bkg.sum()), "ratio_data_over_pred": float(data["cells"].sum() / pred.sum()) if pred.sum() else None},
         "gof": gof,
         "projections": {
-            "x": {"edges": list(b.x_edges), "data": b.project(data["cells"], "x", False).tolist(), "pred": b.project(pred, "x", False).tolist()},
-            "y": {"edges": list(b.y_edges), "data": b.project(data["cells"], "y", False).tolist(), "pred": b.project(pred, "y", False).tolist()},
+            "x": {"edges": list(b.x_edges), "data": b.project(data["cells"], "x", False).tolist(), "pred": b.project(pred, "x", False).tolist(),
+                  "bkg": b.project(bkg, "x", False).tolist(), "label": measurement.x.axis_label("reco"), "log": measurement.x.log},
+            "y": {"edges": list(b.y_edges), "data": b.project(data["cells"], "y", False).tolist(), "pred": b.project(pred, "y", False).tolist(),
+                  "bkg": b.project(bkg, "y", False).tolist(), "label": measurement.y.axis_label("reco"), "log": measurement.y.log},
         },
-        "pot_data": data["pot"], "n_data_selected": data["n_selected"],
+        "is_1d": measurement.is_1d,
+        "pot_data": data["pot"], "n_data_selected": data["n_selected"], "n_data_out_of_grid": data["n_out_of_grid"],
     }
+    return out

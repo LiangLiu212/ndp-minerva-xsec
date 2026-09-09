@@ -1,8 +1,10 @@
 # Roadmap — where the vision stands
 
 Vision: *a theorist provides a model; the platform converts it to a generator sample, smears the
-generator truth into detector reconstruction with a surrogate model, and compares with data; theory
-→ generator, channel, surrogate and data are all implemented from manifests.*
+generator truth into detector reconstruction with a surrogate model learned from the experiment's
+official MC, and compares with data — the published cross section where one exists, or any
+observable the analyst defines; theory → generator, channel, measurement, surrogate and data are all
+implemented from manifests. The model is folded forward to the data; the data are never unfolded.*
 
 ## Done (2026-09-04)
 
@@ -15,6 +17,29 @@ generator truth into detector reconstruction with a surrogate model, and compare
 | orchestration | `ndp run` → manifest-backed run dir, report, figures; CLI; agent skill; 24 tests | `ndp/pipeline.py`, `tests/` |
 | environment | pixi project (conda-forge) with ROOT 6.40, GCC 15.2, GSL/log4cpp/libxml2/LHAPDF 6 and an in-repository GENIE R-3_06_02 (Pythia6 via ROOTEGPythia6); the pipeline drives it through `external/genie_env.json` (12k-event check: data/pred 1.065, same σ_avg as the spack build) | `pixi.toml`, `scripts/`, `runs/2026-09-04_genie_G18_02a_inrepo_12k__*` |
 | generators | NuWro 25.11.1, GiBUU release 2025 (patch 5) + buuinput, ACHILLES v0.3.1 (e02d266) built in the same pixi environment (`pixi run build-generators`), smoke-tested, and readable through the `external` model formats `nuwro_root` / `gibuu_finalevents` / `nuhepmc` | `scripts/build_*.sh`, `ndp/adapters/`, `tests/test_generator_adapters.py` |
+
+## Done (2026-09-09) — forward folding on user-defined observables
+
+| stage | status | evidence |
+|---|---|---|
+| measurement | `Measurement` = (truth observable ↔ reco observable) × 2 + edges [+ release]; registry names or expressions on both sides; 1D or 2D; the channel's `published` grid is one of them, user ones live in `measurements/<channel>/` | `ndp/channels/measurements.py`, `reco_observables.py`, `measurements/minerva_me_cc_inclusive_ptpz/{muon_p_theta,enu_calorimetric,q2_calorimetric}.yaml` |
+| reco cache | versioned per-AnaTuple reco tables (muon, MINOS, recoil-energy family, analysis-tool E_ν/W/x/y, visible E, multiplicities, vertex) via `ndp data cache`; 844 / 43643 selected reproduced; the published-grid surrogate rebuilt from the new cache is bit-identical to the tracked one | `ndp/adapters/minerva_anatuple.py::build_cache`, `ndp data status` |
+| surrogate per measurement | `ndp surrogate build --measurement` (binned + parametric) with closure printed; binned closure exact (max deviation 0) on all three example measurements; parametric total within 0.2 % of the selected signal | `ndp/surrogate/build.py`, `surrogates/minerva_me_cc_inclusive_ptpz/<measurement>/`, `tests/test_measurements.py` |
+| folded-first pipeline | `ndp run --measurement`; report leads with the folded comparison, unfolded only where the grid was published; run dir carries `measurement.json`; regression: `reference_mc` on the published grid reproduces the 2026-09-04 scorecard exactly (folded 205.0/204, data/pred 0.938; unfolded 115.9 / +6.0 %) | `runs/2026-09-09_reference_mc_genie2126__minerva_me_cc_inclusive_ptpz` |
+
+Forward-folded results on the user measurements (me1A slice, statistical errors only; surrogate = binned response from MC 110040):
+
+| model | measurement | −2lnL/ndf | Pearson χ²/ndf (MC stat) | data/pred | run |
+|---|---|---|---|---|---|
+| reference MC (POT-normalised) | muon_p_theta (14×9) | 163.8/126 | 186.4/126 | 0.944 | `2026-09-09_reference_mc_genie2126__*__muon_p_theta` |
+| GENIE 3.6.2 G18_02a (absolute) | muon_p_theta | 166.3/126 | 187.6/126 | 1.067 | `2026-09-09_genie_G18_02a_00_000__*__muon_p_theta` |
+| GENIE 3.6.2 G18_02a (absolute) | enu_calorimetric (1D, 13) | 26.0/13 | 27.4/13 | 1.031 | `2026-09-09_genie_G18_02a_00_000__*__enu_calorimetric` |
+| reference MC, MEC × 1.5 | enu_calorimetric | 54.9/13 | 54.6/13 | 0.924 | `2026-09-09_mec_x1p5__*__enu_calorimetric` |
+| GENIE 3.6.2 G18_02a (absolute) | q2_calorimetric (1D, 14) | 15.7/14 | 15.9/14 | 1.046 | `2026-09-09_genie_G18_02a_00_000__*__q2_calorimetric` |
+
+The two calorimetric measurements use `MasterAnaDev_recoil_E`; which recoil-energy branch is
+MINERvA-canonical is an open question (carried as a note into every run), so they demonstrate the
+mechanism rather than endorse the estimator.
 
 First results (me1A slice, statistical errors only, see the run directories for every number):
 
@@ -48,7 +73,13 @@ number. The folded comparison has ~35 % statistical error per cell at this expos
    efficiency) and validates them against the release covariances — the natural source to port from.
 4. **Learned surrogate.** A conditional normalising flow (or diffusion) trained on the same paired
    MC, implementing `SmearingSurrogate`'s interface (`fit`, `sample_reco`, `fold_events`), to carry
-   the non-Gaussian tails and to smear on arbitrary binnings.
+   the non-Gaussian tails and to smear *once* for every measurement (today each measurement gets its
+   own binned response; an event-level surrogate conditioned on the full truth kinematics would serve
+   all of them). No torch/sklearn in the environment yet — adding one is a `pixi.toml` change.
+4b. **Measurements, richer.** Systematic variations of the reco observable (e.g. the recoil-energy
+   family) as alternative surrogates; a surrogate built with the exploration repo's canonical
+   recoil-E once that question is settled; hadronic truth observables (E_avail, q3) need the
+   final-state list, which the reference MC has and generator samples carry through the adapters.
 5. **Second channel.** Finish `minerva_me_lowrecoil_eavail_q3`: exact edges from Table II, a
    release-manifest kind for the 44-bin covariance, the reco E_avail estimator (exploration repo
    feasibility probe), then the hadronic surrogate.

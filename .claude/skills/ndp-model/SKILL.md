@@ -22,10 +22,19 @@ Ask only if the mapping is ambiguous (e.g. weights that could be per nucleon or 
 Never invent a normalisation: if the sample's absolute cross section is unknown, say the folded
 comparison will be shape-only-invalid and the unfolded one impossible, and ask.
 
-## 2. Pick the channel
+## 2. Pick the channel and the measurement
 
 `python -m ndp channels`. Use the channel the data belong to; check its `status` and the
 `decided/default/open` flags on the physics fields. If a needed value is `open`, stop and ask.
+
+The comparison is made on a *measurement* (`python -m ndp measurements --channel <channel>`):
+the channel's `published` grid (default; folded + unfolded) or a user-defined observable pair
+(folded only). If the user describes an observable that is not there ("compare in muon energy",
+"in reconstructed Q²"), write `measurements/<channel>/<slug>.yaml` with `x`/`y` (`observable` =
+truth name or expression, `reco` = reco name or expression over the cache columns, edges, units),
+`status: user`, then `python -m ndp surrogate build --channel <channel> --measurement <slug>` and
+check the printed closure is exact. Edges are the user's choice — ask if they gave none, or
+propose some and label them clearly as a proposal.
 
 ## 3. Write the model YAML and validate
 
@@ -34,17 +43,18 @@ Put it in `models/<slug>.yaml` with `name`, `kind`, `description`, `author`, the
 
 ## 4. Run
 
-`python -m ndp run models/<slug>.yaml --channel <channel>`. GENIE productions are cached by
-spec fingerprint under `runs/_generator_cache/`; a 180k-event ME sample takes ~4 minutes on 6 cores.
-If the folded comparison is skipped for lack of a surrogate, build one
-(`python -m ndp surrogate build --channel <channel> --source mc --kind all`) — it needs the MC
-caches described in `README.md`.
+`python -m ndp run models/<slug>.yaml --channel <channel> [--measurement <name>]`. GENIE productions
+are cached by spec fingerprint under `runs/_generator_cache/`; a 180k-event ME sample takes ~4 minutes
+on 6 cores. If the folded comparison is skipped for lack of a surrogate, build one
+(`python -m ndp surrogate build --channel <channel> --measurement <name>`) — it needs the caches
+(`python -m ndp data cache --channel <channel>`; `python -m ndp data status` says if they are stale).
 
 ## 5. Report
 
-Open `runs/<id>/report.md` and relay, in this order: (1) what the model is and how it was
-normalised; (2) the unfolded row(s) — χ²_total/ndf with N cells, χ²_shape/ndf **with α**, norm
-offset — and where it lands among the shipped curves; (3) the folded result — data/pred ratio,
-−2lnL/ndf, Pearson χ²/ndf, which surrogate; (4) the figures; (5) every warning in the manifest.
+Open `runs/<id>/report.md` and relay, in this order: (1) what the model is, which measurement
+(observables, grid) and how it was normalised; (2) the folded result — data/pred ratio, −2lnL/ndf,
+Pearson χ²/ndf, which surrogate and its closure; (3) on the published grid, the unfolded row(s) —
+χ²_total/ndf with N cells, χ²_shape/ndf **with α**, norm offset — and where it lands among the
+shipped curves; (4) the figures; (5) every warning in the manifest (measurement notes included).
 State the reference frame and the normalisation constants used (they are in `channel.json`). Do
 not declare a model "better" — the physicist decides; you give them both numbers and the plots.

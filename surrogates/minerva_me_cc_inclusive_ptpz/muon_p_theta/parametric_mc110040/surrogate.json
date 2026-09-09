@@ -1,0 +1,148 @@
+{
+  "kind": "parametric_smearing",
+  "binning": {
+    "x_name": "lep_p",
+    "y_name": "lep_theta_deg",
+    "x_edges": [
+      1.5,
+      2.0,
+      2.5,
+      3.0,
+      3.5,
+      4.0,
+      5.0,
+      6.0,
+      7.0,
+      8.0,
+      10.0,
+      15.0,
+      20.0,
+      30.0,
+      60.0
+    ],
+    "y_edges": [
+      0.0,
+      2.0,
+      4.0,
+      6.0,
+      8.0,
+      10.0,
+      12.0,
+      14.0,
+      17.0,
+      20.0
+    ],
+    "formula": "ix*n_y + iy"
+  },
+  "meta": {
+    "channel": "minerva_me_cc_inclusive_ptpz",
+    "measurement": "muon_p_theta",
+    "measurement_spec": {
+      "name": "muon_p_theta",
+      "channel": "minerva_me_cc_inclusive_ptpz",
+      "description": "Reco muon momentum vs muon angle (beam frame at truth level, as the channel decides), folded comparison of a model with the selected CC-inclusive data.\n",
+      "author": "ndp-platform example",
+      "status": "example",
+      "release": null,
+      "is_1d": false,
+      "x": {
+        "observable": "lep_p",
+        "reco": "reco_p",
+        "edges": [
+          1.5,
+          2.0,
+          2.5,
+          3.0,
+          3.5,
+          4.0,
+          5.0,
+          6.0,
+          7.0,
+          8.0,
+          10.0,
+          15.0,
+          20.0,
+          30.0,
+          60.0
+        ],
+        "units": "GeV/c",
+        "log": true
+      },
+      "y": {
+        "observable": "lep_theta_deg",
+        "reco": "reco_theta_deg",
+        "edges": [
+          0.0,
+          2.0,
+          4.0,
+          6.0,
+          8.0,
+          10.0,
+          12.0,
+          14.0,
+          17.0,
+          20.0
+        ],
+        "units": "deg",
+        "log": false
+      },
+      "global_cell_formula": "ix*n_y + iy",
+      "surrogate": {},
+      "notes": [],
+      "path": "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/measurements/minerva_me_cc_inclusive_ptpz/muon_p_theta.yaml"
+    },
+    "built": "2026-09-09T14:48:58+0000",
+    "training_mc": {
+      "path": "/exp/dune/data/users/liangliu/minerva-open-data/MasterAnaDev_mc_AnaTuple_run00110040_Playlist.root",
+      "size_bytes": 21594091620,
+      "mtime": 1788552532,
+      "fingerprint": "sha256(head1MiB+tail1MiB)",
+      "sha256_partial": "0ead3d541c76be4dc35910ad76611a82441d5dd60aa7453faeb24f19e184ccb3"
+    },
+    "pot_mc": 9.988796749584837e+18,
+    "generator": "GENIE 2.12.6 (MINERvA Open Data StandardMC; unconfirmed tag)",
+    "selection": "minerva_cc_inclusive_v1",
+    "phase_space": {
+      "frame": "beam",
+      "frame_status": "platform default backed by evidence (docs/decisions.md 2026-09-04): the reco muon_thetaX/Y are beam-relative, and the beam-frame truth gives a pT reco-true core width of 0.061 GeV versus 0.278 GeV in the detector frame on MC run 110040 (same-cell fraction 0.40 vs 0.10). The audited run 2026-06-19 used the detector frame; set frame: detector to reproduce it.\n",
+      "vertex": {
+        "z_min_mm": 5980.0,
+        "z_max_mm": 8422.0,
+        "apothem_mm": 850.0
+      },
+      "theta_max_deg": 20.0,
+      "pz_min_gev": 1.5,
+      "status": "decided"
+    },
+    "signal": {
+      "nu_pdg": [
+        14
+      ],
+      "current": "CC",
+      "status": "decided"
+    },
+    "training_counts": {
+      "n_den": 65712,
+      "n_num": 42350,
+      "n_bkg": 1293,
+      "n_passed": 43643
+    },
+    "n_den": 65701.0,
+    "n_num": 42340.0,
+    "n_sparse_cells": 24,
+    "min_events": 20,
+    "robust": true,
+    "modes": [
+      "diff",
+      "ratio"
+    ],
+    "global_location": [
+      -0.01081683249021026,
+      1.00492453553271
+    ],
+    "global_width": [
+      0.3877703685349295,
+      0.047136451743605284
+    ]
+  }
+}

@@ -98,13 +98,13 @@ class RealizeContext:
         self.workdir = Path(workdir)
 
     def reference_truth(self, channel: ChannelSpec) -> TruthTable:
-        cache = self.cfg.require("data_dir") / "cache" / "truth_mc110040.npz"
-        if cache.exists():
-            return TruthTable.load(cache)
-        from ..adapters.minerva_anatuple import read_truth
+        from ..adapters.minerva_anatuple import read_truth, cache_tag
         files = channel.data.get("reco_mc_files", [])
         if not files:
             raise FileNotFoundError("channel lists no reco_mc_files for a reference MC")
+        cache = self.cfg.require("data_dir") / "cache" / f"truth_{cache_tag(files[0])}.npz"
+        if cache.exists():
+            return TruthTable.load(cache)
         t = read_truth(self.cfg.require("data_dir") / files[0])
         cache.parent.mkdir(parents=True, exist_ok=True)
         t.save(cache)
@@ -165,18 +165,9 @@ def _weights(params: dict, t: TruthTable, channel: ChannelSpec) -> np.ndarray:
         spec_.loader.exec_module(mod)
         return np.asarray(getattr(mod, func or "weight")(t), float)
     expr = params["weight_expr"]
-    ns = {k: t[k] for k in t.columns if k not in ("fs_offsets",) and not k.startswith("fs_")}
     frame = channel.phase_space.get("frame", "detector")
-    for name in obs.OBSERVABLES:
-        try:
-            ns[name] = obs.evaluate(name, t, frame=frame)
-        except Exception:
-            pass
-    ns.update({k: v for k, v in INT_CODE.items()})          # QE, RES, DIS, COH, MEC as codes
-    ns.update({"np": np, "where": np.where, "exp": np.exp, "log": np.log, "sqrt": np.sqrt, "abs": np.abs,
-               "clip": np.clip, "minimum": np.minimum, "maximum": np.maximum, "pi": np.pi})
-    w = eval(expr, {"__builtins__": {}}, ns)  # noqa: S307 — theorist-authored expression, numpy namespace only
-    return np.broadcast_to(np.asarray(w, float), (t.n,)).copy()
+    # the same namespace a measurement's truth expression sees: columns, observables, QE/RES/DIS/COH/MEC, numpy
+    return obs.eval_expr(expr, obs.namespace(t, frame), t.n)
 
 
 def _genie(spec, channel, ctx) -> Prediction:
