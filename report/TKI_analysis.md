@@ -268,9 +268,38 @@ symmetric and δp_Ty has the negative tail. The data run about 20 % below the MC
 the deficit concentrated at proton momenta 0.6–0.9 GeV/c and muon momenta 3–4 GeV/c. With this
 exposure and an unweighted MC no further conclusion is drawn.
 
+## 4.4 Playlist 1A from the grid (added 2026-09-14)
+
+The grid program (`grid/README.md`) streamed the whole of playlist 1A: 253 data files
+(8.969 × 10¹⁹ POT_Used) and 41 StandardMC files (4.072 × 10²⁰ POT), 294 of 294 files complete,
+harvested and merged into playlist products. The same selection on these products
+(`runs/2026-09-14_selection_minerva_me_ccqelike_1mu1p_FHC1A/`):
+
+| quantity | single file (Sec. 4.2) | playlist 1A |
+|---|---|---|
+| selected data events | 64 | 30 049 |
+| MC scaled to data POT | 80.1 | 35 244.6 |
+| data / MC | 0.80 ± 0.10 | 0.853 ± 0.005 |
+| MC purity | 0.486 | 0.484 |
+| MC efficiency | 0.352 | 0.347 |
+| efficiency denominator (truth signal in fiducial) | 5 392 | 223 595 |
+
+The selection composition is unchanged (signal 48.4 %: QE 21.7, 2p2h 12.1, RES 12.5, DIS 2.2;
+background: single π± 23.9 %, single π⁰ 11.8 %, multi-π 6.5 %, no-pion 9.3 %). With 470 times
+the statistics the data deficit against the unweighted central-value MC is a flat 15 % across
+δp_T, δα_T and the muon and proton kinematics, i.e. a normalisation effect rather than a shape
+effect at this level; the MINERvA tune and flux weights are not applied to this MC.
+
+![playlist 1A muon and proton kinematics](figs/pl1A_data_vs_mc_muon_proton_2x2.png)
+*Figure 10 — Playlist 1A: muon momentum and angle, leading-proton momentum and angle.*
+
+![playlist 1A δp_T](figs/pl1A_data_vs_mc_dpt_fine.png)
+![playlist 1A δα_T](figs/pl1A_data_vs_mc_alpha.png)
+*Figure 11 — Playlist 1A: δp_T (fine grid) and δα_T.*
+
 ## 5. Caveats
 
-- **Exposure.** 2.05 × 10¹⁷ POT of data versus the paper's 10.61 × 10²⁰; 64 selected events.
+- **Exposure.** Sections 4.2–4.3: 2.05 × 10¹⁷ POT (64 events); Sec. 4.4: playlist 1A, 8.97 × 10¹⁹ POT (30 049 events); the paper: 10.61 × 10²⁰. The remaining FHC playlists are being processed on the grid.
 - **MC weights.** The official MC is used as generated: no MINERvA tune (2p2h enhancement, RPA,
   pion-production retune), no flux constraint, no detector-systematic universes.
 - **Unpublished cut values.** The muon and proton reconstruction windows come from commented-out

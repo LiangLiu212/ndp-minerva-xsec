@@ -81,7 +81,9 @@ number. The folded comparison has ~35 % statistical error per cell at this expos
 - Grid processing program (`ndp/grid/`, `grid/`, `ndp/products.py`): streamed per-file caches +
   skims + sidecars, jobsub-lite payload (slim pixi env), campaign plan/status/resubmit/harvest/merge,
   playlist products consumed by every stage. Certified byte-identical to the local caches on the
-  two local files; FHC campaign planned (`grid/campaigns/fhc_2026-09`).
+  two local files. FHC campaign `grid/campaigns/fhc_2026-09`: playlist 1A done and merged (253 + 41
+  files, 30 049 selected data events, data/MC 0.853, purity 0.484, efficiency 0.347); 1B–1F
+  submitted 2026-09-14; 1G–1P to follow.
 - Still to do for this channel: run the FHC campaign (1A first), settle the purity gap and the
   default thresholds, MC weights, surrogates per measurement, a `benchmark/papers/2503.15047.yaml`
   release manifest for the unfolded comparison.
