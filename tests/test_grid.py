@@ -143,6 +143,16 @@ def test_merge_playlist_from_per_file_products():
     t = TruthTable.load(root / "FHC/1A/truth_1A_skim.npz")
     assert abs(t.norm.pot - 4.0e18) < 1 and not t.has_fs and "lp_p" in t
     assert mf["signal_cutflow_sum"]["numu_cc_muon"] == {"n": 200, "n_fiducial": 80}
+    # chunked access: one playlist at a time, same tables and POT as the merged products
+    from types import SimpleNamespace
+    from ndp.products import iter_mc_chunks, iter_reco_chunks
+    fake = SimpleNamespace(name="fake", data={"beam": "FHC", "playlists": {"mc": ["1A"], "data": ["1A"]}, "products_dir": str(root)})
+    chunks = list(iter_reco_chunks(None, fake, "mc"))
+    assert [c[0] for c in chunks] == ["FHC/1A"] and abs(chunks[0][2] - 4.0e18) < 1 and len(chunks[0][1]["reco_p"]) == 400
+    label, rm, rt, tt, pot, srcs = next(iter_mc_chunks(None, fake))
+    assert label == "FHC/1A" and rt.n == 400 and tt.n == t.n and abs(pot - 4.0e18) < 1 and len(srcs) == 3
+    dchunks = list(iter_reco_chunks(None, fake, "data"))
+    assert len(dchunks) == 1 and len(dchunks[0][1]["reco_p"]) == 4 and abs(dchunks[0][2] - 7.0e17) < 1
 
 
 def test_products_loader_legacy_matches_direct_caches():

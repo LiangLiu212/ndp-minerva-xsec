@@ -287,71 +287,130 @@ def _load_reco_side(ch: ChannelSpec, cfg: SiteConfig):
 
 def run_selection_comparison(channel_name: str, cfg: SiteConfig | None = None, *, out_root: str | Path | None = None,
                              slug: str | None = None) -> Path:
+    """Reco selection on data and official MC: cutflow with purity/efficiency, MC composition, proton-score
+    scan and data-vs-MC histograms per measurement. Every quantity is a count or a fixed-binning histogram,
+    so the inputs are visited one playlist (or legacy file) at a time (`ndp.products.iter_*_chunks`) and
+    accumulated: peak memory is the largest playlist, not the campaign."""
     from .channels import list_measurements, load_measurement
-    from .channels.selections import cutflow as sel_cutflow, select
+    from .channels.selections import cutflow as sel_cutflow
     from .compare.plots import DATA_COLOR
+    from .products import iter_mc_chunks, iter_reco_chunks, sources_fingerprints
     cfg = cfg or load_site_config()
     ch = load_channel(channel_name)
-    rd, rm, rt, truth, pot_d, pot_m, sources = _load_reco_side(ch, cfg)
-    scale = pot_d / pot_m
     params = ch.observable_params
-
-    # ---- cutflow with purity and efficiency ---------------------------------------------------
-    steps_d, steps_m = sel_cutflow(ch, rd), sel_cutflow(ch, rm)
-    sig_rt = ch.is_signal(rt) & ch.in_phase_space(rt)
-    den = int((ch.is_signal(truth) & ch.in_phase_space(truth)).sum())
-    rows = []
-    for (lab, md), (_, mm) in zip(steps_d, steps_m):
-        n_sig = int((mm & sig_rt).sum())
-        rows.append({"step": lab, "n_data": int(md.sum()), "n_mc": int(mm.sum()), "n_mc_scaled": float(mm.sum() * scale),
-                     "mc_purity": float(n_sig / max(mm.sum(), 1)), "mc_efficiency": float(n_sig / max(den, 1)),
-                     "data_over_mc": float(md.sum() / max(mm.sum() * scale, 1e-12))})
-    sel_d, sel_m = steps_d[-1][1], steps_m[-1][1]
-    cats = mc_categories(ch, rt)
-    comp = {c: {"n_mc": int((sel_m & (cats == c)).sum()), "fraction": float((sel_m & (cats == c)).sum() / max(sel_m.sum(), 1))}
-            for c in _CATEGORIES}
-
-    # ---- proton-score scan (all other cuts as in the manifest) --------------------------------
-    scan = []
+    meas = {name: load_measurement(ch, name) for name in list_measurements(ch) if name != "published"}
+    hist = {name: {"edges": np.asarray(m.x.edges, float), "data": np.zeros(len(m.x.edges) - 1, np.int64),
+                   "mc": {c: np.zeros(len(m.x.edges) - 1, np.int64) for c in _CATEGORIES},
+                   "data_nan": 0, "mc_nan": 0, "error": None} for name, m in meas.items()}
     p0 = ch.selection.get("params", {})
-    if "proton_score1_min" in p0:
+    thresholds = (0.0, 0.2, 0.35, 0.5, 0.6, 0.7, 0.8) if "proton_score1_min" in p0 else ()
+    scan = {thr: {"n_data": 0, "n_mc": 0, "n_sig": 0} for thr in thresholds}
+    if thresholds:
         from .adapters.minerva_anatuple import ccqelike_1mu1p_cutflow
-        for thr in (0.0, 0.2, 0.35, 0.5, 0.6, 0.7, 0.8):
-            pp = dict(p0, proton_score1_min=thr)
-            pd_, _ = ccqelike_1mu1p_cutflow(rd, pp); pm_, _ = ccqelike_1mu1p_cutflow(rm, pp)
-            ns = int((pm_ & sig_rt).sum())
-            scan.append({"proton_score1_min": thr, "n_data": int(pd_.sum()), "n_mc_scaled": float(pm_.sum() * scale),
-                         "mc_purity": float(ns / max(pm_.sum(), 1)), "mc_efficiency": float(ns / max(den, 1))})
+
+    def fill(name: str, side: str, r: dict, sel: np.ndarray, cats: np.ndarray | None = None):
+        h = hist[name]
+        if h["error"]:
+            return
+        try:
+            x = meas[name].reco_observables(r, params=params)[0][sel]
+        except KeyError as e:
+            h["error"] = str(e); return
+        fin = np.isfinite(x)
+        if side == "data":
+            h["data"] += np.histogram(x[fin], bins=h["edges"])[0]; h["data_nan"] += int((~fin).sum())
+        else:
+            for c in _CATEGORIES:
+                h["mc"][c] += np.histogram(x[fin & (cats == c)], bins=h["edges"])[0]
+            h["mc_nan"] += int((~fin).sum())
+
+    labels: list[str] | None = None
+    n_data: list[int] = []; n_mc: list[int] = []; n_sig: list[int] = []
+    den = 0; comp_n = {c: 0 for c in _CATEGORIES}
+    pot_d = pot_m = 0.0; sources: list[str] = []; chunks: list[dict] = []
+
+    def steps_of(r):
+        nonlocal labels, n_data, n_mc, n_sig
+        steps = sel_cutflow(ch, r)
+        labs = [lab for lab, _ in steps]
+        if labels is None:
+            labels = labs; n_data = [0] * len(labs); n_mc = [0] * len(labs); n_sig = [0] * len(labs)
+        elif labs != labels:
+            raise ValueError(f"cutflow steps differ between inputs: {labs} vs {labels}")
+        return steps
+
+    for label, rd, pot, src in iter_reco_chunks(cfg, ch, "data"):
+        steps = steps_of(rd)
+        for k, (_, m) in enumerate(steps):
+            n_data[k] += int(m.sum())
+        sel_d = steps[-1][1]
+        for thr in thresholds:
+            pd_, _ = ccqelike_1mu1p_cutflow(rd, dict(p0, proton_score1_min=thr)); scan[thr]["n_data"] += int(pd_.sum())
+        for name in meas:
+            fill(name, "data", rd, sel_d)
+        pot_d += pot; sources.append(src)
+        chunks.append({"kind": "data", "label": label, "pot": pot, "n_rows": int(len(sel_d)), "n_selected": int(sel_d.sum())})
+        del rd, steps, sel_d
+
+    for label, rm, rt, truth, pot, srcs in iter_mc_chunks(cfg, ch):
+        if not rt.has_fs and "n_pi_charged" not in rt:
+            raise ValueError("reco-side truth table has neither fs_* nor derived columns: rebuild the cache "
+                             f"(`python -m ndp data cache --channel {ch.name} --reco-only`)")
+        steps = steps_of(rm)
+        sig_rt = ch.is_signal(rt) & ch.in_phase_space(rt)
+        n_den = int((ch.is_signal(truth) & ch.in_phase_space(truth)).sum()); den += n_den
+        for k, (_, m) in enumerate(steps):
+            n_mc[k] += int(m.sum()); n_sig[k] += int((m & sig_rt).sum())
+        sel_m = steps[-1][1]
+        cats = mc_categories(ch, rt)
+        for c in _CATEGORIES:
+            comp_n[c] += int((sel_m & (cats == c)).sum())
+        for thr in thresholds:
+            pm_, _ = ccqelike_1mu1p_cutflow(rm, dict(p0, proton_score1_min=thr))
+            scan[thr]["n_mc"] += int(pm_.sum()); scan[thr]["n_sig"] += int((pm_ & sig_rt).sum())
+        cats_sel = cats[sel_m]
+        for name in meas:
+            fill(name, "mc", rm, sel_m, cats_sel)
+        pot_m += pot; sources += srcs
+        chunks.append({"kind": "mc", "label": label, "pot": pot, "n_rows": int(len(sel_m)), "n_selected": int(sel_m.sum()),
+                       "n_selected_signal": int((sel_m & sig_rt).sum()), "n_truth_rows": int(truth.n), "efficiency_denominator": n_den})
+        del rm, rt, truth, steps, sig_rt, sel_m, cats, cats_sel
+
+    if labels is None:
+        raise ValueError(f"channel {ch.name} has no data or MC inputs")
+    scale = pot_d / pot_m
+    rows = [{"step": lab, "n_data": nd, "n_mc": nm, "n_mc_scaled": float(nm * scale),
+             "mc_purity": float(ns / max(nm, 1)), "mc_efficiency": float(ns / max(den, 1)),
+             "data_over_mc": float(nd / max(nm * scale, 1e-12))} for lab, nd, nm, ns in zip(labels, n_data, n_mc, n_sig)]
+    n_sel_d, n_sel_m = n_data[-1], n_mc[-1]
+    comp = {c: {"n_mc": comp_n[c], "fraction": float(comp_n[c] / max(n_sel_m, 1))} for c in _CATEGORIES}
+    scan_rows = [{"proton_score1_min": thr, "n_data": v["n_data"], "n_mc_scaled": float(v["n_mc"] * scale),
+                  "mc_purity": float(v["n_sig"] / max(v["n_mc"], 1)), "mc_efficiency": float(v["n_sig"] / max(den, 1))}
+                 for thr, v in scan.items()]
 
     # ---- run directory + figures ---------------------------------------------------------------
     run_dir = unique_run_dir(out_root or cfg.runs, slug or f"selection_{ch.name}")
     figs = ensure_dir(run_dir / "figs")
     dump_json(ch.to_dict(), run_dir / "channel.json")
     dump_json({"channel": ch.name, "selection": ch.selection, "pot_data": pot_d, "pot_mc": pot_m, "scale": scale,
-               "efficiency_denominator": den, "rows": rows, "score_scan": scan}, run_dir / "cutflow.json")
+               "efficiency_denominator": den, "rows": rows, "score_scan": scan_rows, "chunks": chunks}, run_dir / "cutflow.json")
 
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     per_meas = {}
     fig_paths = []
-    names = [n for n in list_measurements(ch) if n != "published"]
-    for name in names:
-        try:
-            m = load_measurement(ch, name)
-            xd = m.reco_observables(rd, params=params)[0][sel_d]
-            xm = m.reco_observables(rm, params=params)[0][sel_m]
-        except KeyError as e:
-            per_meas[name] = {"error": str(e)}
+    for name, m in meas.items():
+        h = hist[name]
+        if h["error"]:
+            per_meas[name] = {"error": h["error"]}
             continue
-        edges = np.asarray(m.x.edges, float)
-        hd, _ = np.histogram(xd[np.isfinite(xd)], bins=edges)
-        hm = {c: np.histogram(xm[np.isfinite(xm) & (cats[sel_m] == c)], bins=edges)[0] for c in _CATEGORIES}
+        edges, hd, hm = h["edges"], h["data"], h["mc"]
         tot = sum(hm.values()).astype(float)
         per_meas[name] = {"edges": edges.tolist(), "data": hd.tolist(), "mc_scaled": (tot * scale).tolist(),
                           "mc_by_category_scaled": {c: (v * scale).tolist() for c, v in hm.items()},
                           "n_data_in_range": int(hd.sum()), "n_mc_scaled_in_range": float(tot.sum() * scale),
-                          "n_data_nan": int((~np.isfinite(xd)).sum()), "n_mc_nan": int((~np.isfinite(xm)).sum())}
+                          "n_data_nan": int(h["data_nan"]), "n_mc_nan": int(h["mc_nan"])}
         fig, (ax, axr) = plt.subplots(2, 1, figsize=(7, 6.5), gridspec_kw={"height_ratios": [3, 1]}, sharex=True)
         bottom = np.zeros(len(edges) - 1)
         for c in _CATEGORIES:
@@ -377,37 +436,43 @@ def run_selection_comparison(channel_name: str, cfg: SiteConfig | None = None, *
         fig.savefig(p, dpi=120); plt.close(fig); fig_paths.append(p)
 
     summary = {"channel": ch.name, "selection": ch.selection.get("name"), "pot_data": pot_d, "pot_mc": pot_m, "scale": scale,
-               "n_data_selected": int(sel_d.sum()), "n_mc_selected": int(sel_m.sum()), "n_mc_selected_scaled": float(sel_m.sum() * scale),
+               "n_data_selected": n_sel_d, "n_mc_selected": n_sel_m, "n_mc_selected_scaled": float(n_sel_m * scale),
                "mc_purity": rows[-1]["mc_purity"], "mc_efficiency": rows[-1]["mc_efficiency"], "efficiency_denominator": den,
                "paper_reference": {"tracker_efficiency": 0.28, "tracker_purity": 0.60, "source": "arXiv:2503.15047 Table I / Sec. Efficiency (paper_2503.15047.md Sec. 4)"},
-               "mc_composition_selected": comp, "score_scan": scan, "measurements": per_meas}
+               "mc_composition_selected": comp, "score_scan": scan_rows, "measurements": per_meas,
+               "inputs": {"n_data_chunks": sum(c["kind"] == "data" for c in chunks), "n_mc_chunks": sum(c["kind"] == "mc" for c in chunks),
+                          "data_labels": [c["label"] for c in chunks if c["kind"] == "data"], "mc_labels": [c["label"] for c in chunks if c["kind"] == "mc"]}}
     dump_json(summary, run_dir / "summary.json")
 
     lines = [f"# Reco selection `{ch.selection.get('name')}` on `{ch.name}`: data vs official MC", "",
-             f"POT data {pot_d:.4g}, MC {pot_m:.4g} (scale {scale:.5g}). Efficiency denominator = truth signal in the fiducial volume: {den} events.", "",
+             f"POT data {pot_d:.4g}, MC {pot_m:.4g} (scale {scale:.5g}). Efficiency denominator = truth signal in the fiducial volume: {den} events.",
+             f"Inputs: {summary['inputs']['n_data_chunks']} data and {summary['inputs']['n_mc_chunks']} MC inputs "
+             f"({', '.join(summary['inputs']['data_labels'])} | {', '.join(summary['inputs']['mc_labels'])}), accumulated one at a time.", "",
              "## Cutflow (cumulative; MC purity = signal fraction, efficiency = selected signal / denominator)", "",
              "| step | data | MC (scaled) | data/MC | MC purity | MC efficiency |", "|---|---|---|---|---|---|"]
     lines += [f"| {r['step']} | {r['n_data']} | {r['n_mc_scaled']:.1f} | {r['data_over_mc']:.3f} | {r['mc_purity']:.3f} | {r['mc_efficiency']:.3f} |" for r in rows]
     lines += ["", f"Paper (CH tracker): efficiency 28%, purity 60% (arXiv:2503.15047). This run: efficiency {rows[-1]['mc_efficiency']:.3f}, purity {rows[-1]['mc_purity']:.3f}.", "",
               "## Composition of the selected MC (categories from the reco rows' truth)", "", "| category | n MC | fraction |", "|---|---|---|"]
     lines += [f"| {c} | {v['n_mc']} | {v['fraction']:.3f} |" for c, v in comp.items()]
-    if scan:
+    if scan_rows:
         lines += ["", "## Proton-score threshold scan (all other cuts as in the manifest)", "",
                   "| proton_score1 > | data | MC (scaled) | MC purity | MC efficiency |", "|---|---|---|---|---|"]
-        lines += [f"| {s['proton_score1_min']} | {s['n_data']} | {s['n_mc_scaled']:.1f} | {s['mc_purity']:.3f} | {s['mc_efficiency']:.3f} |" for s in scan]
+        lines += [f"| {s['proton_score1_min']} | {s['n_data']} | {s['n_mc_scaled']:.1f} | {s['mc_purity']:.3f} | {s['mc_efficiency']:.3f} |" for s in scan_rows]
     lines += ["", "## Data vs MC per released grid (selected sample)", "", "| measurement | data in range | MC scaled in range | data NaN | MC NaN |", "|---|---|---|---|---|"]
     lines += [f"| {k} | {v['n_data_in_range']} | {v['n_mc_scaled_in_range']:.1f} | {v['n_data_nan']} | {v['n_mc_nan']} |" if "data" in v else f"| {k} | ERROR {v['error']} | | | |"
               for k, v in per_meas.items()]
+    if len(chunks) > 2:
+        lines += ["", "## Per-input selected counts", "", "| kind | input | POT | rows | selected | selected signal | eff. denominator |", "|---|---|---|---|---|---|---|"]
+        lines += [f"| {c['kind']} | {c['label']} | {c['pot']:.4g} | {c['n_rows']} | {c['n_selected']} | {c.get('n_selected_signal', '')} | {c.get('efficiency_denominator', '')} |" for c in chunks]
     lines += ["", "## Figures", ""] + [f"![{p.stem}]({p.relative_to(run_dir)})" for p in fig_paths]
     (run_dir / "report.md").write_text("\n".join(lines) + "\n")
 
-    from .products import sources_fingerprints
     manifest = {"run_id": run_dir.name, "kind": "selection_comparison", "timestamp": timestamp(), "platform_version": __version__,
                 "channel": ch.name, "channel_file": str(ch.path), "channel_sha256": sha256_text(Path(ch.path).read_text()) if ch.path else None,
                 "selection": ch.selection, "inputs": {"sources": sources, "fingerprints": sources_fingerprints(cfg, ch)},
                 "pot": {"data": pot_d, "mc": pot_m, "scale": scale}, "git": git_state(cfg.repo_root), "versions": versions(),
                 "outputs": ["channel.json", "cutflow.json", "summary.json", "report.md"] + [str(p.relative_to(run_dir)) for p in fig_paths],
-                "results": {"n_data_selected": int(sel_d.sum()), "n_mc_selected": int(sel_m.sum()), "mc_purity": rows[-1]["mc_purity"],
+                "results": {"n_data_selected": n_sel_d, "n_mc_selected": n_sel_m, "mc_purity": rows[-1]["mc_purity"],
                             "mc_efficiency": rows[-1]["mc_efficiency"]}}
     dump_json(manifest, run_dir / "manifest.json")
     return run_dir

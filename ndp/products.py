@@ -193,6 +193,74 @@ def load_reco_truth(cfg, channel) -> TruthTable:
     return tabs[0] if len(tabs) == 1 else TruthTable.concatenate(tabs)
 
 
+# ---- chunked access (one playlist / legacy file at a time) ------------------------------------
+def iter_reco_chunks(cfg, channel, kind: str):
+    """Yield (label, reco table, POT_Used, source) one playlist product (or legacy cache) at a time.
+
+    Consumers that only accumulate counts and histograms use this instead of `load_reco`, so the peak
+    memory is one playlist, not the whole campaign (the 12 ME FHC playlists are ~90 GB of arrays).
+    """
+    from .adapters.minerva_anatuple import cache_tag
+    if has_products(channel):
+        n = 0
+        for beam, pl in playlists(channel, kind):
+            d = playlist_dir(cfg, channel, beam, pl)
+            p = d / f"reco_{pl}_{kind}.npz"
+            if not p.exists():
+                raise FileNotFoundError(f"missing playlist product {p} (run `ndp data merge --beam {beam} --playlist {pl} --kind {kind}`)")
+            t = load_reco_npz(p)
+            pj = d / f"pot_{pl}_{kind}.json"
+            pot = float(read_json(pj)["pot_used"] if pj.exists() else t["__meta__"].get("pot"))
+            t["__meta__"] = dict(t.get("__meta__", {}), pot=pot)
+            n += 1
+            yield f"{beam}/{pl}", t, pot, str(p)
+        if n == 0:
+            raise FileNotFoundError(f"channel {channel.name} lists no {kind} playlists")
+        return
+    data_dir = cfg.require("data_dir"); cache = data_dir / "cache"
+    files = legacy_files(channel, kind)
+    if not files:
+        raise FileNotFoundError(f"channel {channel.name} lists no {kind} files")
+    for fn in files:
+        tag = cache_tag(fn)
+        p = cache / f"reco_{tag}.npz"
+        if not p.exists():
+            raise FileNotFoundError(f"missing reco cache {p}: `python -m ndp data cache --channel {channel.name}`")
+        t = load_reco_npz(p)
+        tm = cache / f"truth_{tag}.npz"
+        truth_meta = TruthTable.load(tm).meta if (kind == "mc" and tm.exists()) else None
+        pot = float(legacy_pot(cfg, tag, data_dir / fn, t.get("__meta__"), truth_meta))
+        t["__meta__"] = dict(t.get("__meta__", {}), pot=pot)
+        yield tag, t, pot, str(p)
+
+
+def iter_mc_chunks(cfg, channel):
+    """Yield (label, reco MC table, reco-side truth, MC truth, POT_Used, sources) per playlist product
+    (or legacy MC file). The reco table and its reco-side truth come from the same product and are
+    aligned row by row; the truth table is the playlist skim (or the full legacy truth cache)."""
+    from .adapters.minerva_anatuple import cache_tag
+    if has_products(channel):
+        for label, rm, pot, src in iter_reco_chunks(cfg, channel, "mc"):
+            beam, pl = label.split("/", 1)
+            d = playlist_dir(cfg, channel, beam, pl)
+            prt, pt = d / f"reco_{pl}_truthcols_skim.npz", d / f"truth_{pl}_skim.npz"
+            for q in (prt, pt):
+                if not q.exists():
+                    raise FileNotFoundError(f"missing playlist product {q} (run `ndp data merge --beam {beam} --playlist {pl} --kind mc`)")
+            rt = TruthTable.load(prt)
+            if rt.n != len(rm[next(k for k in rm if k != "__meta__")]):
+                raise ValueError(f"{prt}: {rt.n} rows but the reco table has {len(rm[next(k for k in rm if k != '__meta__')])}")
+            yield label, rm, rt, TruthTable.load(pt), pot, [src, str(prt), str(pt)]
+        return
+    cache = cfg.require("data_dir") / "cache"
+    for tag, rm, pot, src in iter_reco_chunks(cfg, channel, "mc"):
+        prt, pt = cache / f"reco_{tag}_truthcols.npz", cache / f"truth_{tag}.npz"
+        for q in (prt, pt):
+            if not q.exists():
+                raise FileNotFoundError(f"missing cache {q}: `python -m ndp data cache --channel {channel.name}`")
+        yield tag, rm, TruthTable.load(prt), TruthTable.load(pt), pot, [src, str(prt), str(pt)]
+
+
 def sources_fingerprints(cfg, channel) -> list[dict]:
     """Fingerprints of the local product / cache files a run reads (for manifests)."""
     from .io import cheap_fingerprint
