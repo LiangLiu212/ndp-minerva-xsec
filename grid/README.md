@@ -38,7 +38,7 @@ python -m ndp grid submit-cmd fhc_2026-09 FHC_mc_1A --max-processes 20     # pri
 python3 $SKILL status <jobid>; python3 $SKILL fetchlog <jobid>
 python -m ndp grid status fhc_2026-09             # sidecars on PNFS -> per-file done/failed/incomplete (POT + entry checks)
 python -m ndp grid resubmit fhc_2026-09           # resubmit_N_<wl>.txt of what is not done; stage-worklists --files <it>, then submit-cmd --file <it>
-python -m ndp grid harvest fhc_2026-09 --playlists 1A   # PNFS -> <data_dir>/products/FHC/1A/files/<tag>/
+python -m ndp grid harvest fhc_2026-09 --playlists 1A [--no-archive]   # PNFS -> <data_dir>/products/FHC/1A/files/<tag>/ (no-archive: skims+reco only, ~65 MB per MC file)
 python -m ndp data merge --beam FHC --playlist 1A --kind data,mc   # playlist products + pot_1A_mc.json / pot_1A_data.json
 ```
 Then point the channel at the products (`data: {beam: FHC, playlists: {mc: [1A], data: [1A]}}`) and run

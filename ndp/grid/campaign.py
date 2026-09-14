@@ -233,6 +233,9 @@ def status(name: str, pot_check: bool = True, log=print) -> dict:
     c = load_campaign(name)
     d = campaign_dir(name); side_dir = d / "sidecars"; side_dir.mkdir(exist_ok=True)
     for wl, w in c["worklists"].items():
+        mine = [f for f in c["files"].values() if f["worklist"] == wl]
+        if all(f["status"] == "planned" for f in mine) or all(f["status"] == "done" for f in mine):
+            continue                                       # nothing submitted yet, or already complete
         try:
             found = scan_outputs(w["pnfs_out"])
         except RuntimeError as e:
@@ -265,6 +268,7 @@ def status(name: str, pot_check: bool = True, log=print) -> dict:
             f["status"] = "incomplete" if problems else "done"
             f["error"] = "; ".join(problems) if problems else None
             f["pot_used"] = s["pot_used"]
+        save_campaign(c)                                   # progress survives an interrupted pass
     save_campaign(c)
     counts: dict[str, int] = {}
     for f in c["files"].values():
@@ -318,23 +322,71 @@ def stage_worklists(name: str, files: list[str] | None = None, log=print) -> dic
     return out
 
 
-def harvest(name: str, products_dir: Path, playlists=None, log=print) -> dict:
-    """Copy every `done` file's products from PNFS into <products_dir>/<beam>/<playlist>/files/<tag>/."""
+def product_names(tag: str, kind: str, archive: bool = True) -> list[str]:
+    """Files a job leaves per AnaTuple: sidecar + reco table (+ MC skims; + the full truth archives when `archive`)."""
+    names = [f"manifest_{tag}.json", f"reco_{tag}.npz"]
+    if kind == "mc":
+        names += [f"truth_{tag}_skim.npz", f"reco_{tag}_truthcols_skim.npz"]
+        if archive:
+            names += [f"truth_{tag}.npz", f"reco_{tag}_truthcols.npz"]
+    return names
+
+
+def harvest(name: str, products_dir: Path, playlists=None, workers: int = 4, archive: bool = True, log=print) -> dict:
+    """Copy every `done` file's products from PNFS into <products_dir>/<beam>/<playlist>/files/<tag>/.
+
+    `archive=False` leaves the full truth tables (`truth_<tag>.npz`, `reco_<tag>_truthcols.npz`, ~260 MB
+    per MC file) on PNFS and harvests only what the merge needs (sidecar, reco table, skims, ~65 MB).
+    Copies are verified (non-empty; the sidecar must parse and name the tag) and retried; a sidecar that
+    stays empty is taken from the campaign's validated `sidecars/` cache.
+    """
     from ..io import cheap_fingerprint
     c = load_campaign(name)
-    n_ok = n_skip = 0
+    side_dir = campaign_dir(name) / "sidecars"
+    todo, n_skip = [], 0
     for tag, f in c["files"].items():
         if f["status"] != "done" or (playlists and f["playlist"] not in playlists):
             continue
         dst = Path(products_dir) / f["beam"] / f["playlist"] / "files" / tag
         if (dst / "harvested.json").exists():
-            n_skip += 1; continue
-        names = [f"manifest_{tag}.json", f"reco_{tag}.npz"] + ([f"truth_{tag}.npz", f"reco_{tag}_truthcols.npz", f"truth_{tag}_skim.npz", f"reco_{tag}_truthcols_skim.npz"] if f["kind"] == "mc" else [])
+            n_skip += 1; f["harvested"] = str(dst); continue
+        todo.append((tag, f, dst))
+
+    def copy_checked(src: str, dst: Path, tag: str):
+        for attempt in range(3):
+            pnfs_copy(src, dst)
+            if dst.stat().st_size > 0:
+                if dst.suffix != ".json":
+                    return
+                try:
+                    if json.loads(dst.read_text()).get("tag") == tag:
+                        return
+                except Exception:  # noqa: BLE001
+                    pass
+            time.sleep(2 * (attempt + 1))
+        if dst.suffix == ".json" and (side_dir / dst.name).exists():
+            shutil.copyfile(side_dir / dst.name, dst); return
+        raise RuntimeError(f"{src}: copy stayed empty/invalid after 3 attempts")
+
+    def one(item):
+        tag, f, dst = item
+        names = product_names(tag, f["kind"], archive)
         for n in names:
-            pnfs_copy(f"{f['pnfs_dir']}/{n}", dst / n)
+            copy_checked(f"{f['pnfs_dir']}/{n}", dst / n, tag)
         (dst / "harvested.json").write_text(json.dumps({"harvested": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "from": f["pnfs_dir"],
-                                                       "files": [cheap_fingerprint(dst / n) for n in names]}, indent=1))
-        f["harvested"] = str(dst); n_ok += 1
-        log(f"harvested {tag} -> {dst}")
+                                                       "archive": archive, "files": [cheap_fingerprint(dst / n) for n in names]}, indent=1))
+        return tag, str(dst)
+
+    n_ok, errors = 0, []
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        for fu in as_completed([ex.submit(one, it) for it in todo]):
+            try:
+                tag, d = fu.result()
+                c["files"][tag]["harvested"] = d; n_ok += 1
+                log(f"harvested {tag} -> {d}")
+                if n_ok % 25 == 0:
+                    save_campaign(c)
+            except Exception as e:  # noqa: BLE001
+                errors.append(str(e)[:200]); log(f"harvest failed: {str(e)[:120]}")
     save_campaign(c)
-    return {"harvested": n_ok, "already": n_skip}
+    return {"harvested": n_ok, "already": n_skip, "failed": len(errors), "errors": errors[:10]}

@@ -200,7 +200,8 @@ def _cmd_grid(a):
     if a.gcmd == "harvest":
         cfg = load_site_config()
         root = Path(a.products_dir) if a.products_dir else cfg.require("data_dir") / "products"
-        print(json.dumps(cp.harvest(a.name, root, playlists=a.playlists.split(",") if a.playlists else None)))
+        print(json.dumps(cp.harvest(a.name, root, playlists=a.playlists.split(",") if a.playlists else None,
+                                    workers=a.workers, archive=not a.no_archive)))
         return 0
     if a.gcmd == "stage-worklists":
         cp.stage_worklists(a.name, files=a.files or None); return 0
@@ -212,7 +213,8 @@ def _cmd_grid(a):
             raise SystemExit(f"worklist not staged on PNFS: run `ndp grid stage-worklists {a.name}` first")
         # requests: MaxRSS 1.26 GB measured on run 110040; the held smoke job showed ~1.45 GB charged during the cold
         # CVMFS import of the environment, so data jobs get 3000 MB and MC jobs 4000 MB
-        req = {"mc": "--memory 4000MB --disk 4GB --expected-lifetime 3h", "data": "--memory 3000MB --disk 2GB --expected-lifetime 2h"}[w["kind"]]
+        # disk: 8 files x ~300 MB outputs per MC process, and playlists with more POT per file (1N: 1.65e19) exceed 4 GB
+        req = {"mc": f"--memory 4000MB --disk {a.disk or '8GB'} --expected-lifetime 3h", "data": f"--memory 3000MB --disk {a.disk or '2GB'} --expected-lifetime 2h"}[w["kind"]]
         n = min(w["n_processes"], a.max_processes) if a.max_processes else w["n_processes"]
         print(f"python3 .claude/skills/jobsub-lite/scripts/jobsub.py submit --worker grid/worker.sh -N {n} --tar-label {a.tar_label} {req} "
               f"--jobsub-arg=--onsite -f {wl_pnfs} --pnfs-out {w['pnfs_out']} --runtype ndpstream --stem {a.stem or a.worklist} "
@@ -289,12 +291,15 @@ def main(argv=None) -> int:
     p.add_argument("--files-per-process", help="e.g. mc=4,data=60"); p.add_argument("--pnfs-base"); p.set_defaults(fn=_cmd_grid)
     p = pg.add_parser("status"); p.add_argument("name"); p.add_argument("--no-pot-check", action="store_true"); p.set_defaults(fn=_cmd_grid)
     p = pg.add_parser("resubmit"); p.add_argument("name"); p.set_defaults(fn=_cmd_grid)
-    p = pg.add_parser("harvest"); p.add_argument("name"); p.add_argument("--products-dir"); p.add_argument("--playlists"); p.set_defaults(fn=_cmd_grid)
+    p = pg.add_parser("harvest"); p.add_argument("name"); p.add_argument("--products-dir"); p.add_argument("--playlists")
+    p.add_argument("--workers", type=int, default=4); p.add_argument("--no-archive", action="store_true", help="skip the full truth tables (keep them on PNFS)")
+    p.set_defaults(fn=_cmd_grid)
     p = pg.add_parser("stage-worklists", help="upload worklists (or resubmit lists) to PNFS scratch as job inputs"); p.add_argument("name")
     p.add_argument("--files", nargs="*", help="specific files (default: every worklist of the campaign)"); p.set_defaults(fn=_cmd_grid)
     p = pg.add_parser("submit-cmd", help="print the jobsub-lite submit command for one worklist"); p.add_argument("name"); p.add_argument("worklist")
     p.add_argument("--tar-label", default="ndp-stream-v1"); p.add_argument("--max-processes", type=int)
-    p.add_argument("--file", help="a staged resubmit list to submit instead of the worklist"); p.add_argument("--stem"); p.set_defaults(fn=_cmd_grid)
+    p.add_argument("--file", help="a staged resubmit list to submit instead of the worklist"); p.add_argument("--stem")
+    p.add_argument("--disk", help="override the disk request, e.g. 8GB"); p.set_defaults(fn=_cmd_grid)
     p = sub.add_parser("flux", help="channel flux table summary / export"); p.add_argument("--channel", required=True); p.add_argument("--out"); p.set_defaults(fn=_cmd_flux)
     p = sub.add_parser("signal", help="apply a channel's truth-level signal definition to the cached MC; writes a diagnostics run")
     p.add_argument("--channel", required=True); p.add_argument("--cache", help="truth .npz (default: the channel's MC cache)")
