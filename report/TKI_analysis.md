@@ -297,6 +297,78 @@ effect at this level; the MINERvA tune and flux weights are not applied to this 
 ![playlist 1A δα_T](figs/pl1A_data_vs_mc_alpha.png)
 *Figure 11 — Playlist 1A: δp_T (fine grid) and δα_T.*
 
+## 4.5 The full ME FHC data set (added 2026-09-14)
+
+The campaign `grid/campaigns/fhc_2026-09` processed every ME FHC file of the Open Data release:
+1818 data files (1.0574 × 10²¹ POT_Used, the paper quotes 10.61 × 10²⁰) and 489 StandardMC files
+(4.9784 × 10²¹ POT), 2307 of 2307 complete (two MC processes of playlist 1N were held for disk
+and resubmitted with 8 GB). The per-file products were harvested without the full truth archives
+(40 GB on `/exp/dune/data`; the archives stay on DUNE scratch because the user quota cannot hold
+their ~150 GB) and merged per playlist; the runs below read the 12 playlists through a scratch
+copy of the channel manifest with `data.playlists: 1A–1P`.
+
+**Truth level** (`runs/2026-09-14_signal_minerva_me_ccqelike_1mu1p_FHC/`, truth skims of all
+489 MC files): 62 257 466 CC events in the skim box, 3 304 412 signal events, 2 734 227 inside the
+tracker fiducial (5.48 % of the fiducial νμ CC sample; single file 5.39 %). Composition of the
+fiducial signal: QE 46.7 %, 2p2h 21.0 %, RES 25.5 %, DIS 6.9 %. The TKI medians agree with the
+single-file run within its statistics (δp_T 0.263 vs 0.261 GeV/c, δα_T 132.0° vs 132.9°,
+δp_L 0.091 vs 0.093 GeV/c, p_n 0.347 vs 0.346 GeV/c).
+
+**Reconstruction level** (`runs/2026-09-14_selection_minerva_me_ccqelike_1mu1p_FHC/`; the
+comparison now accumulates one playlist at a time, 11 min and 18 GB peak):
+
+| quantity | single file (Sec. 4.2) | playlist 1A (Sec. 4.4) | full ME FHC |
+|---|---|---|---|
+| data POT_Used | 2.05 × 10¹⁷ | 8.969 × 10¹⁹ | 1.0574 × 10²¹ |
+| MC POT_Used | 9.99 × 10¹⁸ | 4.072 × 10²⁰ | 4.9784 × 10²¹ |
+| selected data events | 64 | 30 049 | 329 653 |
+| MC scaled to data POT | 80.1 | 35 244.6 | 391 384.4 |
+| data / MC | 0.80 ± 0.10 | 0.853 ± 0.005 | 0.842 ± 0.002 |
+| MC purity | 0.486 | 0.484 | 0.484 |
+| MC efficiency | 0.352 | 0.347 | 0.326 |
+| efficiency denominator (truth signal in fiducial) | 5 392 | 223 595 | 2 734 227 |
+
+The selected-MC composition is unchanged (signal 48.4 %: QE 21.8, 2p2h 11.9, RES 12.3, DIS 2.3;
+background: single π± 24.3 %, single π⁰ 11.7 %, multi-π 6.5 %, no-pion 9.2 %), and the
+proton-score scan keeps its plateau (purity 0.33 → 0.54 for thresholds 0 → 0.8 while the
+efficiency falls 0.44 → 0.12). Per playlist, with the MC scaled to each playlist's own data POT:
+
+| playlist | data POT | data selected | MC selected (scaled) | data / MC | MC purity | MC efficiency |
+|---|---|---|---|---|---|---|
+| 1A | 8.97 × 10¹⁹ | 30 049 | 35 245 | 0.853 | 0.484 | 0.347 |
+| 1B | 1.87 × 10¹⁹ | 6 219 | 7 341 | 0.847 | 0.482 | 0.347 |
+| 1C | 4.29 × 10¹⁹ | 14 492 | 17 019 | 0.851 | 0.484 | 0.350 |
+| 1D | 1.44 × 10²⁰ | 48 014 | 56 963 | 0.843 | 0.485 | 0.349 |
+| 1E | 1.03 × 10²⁰ | 33 341 | 40 350 | 0.826 | 0.486 | 0.347 |
+| 1F | 1.67 × 10²⁰ | 51 398 | 62 144 | 0.827 | 0.485 | 0.329 |
+| 1G | 1.38 × 10²⁰ | 42 748 | 51 831 | 0.825 | 0.484 | 0.333 |
+| 1L | 1.34 × 10¹⁹ | 3 819 | 4 678 | 0.816 | 0.483 | 0.309 |
+| 1M | 1.58 × 10²⁰ | 45 111 | 55 431 | 0.814 | 0.482 | 0.308 |
+| 1N | 1.07 × 10²⁰ | 32 864 | 37 183 | 0.884 | 0.481 | 0.303 |
+| 1O | 2.98 × 10¹⁹ | 8 327 | 9 461 | 0.880 | 0.483 | 0.279 |
+| 1P | 4.68 × 10¹⁹ | 13 271 | 14 780 | 0.898 | 0.480 | 0.278 |
+
+Two things the single-file and 1A runs could not show. First, the MC efficiency is not one
+number: it falls from 0.35 (1A–1E) through 0.33 (1F–1G) and 0.31 (1L–1N) to 0.28 (1O–1P) at
+constant purity, while data/MC moves the other way in the last three playlists (0.88–0.90
+against 0.81–0.85 before). The truth denominator uses the same fiducial for every playlist, so
+this is the simulated detector response changing with the playlist and the data not following it
+in the same measure; the paper's 28 % is the POT-weighted average of such numbers. Second, with
+0.2 % statistics the data deficit is not flat: data/MC rises with the muon angle from 0.50 in the
+first degree to 0.91 at 15–17°, and with the muon momentum from 0.77 (2–3 GeV/c) to 1.11
+(14–20 GeV/c); it is flat in δp_T (0.83–0.88) and falls with the proton momentum (0.90 at
+0.5–0.625 GeV/c to 0.79 above 0.875 GeV/c). The muon-angle trend is the signature of the missing
+low-Q² suppression (RPA) and 2p2h tune weights, which are not applied to this central-value MC
+(Sec. 5); no normalisation should be read from these ratios before the weight set is decided.
+
+![full FHC muon and proton kinematics](figs/fhc_data_vs_mc_muon_proton_2x2.png)
+*Figure 12 — Full ME FHC: muon momentum and angle, leading-proton momentum and angle.*
+
+![full FHC δp_T](figs/fhc_data_vs_mc_dpt.png)
+![full FHC δα_T](figs/fhc_data_vs_mc_alpha.png)
+![full FHC p_n](figs/fhc_data_vs_mc_pn.png)
+*Figure 13 — Full ME FHC: δp_T, δα_T and p_n on the released grids.*
+
 ## 5. Caveats
 
 - **Exposure.** Sections 4.2–4.3: 2.05 × 10¹⁷ POT (64 events); Sec. 4.4: playlist 1A, 8.97 × 10¹⁹ POT (30 049 events); the paper: 10.61 × 10²⁰. The remaining FHC playlists are being processed on the grid.
@@ -337,4 +409,8 @@ python -m ndp data cache --channel minerva_me_ccqelike_1mu1p --reco-only   # cac
 python -m ndp signal    --channel minerva_me_ccqelike_1mu1p               # truth-level signal run
 python -m ndp selection --channel minerva_me_ccqelike_1mu1p               # reco selection + data vs MC
 python tests/run_tests.py
+# full ME FHC (Sec. 4.5): a copy of the channel YAML with the `data.playlists` block uncommented
+# (beam FHC, playlists 1A-1P, products_dir = the harvested products), then
+python -m ndp signal    --channel /path/to/minerva_me_ccqelike_1mu1p_FHC.yaml --slug signal_minerva_me_ccqelike_1mu1p_FHC
+python -m ndp selection --channel /path/to/minerva_me_ccqelike_1mu1p_FHC.yaml --slug selection_minerva_me_ccqelike_1mu1p_FHC
 ```
