@@ -26,6 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 import json
+import math
 
 import numpy as np
 
@@ -141,8 +142,10 @@ class TruthTable:
             off = self.columns["fs_offsets"]
             starts, stops = off[:-1][mask], off[1:][mask]
             counts = stops - starts
-            idx = np.concatenate([np.arange(s, e) for s, e in zip(starts, stops)]) if counts.size else np.zeros(0, int)
-            cols["fs_offsets"] = np.concatenate([[0], np.cumsum(counts)]).astype(np.int64)
+            new_off = np.concatenate([[0], np.cumsum(counts)]).astype(np.int64)
+            # flat index of every kept particle: its position inside its event + the event's old start
+            idx = (np.arange(int(new_off[-1])) - np.repeat(new_off[:-1], counts) + np.repeat(starts, counts)) if counts.size else np.zeros(0, int)
+            cols["fs_offsets"] = new_off
             for k in FS_COLUMNS:
                 if k in self.columns:
                     cols[k] = self.columns[k][idx]
@@ -195,7 +198,18 @@ class TruthTable:
                 cols[k] = np.concatenate([t.columns[k] for t in tables])
         meta = dict(tables[0].meta)
         meta["concatenated_from"] = [t.meta.get("source", "?") for t in tables]
-        return TruthTable(cols, meta)
+        norms = [t.norm for t in tables]
+        kinds = {n.kind for n in norms}
+        if len(kinds) > 1:
+            raise ValueError(f"cannot concatenate tables with different normalisation kinds {sorted(kinds)}")
+        if kinds == {"pot"}:
+            pots = [n.pot for n in norms]
+            if any(p is None for p in pots):
+                raise ValueError("a POT-normalised table without a POT value cannot be concatenated")
+            meta["norm"] = Normalization(kind="pot", pot=float(math.fsum(pots)),
+                                         notes=f"sum over {len(tables)} concatenated tables").to_dict()
+            meta["sources"] = [{"source": t.meta.get("source", "?"), "pot": p, "n_events": t.n} for t, p in zip(tables, pots)]
+        return TruthTable(cols, meta)          # other kinds: the first table's normalisation, as before
 
     def summary(self) -> dict:
         w = self.columns["weight"]

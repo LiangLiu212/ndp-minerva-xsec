@@ -103,6 +103,50 @@ def fs_count(t: TruthTable, particle_mask: np.ndarray) -> np.ndarray:
     return t.fs_sum(np.ones(len(particle_mask)), particle_mask).astype(np.int64)
 
 
+# ---- derived columns (tables whose final-state list was replaced by per-event summaries) ----
+#: per-event columns a skim stores instead of fs_* (see adapters.minerva_anatuple.derive_fs_columns)
+DERIVED_LP = ("lp_p", "lp_theta", "lp_pT", "lp_px", "lp_py", "lp_pz", "lp_E", "lp_n_in_window")
+DERIVED_VETO = ("n_meson", "n_heavy_baryon", "n_photon_hard")
+_WINDOW_KEYS = ("theta_max_deg", "p_min_gev", "p_max_gev")
+
+
+def _same_window(a: dict | None, b: dict | None) -> bool:
+    a, b = a or {}, b or {}
+    return all((a.get(k) is None) == (b.get(k) is None) and (a.get(k) is None or float(a[k]) == float(b[k])) for k in _WINDOW_KEYS)
+
+
+def derived_info(t: TruthTable) -> dict | None:
+    """The `derived` block of a skim's meta (frame, proton_window, photon_E_max_gev, channel), or None."""
+    d = t.meta.get("derived")
+    return dict(d) if isinstance(d, dict) else None
+
+
+def _require_derived(t: TruthTable, columns, frame: str | None = None, window: dict | None = None,
+                     photon_E_max_gev: float | None = None) -> dict:
+    d = derived_info(t)
+    missing = [c for c in columns if c not in t]
+    if d is None or missing:
+        raise ValueError("table has no fs_* columns and no usable derived columns "
+                         f"(missing {missing or 'the meta.derived block'}); build the skim with derive_fs_columns")
+    if frame is not None and d.get("frame") != frame:
+        raise ValueError(f"derived columns were computed in frame {d.get('frame')!r}, requested {frame!r}")
+    if window is not None and not _same_window(d.get("proton_window"), window):
+        raise ValueError(f"derived columns use proton window {d.get('proton_window')}, requested {window}")
+    if photon_E_max_gev is not None and float(d.get("photon_E_max_gev", -1)) != float(photon_E_max_gev):
+        raise ValueError(f"derived photon threshold {d.get('photon_E_max_gev')} != requested {photon_E_max_gev}")
+    return d
+
+
+def veto_counts(t: TruthTable, photon_E_max_gev: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Per-event (n_meson, n_heavy_baryon, n_photon_above_threshold) from fs_* or from derived columns."""
+    if t.has_fs:
+        cls = fs_classes(t)
+        hard = cls["photon"] & (t["fs_E"] > float(photon_E_max_gev))
+        return fs_count(t, cls["meson"]), fs_count(t, cls["heavy_baryon"]), fs_count(t, hard)
+    _require_derived(t, DERIVED_VETO, photon_E_max_gev=photon_E_max_gev)
+    return (t["n_meson"].astype(np.int64), t["n_heavy_baryon"].astype(np.int64), t["n_photon_hard"].astype(np.int64))
+
+
 # ---- leading proton -------------------------------------------------------------------------
 def leading_proton(t: TruthTable, frame: str = "detector", window: dict | None = None) -> dict:
     """Highest-momentum final-state proton inside `window` per event.
@@ -110,7 +154,14 @@ def leading_proton(t: TruthTable, frame: str = "detector", window: dict | None =
     window = {theta_max_deg, p_min_gev, p_max_gev} (any key may be absent). Returns per-event
     arrays: `index` (flat fs index, -1 if none), `n_in_window`, `p`, `theta` [rad], `pT`,
     `px`, `py`, `pz`, `E` (GeV, in `frame`; NaN where the event has no proton in the window).
+    On a skim (no fs_* columns) the stored `lp_*` columns are returned, provided they were
+    derived in the same frame and window; `index` is then 0 / -1 (has / has no proton).
     """
+    if not t.has_fs:
+        _require_derived(t, DERIVED_LP, frame=frame, window=window)
+        n_in = t["lp_n_in_window"].astype(np.int64)
+        return {"index": np.where(n_in > 0, 0, -1).astype(np.int64), "n_in_window": n_in, "p": t["lp_p"], "theta": t["lp_theta"],
+                "pT": t["lp_pT"], "px": t["lp_px"], "py": t["lp_py"], "pz": t["lp_pz"], "E": t["lp_E"]}
     w = window or {}
     px, py, pz = rotate_to_frame(t["fs_px"], t["fs_py"], t["fs_pz"], frame)
     theta, p = _theta(px, py, pz)
@@ -169,16 +220,15 @@ def cutflow_1mu1p(spec: dict, t: TruthTable, frame: str = "detector") -> list[tu
     lp = leading_proton(t, frame, pr)
     m &= lp["n_in_window"] >= int(pr.get("min_count", 1))
     steps.append(("proton_in_window", m.copy()))
-    cls = fs_classes(t)
+    n_meson, n_heavy, n_hard = veto_counts(t, float(veto.get("photon_E_max_gev", np.inf)))
     if veto.get("mesons", True):
-        m &= fs_count(t, cls["meson"]) == 0
+        m &= n_meson == 0
         steps.append(("no_mesons", m.copy()))
     if veto.get("heavy_baryons", True):
-        m &= fs_count(t, cls["heavy_baryon"]) == 0
+        m &= n_heavy == 0
         steps.append(("no_heavy_baryons", m.copy()))
     if "photon_E_max_gev" in veto:
-        hard = cls["photon"] & (t["fs_E"] > float(veto["photon_E_max_gev"]))
-        m &= fs_count(t, hard) == 0
+        m &= n_hard == 0
         steps.append(("no_photons_above_threshold", m.copy()))
     return steps
 

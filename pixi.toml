@@ -55,6 +55,23 @@ spdlog = ">=1.12"
 yaml-cpp = ">=0.8"
 highfive = ">=2.9"
 pyhepmc = ">=2.13"          # read ACHILLES / NuHepMC output from Python
+# --- nusystematics / NUISANCE (Boost for the standalone fhicl-cpp suite systematicstools fetches; Eigen3 for nusystematics) ---
+libboost-devel = ">=1.75"
+eigen = ">=3.4"
+tbb-devel = ">=2021"       # fhicl-cpp suite (hep-concurrency) needs TBBConfig.cmake
+
+# --- slim, relocatable environment for grid workers (pixi install -e grid; grid/stage_payload.sh) ---
+[feature.grid.dependencies]
+python = "3.14.*"
+numpy = ">=2.0"
+pyyaml = ">=6"
+uproot = ">=5.3"
+awkward = ">=2.6"
+xrootd = ">=5.6"
+fsspec-xrootd = ">=0.4"
+
+[environments]
+grid = { features = ["grid"], no-default-feature = true }
 
 [tasks]
 build-pythia6 = { cmd = "scripts/build_pythia6.sh", description = "Build ROOTEGPythia6 (Pythia6 + TPythia6) into external/ROOTEGPythia6/install" }
@@ -64,6 +81,11 @@ test-genie = { cmd = "scripts/test_genie.sh", description = "gevgen/gntpc smoke 
 build-nuwro = { cmd = "scripts/build_nuwro.sh", depends-on = ["build-pythia6"], description = "Clone + build NuWro (master) in external/nuwro" }
 build-gibuu = { cmd = "scripts/build_gibuu.sh", description = "Fetch GiBUU release2025 + buuinput2025 and build GiBUU.x in external/gibuu" }
 build-achilles = { cmd = "scripts/build_achilles.sh", description = "Clone + CMake-build ACHILLES $ACHILLES_VERSION into external/achilles" }
+build-genie-reweight = { cmd = "scripts/build_genie_reweight.sh", description = "Clone + build GENIE Reweight $GENIE_REWEIGHT_VERSION in external/genie/Reweight (needs build-genie)" }
+build-nusystematics = { cmd = "scripts/build_nusystematics.sh", description = "Clone + CMake-build nusystematics $NUSYST_VERSION (+ systematicstools, fhicl-cpp) into external/nusystematics (needs build-genie-reweight)" }
+build-nuisance = { cmd = "scripts/build_nuisance.sh", description = "Clone + CMake-build NUISANCE (main, or $NUISANCE_REF) with GENIE/NuWro/nusystematics/NuHepMC into external/nuisance (needs build-nusystematics, build-nuwro)" }
+build-nuisance-stack = { depends-on = ["build-genie-reweight", "build-nusystematics", "build-nuisance"], description = "GENIE Reweight -> nusystematics -> NUISANCE" }
+test-nuisance = { cmd = "scripts/test_nuisance.sh", description = "Smoke test: PrepareGENIE/PrepareNuWroEvents -> nuisflat, and a nusystematics GENIE-reweight dump (needs test-genie and test-generators outputs)" }
 build-generators = { depends-on = ["build-genie", "build-nuwro", "build-gibuu", "build-achilles"], description = "Build every generator" }
 test-generators = { cmd = "scripts/test_generators.sh", description = "Smoke tests: NuWro, GiBUU, ACHILLES (GENIE has test-genie)" }
 make-splines = { cmd = "scripts/make_splines.sh", description = "Cross-section splines for a tune: gmkspl per nuclide in parallel + gspladd (pass -- --tune <name> ...)" }

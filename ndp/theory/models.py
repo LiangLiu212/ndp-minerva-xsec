@@ -98,17 +98,19 @@ class RealizeContext:
         self.workdir = Path(workdir)
 
     def reference_truth(self, channel: ChannelSpec) -> TruthTable:
-        from ..adapters.minerva_anatuple import read_truth, cache_tag
-        files = channel.data.get("reco_mc_files", [])
-        if not files:
-            raise FileNotFoundError("channel lists no reco_mc_files for a reference MC")
-        cache = self.cfg.require("data_dir") / "cache" / f"truth_{cache_tag(files[0])}.npz"
-        if cache.exists():
-            return TruthTable.load(cache)
-        t = read_truth(self.cfg.require("data_dir") / files[0])
-        cache.parent.mkdir(parents=True, exist_ok=True)
-        t.save(cache)
-        return t
+        from ..products import load_truth
+        try:
+            return load_truth(self.cfg, channel)
+        except FileNotFoundError:
+            from ..adapters.minerva_anatuple import read_truth, cache_tag
+            files = channel.data.get("reco_mc_files", [])
+            if not files:
+                raise
+            cache = self.cfg.require("data_dir") / "cache" / f"truth_{cache_tag(files[0])}.npz"
+            t = read_truth(self.cfg.require("data_dir") / files[0])
+            cache.parent.mkdir(parents=True, exist_ok=True)
+            t.save(cache)
+            return t
 
 
 # --------------------------------------------------------------------------------------

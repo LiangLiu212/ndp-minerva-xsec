@@ -127,11 +127,24 @@ def theta3d(theta_x: np.ndarray, theta_y: np.ndarray) -> np.ndarray:
     return np.arccos(1.0 / np.sqrt(1.0 + tx * tx + ty * ty))
 
 
-def read_pot(path: str | Path) -> dict:
-    t = _uproot().open(path)["Meta"]
-    a = t.arrays(["POT_Used", "POT_Total"], library="np")
-    return {"pot_used": float(np.sum(a["POT_Used"])), "pot_total": float(np.sum(a["POT_Total"])),
-            "n_meta_entries": int(len(a["POT_Used"]))}
+def open_anatuple(path: str | Path, timeout: float = 300.0):
+    """uproot file handle for a local path or a `root://` URL (never passed through Path())."""
+    return _uproot().open(str(path), timeout=int(timeout))      # the XRootD client wants an integer timeout
+
+
+def read_pot(path: str | Path, file=None) -> dict:
+    """POT_Used / POT_Total summed over the Meta tree (+ the tuple's own entry totals when present)."""
+    f = file if file is not None else open_anatuple(path)
+    t = f["Meta"]
+    keys = set(t.keys())
+    want = ["POT_Used", "POT_Total"] + [k for k in ("Total_Reco_Entries", "Total_Truth_Entries") if k in keys]
+    a = t.arrays(want, library="np")
+    out = {"pot_used": float(np.sum(a["POT_Used"])), "pot_total": float(np.sum(a["POT_Total"])),
+           "n_meta_entries": int(len(a["POT_Used"]))}
+    for k in ("Total_Reco_Entries", "Total_Truth_Entries"):
+        if k in a:
+            out[k.lower()] = int(np.sum(a[k]))
+    return out
 
 
 # --------------------------------------------------------------------------------------
@@ -242,14 +255,15 @@ def reco_columns(a: dict) -> dict:
     return out
 
 
-def read_reco(path: str | Path, is_mc: bool, entry_stop: int | None = None, extra: bool = True, with_fs: bool = True) -> dict:
+def read_reco(path: str | Path, is_mc: bool, entry_stop: int | None = None, extra: bool = True, with_fs: bool = True,
+              file=None) -> dict:
     """Read the `MasterAnaDev` tree -> dict of arrays with selection + kinematics.
 
     Keys: `passed`, `failing_cut`, `reco` (dict p/theta/pT/pz/E), `columns` (the cache
     table, see RECO_CACHE_COLUMNS), and for MC `truth` (a TruthTable built from the reco
-    rows' truth branches, in GeV).
+    rows' truth branches, in GeV). `file=` reuses an open uproot file (one connection per AnaTuple).
     """
-    tree = _uproot().open(path)["MasterAnaDev"]
+    tree = (file if file is not None else open_anatuple(path))["MasterAnaDev"]
     keys = set(tree.keys())
     branches = list(RECO_BRANCHES)
     if extra:
@@ -327,20 +341,19 @@ def _read_fs(tree, entry_stop: int | None = None) -> dict:
     }
 
 
-def read_truth(path: str | Path, entry_stop: int | None = None, with_fs: bool = True,
-               step_size: str = "200 MB") -> TruthTable:
+def read_truth(path: str | Path, entry_stop: int | None = None, with_fs: bool = True, file=None) -> TruthTable:
     """Read the `Truth` tree (all generated events) into a TruthTable, GeV units.
 
-    Final-state particles are read jagged and stored CSR-style. ~90 s for the full
-    544k-entry me1A MC file on the EAF filesystem; callers should cache the .npz.
+    Final-state particles are read jagged and stored CSR-style (~10 s for the 544k-entry
+    me1A MC file from local disk, ~15 s streamed); callers should cache the .npz.
+    `file=` reuses an open uproot file.
     """
-    up = _uproot()
-    f = up.open(path)
+    f = file if file is not None else open_anatuple(path)
     tree = f["Truth"]
     branches = list(TRUTH_SCALARS) + list(TRUTH_VECTORS)
     a = tree.arrays(branches, library="np", entry_stop=entry_stop)
     fs = _read_fs(tree, entry_stop) if with_fs else None
-    pot = read_pot(path)["pot_used"]
+    pot = read_pot(path, file=f)["pot_used"]
     t = _truth_table_from_arrays(a, source=f"{path}:Truth", fs=fs, pot=pot)
     t.meta["n_truth_entries_in_file"] = int(tree.num_entries)
     t.meta["entry_stop"] = entry_stop
@@ -348,41 +361,182 @@ def read_truth(path: str | Path, entry_stop: int | None = None, with_fs: bool = 
 
 
 # --------------------------------------------------------------------------------------
-# Cache builder (`ndp data cache`)
+# Derived truth columns and skims (what a grid job keeps besides the full caches)
+# --------------------------------------------------------------------------------------
+#: enlarged tracker box for the truth skim: a superset of every channel's fiducial vertex box
+#: (inclusive / 1mu1p: z 5980-8422 mm, apothem 850 mm). Status: default, physics choice.
+DEFAULT_SKIM_BOX = {"z_min_mm": 5880.0, "z_max_mm": 8522.0, "apothem_mm": 900.0}
+DERIVED_COLUMNS = ("n_meson", "n_heavy_baryon", "n_photon_hard", "n_proton", "n_neutron", "n_pi_charged", "n_pi0",
+                   "E_avail", "E_had_fs", "lp_p", "lp_theta", "lp_pT", "lp_px", "lp_py", "lp_pz", "lp_E", "lp_n_in_window")
+
+
+def derive_fs_columns(t: TruthTable, channel) -> TruthTable:
+    """A copy of `t` with per-event summaries of the final-state list added (DERIVED_COLUMNS +
+    `signal_<type>`), computed in the channel's frame / proton window / photon threshold, and
+    `meta["derived"]` recording those choices so a skim can be checked against a channel later.
+    The fs_* columns are kept; `skim_truth` drops them."""
+    from ..channels import signal as sig
+    from ..channels import observables as obs
+    if not t.has_fs:
+        raise ValueError("derive_fs_columns needs a table with fs_* columns")
+    frame = channel.frame
+    spec = channel.signal
+    window = dict(spec.get("proton", {}))
+    photon = float(spec.get("veto", {}).get("photon_E_max_gev", 0.010))
+    cls = sig.fs_classes(t)
+    n_meson, n_heavy, n_hard = sig.veto_counts(t, photon)
+    lp = sig.leading_proton(t, frame, window)
+    cols = dict(t.columns)
+    cols.update({
+        "n_meson": n_meson, "n_heavy_baryon": n_heavy, "n_photon_hard": n_hard,
+        "n_proton": sig.fs_count(t, cls["proton"]), "n_neutron": sig.fs_count(t, cls["neutron"]),
+        "n_pi_charged": sig.fs_count(t, np.abs(t["fs_pdg"]) == 211), "n_pi0": sig.fs_count(t, t["fs_pdg"] == 111),
+        "E_avail": obs.E_avail(t), "E_had_fs": obs.E_had_fs(t),
+        "lp_p": lp["p"], "lp_theta": lp["theta"], "lp_pT": lp["pT"], "lp_px": lp["px"], "lp_py": lp["py"],
+        "lp_pz": lp["pz"], "lp_E": lp["E"], "lp_n_in_window": lp["n_in_window"],
+        f"signal_{sig.signal_type(spec)}": channel.is_signal(t),
+    })
+    meta = json.loads(json.dumps(t.meta, default=str))
+    meta["derived"] = {"frame": frame, "proton_window": {k: float(v) for k, v in window.items() if k in ("theta_max_deg", "p_min_gev", "p_max_gev")},
+                       "photon_E_max_gev": photon, "channel": channel.name, "signal_type": sig.signal_type(spec),
+                       "columns": list(DERIVED_COLUMNS) + [f"signal_{sig.signal_type(spec)}"]}
+    return TruthTable(cols, meta)
+
+
+def skim_mask(t: TruthTable, box: dict | None = None, current: int | None = 1) -> np.ndarray:
+    """Rows kept by a truth skim: `current` (1 = CC; None = any) with the true vertex inside `box`."""
+    from ..channels.registry import hex_apothem_mask
+    box = box or DEFAULT_SKIM_BOX
+    m = np.ones(t.n, bool)
+    if current is not None:
+        m &= t["current"] == int(current)
+    if "vtx_z" in t:
+        m &= (t["vtx_z"] >= float(box["z_min_mm"])) & (t["vtx_z"] <= float(box["z_max_mm"]))
+        m &= hex_apothem_mask(t["vtx_x"], t["vtx_y"], float(box["apothem_mm"]))
+    return m
+
+
+def skim_truth(t: TruthTable, box: dict | None = None, current: int | None = 1) -> TruthTable:
+    """Skim of a derived table: rows by `skim_mask`, fs_* columns dropped, derived columns kept."""
+    if "derived" not in t.meta:
+        raise ValueError("skim_truth expects a table from derive_fs_columns")
+    m = skim_mask(t, box, current)
+    cols = {k: v[m] for k, v in t.columns.items() if k not in FS_COLUMNS_ALL}
+    meta = json.loads(json.dumps(t.meta, default=str))
+    meta["skim"] = {"box": dict(box or DEFAULT_SKIM_BOX), "current": current, "n_before": int(t.n), "n_after": int(m.sum())}
+    return TruthTable(cols, meta)
+
+
+FS_COLUMNS_ALL = ("fs_offsets", "fs_pdg", "fs_E", "fs_px", "fs_py", "fs_pz")
+
+
+# --------------------------------------------------------------------------------------
+# Cache builder (`ndp data cache`, and per file on the grid)
 # --------------------------------------------------------------------------------------
 def build_cache(path: str | Path, cache_dir: str | Path, is_mc: bool, *, truth: bool = True, reco: bool = True,
-                entry_stop: int | None = None, log=print) -> dict:
-    """Write the .npz tables for one AnaTuple. Returns what was written with timings."""
-    from ..io import cheap_fingerprint
-    path, cache_dir = Path(path), Path(cache_dir)
+                entry_stop: int | None = None, log=print, channel=None, skim: bool = False,
+                skim_box: dict | None = None, sidecar: bool = False, timeout: float = 300.0, extra_meta: dict | None = None) -> dict:
+    """Write the .npz tables for one AnaTuple (local path or root:// URL). Returns what was written.
+
+    With `channel`, the sidecar `manifest_<tag>.json` records the channel's truth-level signal
+    cutflow and reco selection cutflow; with `skim` (MC only) the derived-column skims
+    `truth_<tag>_skim.npz` / `reco_<tag>_truthcols_skim.npz` are written as well.
+    """
+    from ..io import cheap_fingerprint, git_state, versions, timestamp
+    from ..config import REPO_ROOT
+    src = str(path)
+    cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
-    tag = cache_tag(path)
-    out: dict = {"tag": tag, "path": str(path), "written": []}
+    tag = cache_tag(src)
+    t_open = time.time()
+    f = open_anatuple(src, timeout=timeout)
+    pot = read_pot(src, file=f)
+    fp = cheap_fingerprint(src, file=f)
+    out: dict = {"tag": tag, "path": src, "written": [], "pot": pot, "fingerprint": fp, "open_s": round(time.time() - t_open, 1)}
+    side: dict = {"tag": tag, "source": src, "kind": "mc" if is_mc else "data", "cache_version": RECO_CACHE_VERSION,
+                  "fingerprint": fp, **pot, "entry_stop": entry_stop, "built": timestamp(), "status": "ok"}
     if is_mc and truth:
         t0 = time.time()
-        tt = read_truth(path, entry_stop=entry_stop)
+        tt = read_truth(src, entry_stop=entry_stop, file=f)
         p = cache_dir / f"truth_{tag}.npz"
         tt.save(p); out["written"].append(str(p)); out["truth_s"] = round(time.time() - t0, 1); out["n_truth"] = tt.n
+        side["n_truth"] = int(tt.n)
         log(f"truth {tag}: {tt.n} entries in {out['truth_s']} s -> {p}")
+        if channel is not None:
+            t1 = time.time()
+            side["signal_cutflow"] = _signal_cutflow_counts(channel, tt)
+            if skim:
+                td = derive_fs_columns(tt, channel)
+                ts = skim_truth(td, skim_box)
+                ps = cache_dir / f"truth_{tag}_skim.npz"
+                ts.save(ps); out["written"].append(str(ps)); side["n_truth_skim"] = int(ts.n)
+                side["skim"] = ts.meta["skim"]
+            out["derive_s"] = round(time.time() - t1, 1)
     if reco:
         t0 = time.time()
-        r = read_reco(path, is_mc=is_mc, entry_stop=entry_stop)
+        r = read_reco(src, is_mc=is_mc, entry_stop=entry_stop, file=f)
         cols = r["columns"]
-        meta = {"cache_version": RECO_CACHE_VERSION, "source": str(path), "tree": "MasterAnaDev", "is_mc": is_mc,
+        meta = {"cache_version": RECO_CACHE_VERSION, "source": src, "tree": "MasterAnaDev", "is_mc": is_mc,
                 "units": "GeV, GeV^2, mm", "selection": "minerva_cc_inclusive_v1 (vectorised cc_inclusive_cutflow)",
                 "columns": list(cols), "branches": {c: b for b, c, _ in RECO_EXTRA_BRANCHES if c in cols},
                 "missing_extra_branches": r["missing_extra_branches"], "entry_stop": entry_stop,
                 "n_entries": int(r["n_entries"]), "n_passed": int(cols["passed"].sum()),
-                "file_fingerprint": cheap_fingerprint(path), "built": time.strftime("%Y-%m-%dT%H:%M:%S")}
+                "file_fingerprint": fp, "pot": pot, "built": time.strftime("%Y-%m-%dT%H:%M:%S")}
         p = cache_dir / f"reco_{tag}.npz"
         np.savez_compressed(p, __meta__=json.dumps(meta), **cols)
         out["written"].append(str(p))
+        side.update({"n_reco": int(r["n_entries"]), "n_passed_cc_inclusive": int(cols["passed"].sum()),
+                     "missing_extra_branches": r["missing_extra_branches"]})
         if is_mc:
             p2 = cache_dir / f"reco_{tag}_truthcols.npz"
             r["truth"].save(p2); out["written"].append(str(p2))
+        if channel is not None:
+            from ..channels.selections import cutflow as sel_cutflow
+            rr = dict(cols); rr["__meta__"] = meta
+            steps = sel_cutflow(channel, rr)
+            side["selection"] = channel.selection.get("name")
+            side["selection_cutflow"] = {lab: int(m.sum()) for lab, m in steps}
+            if is_mc:
+                rt = r["truth"]
+                sig_rt = channel.is_signal(rt) & channel.in_phase_space(rt)
+                side["n_selected_signal"] = int((steps[-1][1] & sig_rt).sum())
+                if skim:
+                    rd = derive_fs_columns(rt, channel)
+                    rs = skim_truth(rd, skim_box, current=None)          # keep every reco row's truth
+                    p3 = cache_dir / f"reco_{tag}_truthcols_skim.npz"
+                    rs.save(p3); out["written"].append(str(p3))
         out["reco_s"] = round(time.time() - t0, 1); out["n_reco"] = int(r["n_entries"]); out["n_passed"] = int(cols["passed"].sum())
         log(f"reco {tag}: {r['n_entries']} entries, {out['n_passed']} selected, in {out['reco_s']} s -> {p}")
+    try:
+        side["bytes_requested"] = int(getattr(f.file.source, "num_requested_bytes", 0))
+    except Exception:
+        pass
+    if sidecar:
+        side.update({"channel": getattr(channel, "name", None),
+                     "channel_sha256": _sha256_file(channel.path) if channel is not None and getattr(channel, "path", None) else None,
+                     "ndp_git": git_state(REPO_ROOT), "versions": versions(), "written": out["written"],
+                     "timings_s": {k: v for k, v in out.items() if k.endswith("_s")}, **(extra_meta or {})})
+        ps = cache_dir / f"manifest_{tag}.json"
+        ps.write_text(json.dumps(side, indent=2, default=str))
+        out["sidecar"] = str(ps)
+    out["total_s"] = round(time.time() - t_open, 1)
     return out
+
+
+def _signal_cutflow_counts(channel, t: TruthTable) -> dict:
+    fid = channel.in_phase_space(t)
+    rows = {"all": {"n": int(t.n), "n_fiducial": int(fid.sum())}}
+    for lab, m in channel.signal_cutflow(t):
+        rows[lab] = {"n": int(m.sum()), "n_fiducial": int((m & fid).sum())}
+    return rows
+
+
+def _sha256_file(p) -> str | None:
+    import hashlib
+    try:
+        return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+    except OSError:
+        return None
 
 
 # --------------------------------------------------------------------------------------

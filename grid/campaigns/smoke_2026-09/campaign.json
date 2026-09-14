@@ -1,0 +1,104 @@
+{
+ "name": "smoke_2026-09",
+ "created": "2026-09-14T15:51:51+0000",
+ "channel": "minerva_me_ccqelike_1mu1p",
+ "beams": [
+  "FHC"
+ ],
+ "kinds": [
+  "data",
+  "mc"
+ ],
+ "playlists": [
+  "1A"
+ ],
+ "files_per_process": {
+  "mc": 1,
+  "data": 3
+ },
+ "pnfs_base": "/pnfs/dune/scratch/users/liangliu/ndp-stream/smoke_2026-09",
+ "worklists": {
+  "FHC_data_1A": {
+   "file": "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/grid/campaigns/smoke_2026-09/worklists/FHC_data_1A.txt",
+   "beam": "FHC",
+   "kind": "data",
+   "playlist": "1A",
+   "n_files": 3,
+   "files_per_process": 3,
+   "n_processes": 1,
+   "pnfs_out": "/pnfs/dune/scratch/users/liangliu/ndp-stream/smoke_2026-09/FHC_data_1A",
+   "jobs": [],
+   "pnfs_worklist": "/pnfs/dune/scratch/users/liangliu/ndp-stream/smoke_2026-09/worklists/FHC_data_1A.txt"
+  },
+  "FHC_mc_1A": {
+   "file": "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/grid/campaigns/smoke_2026-09/worklists/FHC_mc_1A.txt",
+   "beam": "FHC",
+   "kind": "mc",
+   "playlist": "1A",
+   "n_files": 1,
+   "files_per_process": 1,
+   "n_processes": 1,
+   "pnfs_out": "/pnfs/dune/scratch/users/liangliu/ndp-stream/smoke_2026-09/FHC_mc_1A",
+   "jobs": [],
+   "pnfs_worklist": "/pnfs/dune/scratch/users/liangliu/ndp-stream/smoke_2026-09/worklists/FHC_mc_1A.txt"
+  }
+ },
+ "files": {
+  "data6038": {
+   "beam": "FHC",
+   "kind": "data",
+   "playlist": "1A",
+   "url": "root://fndcadoor.fnal.gov:1095/pnfs/fnal.gov/usr/minerva/persistent/OpenData/MediumEnergy_FHC/Data/Playlist1A/MasterAnaDev_data_AnaTuple_run00006038_Playlist.root",
+   "tag": "data6038",
+   "worklist": "FHC_data_1A",
+   "line": 0,
+   "process": 0,
+   "status": "planned",
+   "pot_used_harvest": 4.8283761550736435e+17,
+   "attempts": 0
+  },
+  "data6040": {
+   "beam": "FHC",
+   "kind": "data",
+   "playlist": "1A",
+   "url": "root://fndcadoor.fnal.gov:1095/pnfs/fnal.gov/usr/minerva/persistent/OpenData/MediumEnergy_FHC/Data/Playlist1A/MasterAnaDev_data_AnaTuple_run00006040_Playlist.root",
+   "tag": "data6040",
+   "worklist": "FHC_data_1A",
+   "line": 1,
+   "process": 0,
+   "status": "planned",
+   "pot_used_harvest": 2.5840281999588012e+16,
+   "attempts": 0
+  },
+  "data10066": {
+   "beam": "FHC",
+   "kind": "data",
+   "playlist": "1A",
+   "url": "root://fndcadoor.fnal.gov:1095/pnfs/fnal.gov/usr/minerva/persistent/OpenData/MediumEnergy_FHC/Data/Playlist1A/MasterAnaDev_data_AnaTuple_run00010066_Playlist.root",
+   "tag": "data10066",
+   "worklist": "FHC_data_1A",
+   "line": 2,
+   "process": 0,
+   "status": "planned",
+   "pot_used_harvest": 2.0497721920490272e+17,
+   "attempts": 0
+  },
+  "mc110040": {
+   "beam": "FHC",
+   "kind": "mc",
+   "playlist": "1A",
+   "url": "root://fndcadoor.fnal.gov:1095/pnfs/fnal.gov/usr/minerva/persistent/OpenData/MediumEnergy_FHC/MC/StandardMC/Playlist1A/MasterAnaDev_mc_AnaTuple_run00110040_Playlist.root",
+   "tag": "mc110040",
+   "worklist": "FHC_mc_1A",
+   "line": 0,
+   "process": 0,
+   "status": "planned",
+   "pot_used_harvest": 9.988796749584837e+18,
+   "attempts": 0
+  }
+ },
+ "staged_worklists": {
+  "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/grid/campaigns/smoke_2026-09/worklists/FHC_data_1A.txt": "/pnfs/dune/scratch/users/liangliu/ndp-stream/smoke_2026-09/worklists/FHC_data_1A.txt",
+  "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/grid/campaigns/smoke_2026-09/worklists/FHC_mc_1A.txt": "/pnfs/dune/scratch/users/liangliu/ndp-stream/smoke_2026-09/worklists/FHC_mc_1A.txt"
+ }
+}

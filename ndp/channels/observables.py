@@ -128,7 +128,9 @@ def E_avail(t: TruthTable, **_) -> np.ndarray:
     E - M_nucleon (they carry a nucleon mass that is not deposited).
     """
     if not t.has_fs:
-        raise ValueError("E_avail needs final-state particles (fs_* columns)")
+        if "E_avail" in t:                      # a skim stores the derived value
+            return np.asarray(t["E_avail"], float)
+        raise ValueError("E_avail needs final-state particles (fs_* columns) or a derived E_avail column")
     pdg, E = t["fs_pdg"], t["fs_E"]
     apdg = np.abs(pdg)
     contrib = np.array(E, dtype=float)
@@ -145,7 +147,9 @@ def E_avail(t: TruthTable, **_) -> np.ndarray:
 def E_had_fs(t: TruthTable, **_) -> np.ndarray:
     """Total final-state hadronic energy (every non-lepton particle, incl. neutrons) [GeV]."""
     if not t.has_fs:
-        raise ValueError("E_had_fs needs final-state particles (fs_* columns)")
+        if "E_had_fs" in t:
+            return np.asarray(t["E_had_fs"], float)
+        raise ValueError("E_had_fs needs final-state particles (fs_* columns) or a derived E_had_fs column")
     apdg = np.abs(t["fs_pdg"])
     lep = np.isin(apdg, [11, 12, 13, 14, 15, 16]) | (apdg >= 1000000000)
     return t.fs_sum(np.where(lep, 0.0, t["fs_E"]))

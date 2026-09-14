@@ -159,12 +159,17 @@ def run_model(model: str | Path | ModelSpec, channel_name: str, *, measurement: 
     ctx_out["figures"] = [str(p.relative_to(run_dir)) for p in fig_paths]
     ctx_out["warnings"] = warnings
     report.write_report(run_dir, ctx_out)
+    from .products import sources_fingerprints
     inputs = []
     for key in ("reco_data_files", "reco_mc_files"):
         for fn in channel.data.get(key, []):
             p = Path(cfg.data_dir or "") / fn
             if p.exists():
                 inputs.append({"role": key, **cheap_fingerprint(p)})
+    try:
+        inputs += sources_fingerprints(cfg, channel)
+    except FileNotFoundError:
+        pass
     if pred.truth is not None and pred.truth.meta.get("source"):
         inputs.append({"role": "model_truth_source", "path": str(pred.truth.meta["source"])})
     manifest = {

@@ -40,28 +40,17 @@ def expected_true_cells(channel: ChannelSpec, measurement: Measurement, t: Truth
 
 
 def data_reco_cells(channel: ChannelSpec, measurement: Measurement, cfg, reco_cache: Path | None = None) -> dict:
-    """Selected data candidates in the measurement's reco cells (from the cache or the AnaTuple)."""
-    from ..adapters.minerva_anatuple import read_reco, read_pot, cache_tag, load_reco_cache
-    data_dir = cfg.require("data_dir")
-    files = channel.data["reco_data_files"]
-    cells = np.zeros(measurement.binning.n_cells)
-    n_sel = n_out = 0
-    pot = 0.0
-    sources = []
-    for fn in files:
-        path = data_dir / fn
-        cache = (reco_cache or data_dir / "cache") / f"reco_{cache_tag(fn)}.npz"
-        if cache.exists():
-            r = load_reco_cache(cache); sources.append(str(cache))
-        else:
-            r = read_reco(path, is_mc=False)["columns"]; sources.append(str(path))
-        from ..channels.selections import select
-        passed = select(channel, r)
-        x, y = measurement.reco_observables(r, params=channel.observable_params)
-        h, _, out = measurement.binning.histogram(x[passed], y[passed])
-        cells += h; n_sel += int(passed.sum()); n_out += out
-        pot += read_pot(path)["pot_used"]
-    return {"cells": cells, "n_selected": n_sel, "n_out_of_grid": n_out, "pot": pot, "files": files, "sources": sources}
+    """Selected data candidates in the measurement's reco cells, from the playlist products or the
+    per-file caches (ndp.products); the POT comes with the tables, never from the AnaTuples."""
+    from ..products import load_reco, has_products, playlists
+    from ..channels.selections import select
+    r, pot, sources = load_reco(cfg, channel, "data")
+    passed = select(channel, r)
+    x, y = measurement.reco_observables(r, params=channel.observable_params)
+    cells, _, n_out = measurement.binning.histogram(x[passed], y[passed])
+    files = [f"{b}/{p}" for b, p in playlists(channel, "data")] if has_products(channel) else list(channel.data.get("reco_data_files", []))
+    return {"cells": cells, "n_selected": int(passed.sum()), "n_out_of_grid": int(n_out), "pot": float(pot),
+            "files": files, "sources": sources}
 
 
 def poisson_gof(data: np.ndarray, pred: np.ndarray, var_mc: np.ndarray | None = None) -> dict:

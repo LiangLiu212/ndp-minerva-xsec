@@ -80,9 +80,15 @@ selection:                   # reconstruction-level selection: ndp.channels.sele
 
 data:
   paper_manifest: null                              # no benchmark/papers/2503.15047.yaml in the MINERvA repo yet
-  reco_data_files: ["MasterAnaDev_data_AnaTuple_run00010066_Playlist.root"]   # relative to site data_dir
+  reco_data_files: ["MasterAnaDev_data_AnaTuple_run00010066_Playlist.root"]   # relative to site data_dir (single-file mode)
   reco_mc_files:   ["MasterAnaDev_mc_AnaTuple_run00110040_Playlist.root"]
   playlist: minervame1A
+  # Playlist products from the grid campaign (ndp.products): uncomment to switch every consumer from
+  # the single-file caches above to <products_dir>/<beam>/<playlist>/ (POT summed over playlists).
+  # Which playlists enter the analysis is the analyst's choice (status: open until then).
+  # beam: FHC
+  # playlists: {mc: [1A], data: [1A]}
+  # products_dir: /exp/dune/data/users/liangliu/minerva-open-data/products
   mc_generator: "GENIE 2.12.6 (Open Data StandardMC; tune tag not embedded in the tuple — open question)"
   pot_status: "read from the Meta tree at run time, never typed in"
   paper_pot: 10.61e20        # arXiv:2503.15047: "10.61e20 POT in the neutrino enhanced ME configuration"

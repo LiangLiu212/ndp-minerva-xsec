@@ -154,15 +154,71 @@ def _cmd_data_cache(a):
     from .channels import load_channel
     from .adapters.minerva_anatuple import build_cache
     cfg = load_site_config(); ch = load_channel(a.channel)
+    if a.url:                                   # one file (local path or root:// URL), grid-style outputs
+        from .grid.process_file import process
+        out = a.out or str(cfg.require("data_dir") / "cache")
+        r = process(a.url, a.channel, a.kind or ("mc" if "_mc_" in a.url else "data"), out, skim=a.skim, entry_stop=a.entry_stop)
+        print(json.dumps({k: v for k, v in r.items() if k != "fingerprint"}, indent=2, default=str))
+        return 5 if r.get("status") == "failed" else 0
     data_dir = cfg.require("data_dir"); cache = data_dir / "cache"
     which = set(a.which.split(","))
     for key, is_mc in (("reco_data_files", False), ("reco_mc_files", True)):
         if ("mc" if is_mc else "data") not in which:
             continue
         for fn in ch.data.get(key, []):
-            r = build_cache(data_dir / fn, cache, is_mc=is_mc, truth=not a.reco_only, entry_stop=a.entry_stop)
-            print(json.dumps(r, indent=2))
+            r = build_cache(data_dir / fn, cache, is_mc=is_mc, truth=not a.reco_only, entry_stop=a.entry_stop,
+                            channel=ch if (a.skim or a.sidecar) else None, skim=a.skim, sidecar=a.sidecar)
+            print(json.dumps({k: v for k, v in r.items() if k != "fingerprint"}, indent=2, default=str))
     return 0
+
+
+def _cmd_data_merge(a):
+    from .products import merge_playlist
+    cfg = load_site_config()
+    root = Path(a.products_dir) if a.products_dir else cfg.require("data_dir") / "products"
+    for kind in a.kind.split(","):
+        merge_playlist(root, a.beam, a.playlist, kind)
+    return 0
+
+
+def _cmd_grid(a):
+    from .grid import campaign as cp
+    if a.gcmd == "harvest-pot":
+        cp.harvest_pot(workers=a.workers); return 0
+    if a.gcmd == "plan":
+        fpp = {}
+        if a.files_per_process:
+            for kv in a.files_per_process.split(","):
+                k, v = kv.split("="); fpp[k] = int(v)
+        cp.plan(a.name, a.channel, beams=tuple(a.beams.split(",")), kinds=tuple(a.kinds.split(",")),
+                playlists=a.playlists.split(",") if a.playlists else None, files_per_process=fpp, pnfs_base=a.pnfs_base)
+        return 0
+    if a.gcmd == "status":
+        cp.status(a.name, pot_check=not a.no_pot_check); return 0
+    if a.gcmd == "resubmit":
+        cp.resubmit(a.name); return 0
+    if a.gcmd == "harvest":
+        cfg = load_site_config()
+        root = Path(a.products_dir) if a.products_dir else cfg.require("data_dir") / "products"
+        print(json.dumps(cp.harvest(a.name, root, playlists=a.playlists.split(",") if a.playlists else None)))
+        return 0
+    if a.gcmd == "stage-worklists":
+        cp.stage_worklists(a.name, files=a.files or None); return 0
+    if a.gcmd == "submit-cmd":
+        c = cp.load_campaign(a.name)
+        w = c["worklists"][a.worklist]
+        wl_pnfs = c.get("staged_worklists", {}).get(a.file or w["file"]) or w.get("pnfs_worklist")
+        if not wl_pnfs:
+            raise SystemExit(f"worklist not staged on PNFS: run `ndp grid stage-worklists {a.name}` first")
+        # requests: MaxRSS 1.26 GB measured on run 110040; the held smoke job showed ~1.45 GB charged during the cold
+        # CVMFS import of the environment, so data jobs get 3000 MB and MC jobs 4000 MB
+        req = {"mc": "--memory 4000MB --disk 4GB --expected-lifetime 3h", "data": "--memory 3000MB --disk 2GB --expected-lifetime 2h"}[w["kind"]]
+        n = min(w["n_processes"], a.max_processes) if a.max_processes else w["n_processes"]
+        print(f"python3 .claude/skills/jobsub-lite/scripts/jobsub.py submit --worker grid/worker.sh -N {n} --tar-label {a.tar_label} {req} "
+              f"--jobsub-arg=--onsite -f {wl_pnfs} --pnfs-out {w['pnfs_out']} --runtype ndpstream --stem {a.stem or a.worklist} "
+              f"-- -R @TAR_DIR@ -O @PNFS_OUT@ -W {Path(wl_pnfs).name} -K {w['kind']} -C {c['channel']} -n {w['files_per_process']}")
+        return 0
+    raise SystemExit(f"unknown grid command {a.gcmd}")
 
 
 def _cmd_flux(a):
@@ -218,7 +274,27 @@ def main(argv=None) -> int:
     p = pd.add_parser("cache", help="build the truth/reco .npz caches from the channel's AnaTuples")
     p.add_argument("--channel", required=True); p.add_argument("--which", default="data,mc")
     p.add_argument("--reco-only", action="store_true", help="skip the (slow) Truth tree"); p.add_argument("--entry-stop", type=int)
+    p.add_argument("--url", help="process this one file (local path or root:// URL) instead of the channel's files")
+    p.add_argument("--kind", choices=("data", "mc")); p.add_argument("--out", help="output dir for --url (default <data_dir>/cache)")
+    p.add_argument("--skim", action="store_true", help="also write derived-column skims (MC)")
+    p.add_argument("--sidecar", action="store_true", help="also write manifest_<tag>.json with the channel's cutflows")
     p.set_defaults(fn=_cmd_data_cache)
+    p = pd.add_parser("merge", help="merge harvested per-file products into playlist products")
+    p.add_argument("--beam", default="FHC"); p.add_argument("--playlist", required=True); p.add_argument("--kind", default="data,mc")
+    p.add_argument("--products-dir"); p.set_defaults(fn=_cmd_data_merge)
+    pg = sub.add_parser("grid", help="grid campaign: plan worklists, track status, resubmit, harvest products").add_subparsers(dest="gcmd", required=True)
+    p = pg.add_parser("harvest-pot", help="read every published file's Meta tree -> resources/minerva/opendata_pot_per_file.tsv"); p.add_argument("--workers", type=int, default=24); p.set_defaults(fn=_cmd_grid)
+    p = pg.add_parser("plan"); p.add_argument("name"); p.add_argument("--channel", required=True); p.add_argument("--beams", default="FHC")
+    p.add_argument("--kinds", default="data,mc"); p.add_argument("--playlists", help="comma list, e.g. 1A,1B (default: all)")
+    p.add_argument("--files-per-process", help="e.g. mc=4,data=60"); p.add_argument("--pnfs-base"); p.set_defaults(fn=_cmd_grid)
+    p = pg.add_parser("status"); p.add_argument("name"); p.add_argument("--no-pot-check", action="store_true"); p.set_defaults(fn=_cmd_grid)
+    p = pg.add_parser("resubmit"); p.add_argument("name"); p.set_defaults(fn=_cmd_grid)
+    p = pg.add_parser("harvest"); p.add_argument("name"); p.add_argument("--products-dir"); p.add_argument("--playlists"); p.set_defaults(fn=_cmd_grid)
+    p = pg.add_parser("stage-worklists", help="upload worklists (or resubmit lists) to PNFS scratch as job inputs"); p.add_argument("name")
+    p.add_argument("--files", nargs="*", help="specific files (default: every worklist of the campaign)"); p.set_defaults(fn=_cmd_grid)
+    p = pg.add_parser("submit-cmd", help="print the jobsub-lite submit command for one worklist"); p.add_argument("name"); p.add_argument("worklist")
+    p.add_argument("--tar-label", default="ndp-stream-v1"); p.add_argument("--max-processes", type=int)
+    p.add_argument("--file", help="a staged resubmit list to submit instead of the worklist"); p.add_argument("--stem"); p.set_defaults(fn=_cmd_grid)
     p = sub.add_parser("flux", help="channel flux table summary / export"); p.add_argument("--channel", required=True); p.add_argument("--out"); p.set_defaults(fn=_cmd_flux)
     p = sub.add_parser("signal", help="apply a channel's truth-level signal definition to the cached MC; writes a diagnostics run")
     p.add_argument("--channel", required=True); p.add_argument("--cache", help="truth .npz (default: the channel's MC cache)")

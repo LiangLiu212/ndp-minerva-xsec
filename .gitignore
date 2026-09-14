@@ -9,3 +9,6 @@ runs/*
 *.ghep.status
 input-flux.root
 external/
+.jobsub/
+grid/campaigns/*/sidecars/
+grid/campaigns/*/pulled/

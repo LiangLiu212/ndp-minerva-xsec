@@ -52,13 +52,12 @@ def run_signal_diagnostics(channel_name: str, cfg: SiteConfig | None = None, *, 
     cfg = cfg or load_site_config()
     ch: ChannelSpec = load_channel(channel_name)
     if cache is None:
-        from .adapters.minerva_anatuple import cache_tag
-        mc = ch.data.get("reco_mc_files", [])
-        if not mc or cfg.data_dir is None:
-            raise FileNotFoundError("channel names no reco_mc_files or site has no data_dir; pass cache=")
-        cache = cfg.data_dir / "cache" / f"truth_{cache_tag(mc[0])}.npz"
-    cache = Path(cache)
-    t = TruthTable.load(cache)
+        from .products import load_truth, sources_fingerprints
+        t = load_truth(cfg, ch)
+        cache = Path(t.meta.get("source", "products")); inputs = sources_fingerprints(cfg, ch)
+    else:
+        cache = Path(cache)
+        t = TruthTable.load(cache); inputs = [cheap_fingerprint(cache)]
     frame = ch.frame
 
     # ---- cutflow, with and without the fiducial vertex --------------------------------------
@@ -79,41 +78,50 @@ def run_signal_diagnostics(channel_name: str, cfg: SiteConfig | None = None, *, 
                                            "fraction": float((sel & (it == k)).sum() / max(sel.sum(), 1))}
             for k in np.unique(it[sel])}
     lp = sig.leading_proton(t, frame, ch.signal.get("proton", {}))
-    cls = sig.fs_classes(t)
-    n_all_protons = sig.fs_count(t, cls["proton"])
+    cls = sig.fs_classes(t) if t.has_fs else None
+    n_all_protons = sig.fs_count(t, cls["proton"]) if t.has_fs else t["n_proton"].astype(np.int64)
     mult_window = {int(k): int(v) for k, v in zip(*np.unique(lp["n_in_window"][sel], return_counts=True))}
     mult_all = {int(k): int(v) for k, v in zip(*np.unique(n_all_protons[sel], return_counts=True))}
 
     # ---- veto inventory on the kinematically accepted CC events ------------------------------
     kin = dict(steps)["proton_in_window"] & fid
-    pdg = t["fs_pdg"]
-    ev_kin = kin[t.fs_event_index()]
-    inventory = {}
-    for cname in ("meson", "heavy_baryon", "photon", "charged_lepton", "neutrino", "nucleus", "pseudo"):
-        m = cls[cname] & ev_kin
-        codes, counts = np.unique(pdg[m], return_counts=True)
-        inventory[cname] = {"n_events_with_any": int((sig.fs_count(t, cls[cname]) > 0)[kin].sum()),
-                            "pdg_counts": {int(c): int(n) for c, n in zip(codes, counts)}}
-    hard = cls["photon"] & (t["fs_E"] > float(ch.signal.get("veto", {}).get("photon_E_max_gev", 0.010)))
-    inventory["photon"]["n_events_with_photon_above_threshold"] = int((sig.fs_count(t, hard) > 0)[kin].sum())
-    anti = np.isin(pdg, [-2212, -2112]) & ev_kin
-    inventory["antinucleons_not_vetoed"] = {"n_particles": int(anti.sum()),
-                                            "n_events": int((sig.fs_count(t, np.isin(pdg, [-2212, -2112])) > 0)[kin].sum())}
-    n_fs_mu = sig.fs_count(t, np.abs(pdg) == 13)
-    extra_mu = {"n_events_with_fs_muon_count_ne_1": int((n_fs_mu[kin] != 1).sum())}
-
-    # ---- parity of the veto classes vs MAT's enumerated IsQELike -----------------------------
-    ours_veto = (sig.fs_count(t, cls["meson"]) == 0) & (sig.fs_count(t, cls["heavy_baryon"]) == 0) & (sig.fs_count(t, hard) == 0)
-    mat = mat_isqelike(t)
+    photon_max = float(ch.signal.get("veto", {}).get("photon_E_max_gev", 0.010))
     numu_cc = steps[0][1]
-    parity = {"scope": "numu CC events with a mu- primary lepton, vetoes only (no kinematic window)",
-              "n_scope": int(numu_cc.sum()),
-              "n_pass_ours": int((ours_veto & numu_cc).sum()), "n_pass_mat": int((mat & numu_cc).sum()),
-              "n_disagree": int(((ours_veto != mat) & numu_cc).sum())}
-    if parity["n_disagree"]:
-        dis = (ours_veto != mat) & numu_cc
-        codes, counts = np.unique(pdg[dis[t.fs_event_index()]], return_counts=True)
-        parity["pdg_in_disagreeing_events"] = {int(c): int(n) for c, n in zip(codes, counts)}
+    if t.has_fs:
+        pdg = t["fs_pdg"]
+        ev_kin = kin[t.fs_event_index()]
+        inventory = {}
+        for cname in ("meson", "heavy_baryon", "photon", "charged_lepton", "neutrino", "nucleus", "pseudo"):
+            m = cls[cname] & ev_kin
+            codes, counts = np.unique(pdg[m], return_counts=True)
+            inventory[cname] = {"n_events_with_any": int((sig.fs_count(t, cls[cname]) > 0)[kin].sum()),
+                                "pdg_counts": {int(c): int(n) for c, n in zip(codes, counts)}}
+        hard = cls["photon"] & (t["fs_E"] > photon_max)
+        inventory["photon"]["n_events_with_photon_above_threshold"] = int((sig.fs_count(t, hard) > 0)[kin].sum())
+        anti = np.isin(pdg, [-2212, -2112]) & ev_kin
+        inventory["antinucleons_not_vetoed"] = {"n_particles": int(anti.sum()),
+                                                "n_events": int((sig.fs_count(t, np.isin(pdg, [-2212, -2112])) > 0)[kin].sum())}
+        n_fs_mu = sig.fs_count(t, np.abs(pdg) == 13)
+        extra_mu = {"n_events_with_fs_muon_count_ne_1": int((n_fs_mu[kin] != 1).sum())}
+
+        # ---- parity of the veto classes vs MAT's enumerated IsQELike -------------------------
+        ours_veto = (sig.fs_count(t, cls["meson"]) == 0) & (sig.fs_count(t, cls["heavy_baryon"]) == 0) & (sig.fs_count(t, hard) == 0)
+        mat = mat_isqelike(t)
+        parity = {"scope": "numu CC events with a mu- primary lepton, vetoes only (no kinematic window)",
+                  "n_scope": int(numu_cc.sum()),
+                  "n_pass_ours": int((ours_veto & numu_cc).sum()), "n_pass_mat": int((mat & numu_cc).sum()),
+                  "n_disagree": int(((ours_veto != mat) & numu_cc).sum())}
+        if parity["n_disagree"]:
+            dis = (ours_veto != mat) & numu_cc
+            codes, counts = np.unique(pdg[dis[t.fs_event_index()]], return_counts=True)
+            parity["pdg_in_disagreeing_events"] = {int(c): int(n) for c, n in zip(codes, counts)}
+    else:                                   # skim: no particle list, only the derived counts
+        inventory = {"note": "skim without fs_* columns: per-PDG inventory not available",
+                     "n_events_with_meson": int((t["n_meson"] > 0)[kin].sum()),
+                     "n_events_with_heavy_baryon": int((t["n_heavy_baryon"] > 0)[kin].sum()),
+                     "n_events_with_photon_above_threshold": int((t["n_photon_hard"] > 0)[kin].sum())}
+        extra_mu = {}
+        parity = {"note": "skim: MAT IsQELike parity not evaluated", "n_scope": int(numu_cc.sum()), "n_disagree": None}
 
     # ---- kinematics of the selected signal ----------------------------------------------------
     mu_p, mu_th = obs.lep_p(t, frame)[sel], obs.lep_theta_deg(t, frame)[sel]
@@ -222,11 +230,11 @@ def run_signal_diagnostics(channel_name: str, cfg: SiteConfig | None = None, *, 
     manifest = {"run_id": run_dir.name, "kind": "signal_diagnostics", "timestamp": timestamp(),
                 "platform_version": __version__, "channel": ch.name,
                 "channel_file": str(ch.path), "channel_sha256": sha256_text(Path(ch.path).read_text()) if ch.path else None,
-                "inputs": {"truth_cache": cheap_fingerprint(cache), "truth_meta": t.meta},
+                "inputs": {"truth_sources": inputs, "truth_meta": {k: v for k, v in t.meta.items() if k != "sources"}},
                 "git": git_state(cfg.repo_root), "versions": versions(),
                 "outputs": ["channel.json", "cutflow.json", "summary.json", "report.md"] + [str(p.relative_to(run_dir)) for p in fig_paths],
                 "results": {"n_signal": summary["n_signal"], "n_signal_fiducial": summary["n_signal_fiducial"],
-                            "mat_parity_disagreements": parity["n_disagree"]}}
+                            "mat_parity_disagreements": parity.get("n_disagree")}}
     dump_json(manifest, run_dir / "manifest.json")
     return run_dir
 
@@ -248,8 +256,11 @@ def mc_categories(ch: ChannelSpec, rt: TruthTable) -> np.ndarray:
     cat = np.full(rt.n, "bkg other (no pion)", dtype=object)
     cat[sig & (it == 1)] = "signal QE"; cat[sig & (it == 5)] = "signal 2p2h"; cat[sig & (it == 2)] = "signal RES"
     cat[sig & ~np.isin(it, [1, 2, 5])] = "signal DIS/other"
-    pdg = rt["fs_pdg"]
-    n_pic = sig_mod_count(rt, np.abs(pdg) == 211); n_pi0 = sig_mod_count(rt, pdg == 111)
+    if rt.has_fs:
+        pdg = rt["fs_pdg"]
+        n_pic = sig_mod_count(rt, np.abs(pdg) == 211); n_pi0 = sig_mod_count(rt, pdg == 111)
+    else:                                   # skim: derived per-event pion counts
+        n_pic, n_pi0 = rt["n_pi_charged"].astype(np.int64), rt["n_pi0"].astype(np.int64)
     cat[~sig & (n_pic == 1) & (n_pi0 == 0)] = "bkg 1 pi+-"
     cat[~sig & (n_pic == 0) & (n_pi0 == 1)] = "bkg 1 pi0"
     cat[~sig & (n_pic + n_pi0 >= 2)] = "bkg multi-pi"
@@ -261,28 +272,16 @@ def sig_mod_count(rt: TruthTable, particle_mask: np.ndarray) -> np.ndarray:
 
 
 def _load_reco_side(ch: ChannelSpec, cfg: SiteConfig):
-    from .adapters.minerva_anatuple import cache_tag, load_reco_cache, read_pot
-    data_dir = cfg.require("data_dir"); cache = data_dir / "cache"
-    def concat(files, is_mc):
-        recos, truths, pot, srcs = [], [], 0.0, []
-        for fn in files:
-            tag = cache_tag(fn)
-            r = load_reco_cache(cache / f"reco_{tag}.npz")
-            recos.append(r); srcs.append(str(cache / f"reco_{tag}.npz"))
-            pot += read_pot(data_dir / fn)["pot_used"]
-            if is_mc:
-                t = TruthTable.load(cache / f"reco_{tag}_truthcols.npz")
-                if not t.has_fs:
-                    raise ValueError(f"{cache / f'reco_{tag}_truthcols.npz'} has no final-state particles: rebuild the cache "
-                                     f"(`python -m ndp data cache --channel {ch.name} --reco-only`)")
-                truths.append(t)
-        keys = [k for k in recos[0] if k != "__meta__"]
-        r = {k: np.concatenate([x[k] for x in recos]) for k in keys}
-        r["__meta__"] = recos[0].get("__meta__", {})
-        return r, (TruthTable.concatenate(truths) if truths else None), pot, srcs
-    rd, _, pot_d, src_d = concat(ch.data["reco_data_files"], False)
-    rm, rt, pot_m, src_m = concat(ch.data["reco_mc_files"], True)
-    truth = TruthTable.concatenate([TruthTable.load(cache / f"truth_{cache_tag(fn)}.npz") for fn in ch.data["reco_mc_files"]])
+    """Data reco table, MC reco table, MC reco-side truth, MC truth, POTs and sources — playlist
+    products when the channel lists `data.playlists`, else the per-file caches (ndp.products)."""
+    from .products import load_reco, load_reco_truth, load_truth
+    rd, pot_d, src_d = load_reco(cfg, ch, "data")
+    rm, pot_m, src_m = load_reco(cfg, ch, "mc")
+    rt = load_reco_truth(cfg, ch)
+    if not rt.has_fs and "n_pi_charged" not in rt:
+        raise ValueError("reco-side truth table has neither fs_* nor derived columns: rebuild the cache "
+                         f"(`python -m ndp data cache --channel {ch.name} --reco-only`)")
+    truth = load_truth(cfg, ch)
     return rd, rm, rt, truth, pot_d, pot_m, src_d + src_m
 
 
@@ -402,12 +401,10 @@ def run_selection_comparison(channel_name: str, cfg: SiteConfig | None = None, *
     lines += ["", "## Figures", ""] + [f"![{p.stem}]({p.relative_to(run_dir)})" for p in fig_paths]
     (run_dir / "report.md").write_text("\n".join(lines) + "\n")
 
-    data_dir = cfg.require("data_dir")
+    from .products import sources_fingerprints
     manifest = {"run_id": run_dir.name, "kind": "selection_comparison", "timestamp": timestamp(), "platform_version": __version__,
                 "channel": ch.name, "channel_file": str(ch.path), "channel_sha256": sha256_text(Path(ch.path).read_text()) if ch.path else None,
-                "selection": ch.selection, "inputs": {"caches": [cheap_fingerprint(s) for s in sources],
-                                                      "data_files": [cheap_fingerprint(data_dir / fn) for fn in ch.data["reco_data_files"]],
-                                                      "mc_files": [cheap_fingerprint(data_dir / fn) for fn in ch.data["reco_mc_files"]]},
+                "selection": ch.selection, "inputs": {"sources": sources, "fingerprints": sources_fingerprints(cfg, ch)},
                 "pot": {"data": pot_d, "mc": pot_m, "scale": scale}, "git": git_state(cfg.repo_root), "versions": versions(),
                 "outputs": ["channel.json", "cutflow.json", "summary.json", "report.md"] + [str(p.relative_to(run_dir)) for p in fig_paths],
                 "results": {"n_data_selected": int(sel_d.sum()), "n_mc_selected": int(sel_m.sum()), "mc_purity": rows[-1]["mc_purity"],

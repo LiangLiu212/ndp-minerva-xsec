@@ -78,8 +78,12 @@ number. The folded comparison has ~35 % statistical error per cell at this expos
   reco-level proton/TKI observables, the 14 released grids as measurement manifests, and
   `ndp selection --channel <c>`: cutflow, purity/efficiency, score scan, data-vs-MC per grid.
   Result on the local files: efficiency 0.35 / purity 0.49 (paper 0.28 / 0.60), 64 data events.
-- Still to do for this channel: settle the purity gap and the default thresholds, more data
-  (playlist 1A), MC weights, surrogates per measurement, a `benchmark/papers/2503.15047.yaml`
+- Grid processing program (`ndp/grid/`, `grid/`, `ndp/products.py`): streamed per-file caches +
+  skims + sidecars, jobsub-lite payload (slim pixi env), campaign plan/status/resubmit/harvest/merge,
+  playlist products consumed by every stage. Certified byte-identical to the local caches on the
+  two local files; FHC campaign planned (`grid/campaigns/fhc_2026-09`).
+- Still to do for this channel: run the FHC campaign (1A first), settle the purity gap and the
+  default thresholds, MC weights, surrogates per measurement, a `benchmark/papers/2503.15047.yaml`
   release manifest for the unfolded comparison.
 
 ## Next

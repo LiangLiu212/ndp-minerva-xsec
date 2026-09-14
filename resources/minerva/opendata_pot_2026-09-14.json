@@ -1,0 +1,466 @@
+{
+ "read_at": "2026-09-14T14:59:20",
+ "source": "Meta tree of every file in the published file lists (POT_Used, POT_Total summed over Meta entries)",
+ "per_playlist": [
+  {
+   "beam": "FHC",
+   "kind": "Data",
+   "playlist": "1A",
+   "n_files": 253,
+   "POT_Used": 8.968946226551534e+19,
+   "POT_Total": 9.602825513914188e+19,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "Data",
+   "playlist": "1B",
+   "n_files": 47,
+   "POT_Used": 1.8673986975553036e+19,
+   "POT_Total": 1.879212368930377e+19,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "Data",
+   "playlist": "1C",
+   "n_files": 102,
+   "POT_Used": 4.294376238504551e+19,
+   "POT_Total": 4.956622938908043e+19,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "Data",
+   "playlist": "1D",
+   "n_files": 283,
+   "POT_Used": 1.4404452962278605e+20,
+   "POT_Total": 1.450615243828176e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "Data",
+   "playlist": "1E",
+   "n_files": 219,
+   "POT_Used": 1.0296200958633948e+20,
+   "POT_Total": 1.0507182918867226e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "Data",
+   "playlist": "1F",
+   "n_files": 260,
+   "POT_Used": 1.6685546978706165e+20,
+   "POT_Total": 1.7224598581293977e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "Data",
+   "playlist": "1G",
+   "n_files": 233,
+   "POT_Used": 1.3756941427380457e+20,
+   "POT_Total": 1.4620851413397104e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "Data",
+   "playlist": "1L",
+   "n_files": 15,
+   "POT_Used": 1.3370718209243894e+19,
+   "POT_Total": 1.3652145096642234e+19,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "Data",
+   "playlist": "1M",
+   "n_files": 202,
+   "POT_Used": 1.5812689941683844e+20,
+   "POT_Total": 1.7142859462975046e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "Data",
+   "playlist": "1N",
+   "n_files": 138,
+   "POT_Used": 1.0656505761839271e+20,
+   "POT_Total": 1.1250696569635498e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "Data",
+   "playlist": "1O",
+   "n_files": 26,
+   "POT_Used": 2.9796628174847955e+19,
+   "POT_Total": 2.9913423404094546e+19,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "Data",
+   "playlist": "1P",
+   "n_files": 40,
+   "POT_Used": 4.675822390412009e+19,
+   "POT_Total": 4.741429561966645e+19,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "StandardMC",
+   "playlist": "1A",
+   "n_files": 41,
+   "POT_Used": 4.071660104535689e+20,
+   "POT_Total": 4.0719487410683e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "StandardMC",
+   "playlist": "1B",
+   "n_files": 11,
+   "POT_Used": 1.0937143891069359e+20,
+   "POT_Total": 1.0937354879253148e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "StandardMC",
+   "playlist": "1C",
+   "n_files": 21,
+   "POT_Used": 2.0873802493616203e+20,
+   "POT_Total": 2.088861375704856e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "StandardMC",
+   "playlist": "1D",
+   "n_files": 61,
+   "POT_Used": 6.074026581183651e+20,
+   "POT_Total": 6.074445343562051e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "StandardMC",
+   "playlist": "1E",
+   "n_files": 51,
+   "POT_Used": 5.086128909938359e+20,
+   "POT_Total": 5.086139200890256e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "StandardMC",
+   "playlist": "1F",
+   "n_files": 71,
+   "POT_Used": 7.071214242029071e+20,
+   "POT_Total": 7.071279792871164e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "StandardMC",
+   "playlist": "1G",
+   "n_files": 61,
+   "POT_Used": 5.954273654656091e+20,
+   "POT_Total": 5.954316023540972e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "StandardMC",
+   "playlist": "1L",
+   "n_files": 6,
+   "POT_Used": 5.822833555494932e+19,
+   "POT_Total": 5.826294991445401e+19,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "StandardMC",
+   "playlist": "1M",
+   "n_files": 98,
+   "POT_Used": 8.978852586344844e+20,
+   "POT_Total": 8.982025686826687e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "StandardMC",
+   "playlist": "1N",
+   "n_files": 31,
+   "POT_Used": 5.121095665216081e+20,
+   "POT_Total": 5.186258315561543e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "StandardMC",
+   "playlist": "1O",
+   "n_files": 16,
+   "POT_Used": 1.582390003449013e+20,
+   "POT_Total": 1.5823939294684774e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "FHC",
+   "kind": "StandardMC",
+   "playlist": "1P",
+   "n_files": 21,
+   "POT_Used": 2.0813657500734888e+20,
+   "POT_Total": 2.0814244723312332e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "Data",
+   "playlist": "5A",
+   "n_files": 79,
+   "POT_Used": 5.415596576503412e+19,
+   "POT_Total": 6.230429245035712e+19,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "Data",
+   "playlist": "6A",
+   "n_files": 160,
+   "POT_Used": 1.622564490126769e+20,
+   "POT_Total": 1.8403534006515502e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "Data",
+   "playlist": "6B",
+   "n_files": 102,
+   "POT_Used": 1.021492851928134e+20,
+   "POT_Total": 1.1304013892375601e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "Data",
+   "playlist": "6C",
+   "n_files": 126,
+   "POT_Used": 1.096525471577009e+20,
+   "POT_Total": 1.1919874721495664e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "Data",
+   "playlist": "6D",
+   "n_files": 95,
+   "POT_Used": 1.1541426145105181e+20,
+   "POT_Total": 1.1748843123158295e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "Data",
+   "playlist": "6E",
+   "n_files": 72,
+   "POT_Used": 8.633422835462488e+19,
+   "POT_Total": 9.248656220414188e+19,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "Data",
+   "playlist": "6F",
+   "n_files": 117,
+   "POT_Used": 1.3895495477784086e+20,
+   "POT_Total": 1.4537419671002952e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "Data",
+   "playlist": "6G",
+   "n_files": 63,
+   "POT_Used": 7.342636100984213e+19,
+   "POT_Total": 7.901684294636274e+19,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "Data",
+   "playlist": "6H",
+   "n_files": 123,
+   "POT_Used": 1.0758172564996307e+20,
+   "POT_Total": 1.157112438458409e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "Data",
+   "playlist": "6I",
+   "n_files": 72,
+   "POT_Used": 7.821911054071523e+19,
+   "POT_Total": 9.196228796477877e+19,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "Data",
+   "playlist": "6J",
+   "n_files": 76,
+   "POT_Used": 8.979369282620536e+19,
+   "POT_Total": 9.921746502830807e+19,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "StandardMC",
+   "playlist": "5A",
+   "n_files": 22,
+   "POT_Used": 2.1450022161999436e+20,
+   "POT_Total": 2.145680534193137e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "StandardMC",
+   "playlist": "6A",
+   "n_files": 64,
+   "POT_Used": 6.381870231716713e+20,
+   "POT_Total": 6.3822517245652e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "StandardMC",
+   "playlist": "6B",
+   "n_files": 42,
+   "POT_Used": 4.163402702402161e+20,
+   "POT_Total": 4.163746505550749e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "StandardMC",
+   "playlist": "6C",
+   "n_files": 50,
+   "POT_Used": 4.929359977968532e+20,
+   "POT_Total": 4.9906132374880964e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "StandardMC",
+   "playlist": "6D",
+   "n_files": 46,
+   "POT_Used": 4.5200611488973986e+20,
+   "POT_Total": 4.520074784649054e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "StandardMC",
+   "playlist": "6E",
+   "n_files": 42,
+   "POT_Used": 3.9970168084467424e+20,
+   "POT_Total": 4.053405554022411e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "StandardMC",
+   "playlist": "6F",
+   "n_files": 32,
+   "POT_Used": 6.1949274313006e+20,
+   "POT_Total": 6.198746664065216e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "StandardMC",
+   "playlist": "6G",
+   "n_files": 42,
+   "POT_Used": 4.190623006750353e+20,
+   "POT_Total": 4.190633935963929e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "StandardMC",
+   "playlist": "6H",
+   "n_files": 51,
+   "POT_Used": 5.0945759129806556e+20,
+   "POT_Total": 5.0947904521033174e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "StandardMC",
+   "playlist": "6I",
+   "n_files": 41,
+   "POT_Used": 3.9981176796591e+20,
+   "POT_Total": 3.998240098618378e+20,
+   "n_failed": 0,
+   "failed": []
+  },
+  {
+   "beam": "RHC",
+   "kind": "StandardMC",
+   "playlist": "6J",
+   "n_files": 41,
+   "POT_Used": 3.9574408394982955e+20,
+   "POT_Total": 3.958074855063574e+20,
+   "n_failed": 0,
+   "failed": []
+  }
+ ]
+}

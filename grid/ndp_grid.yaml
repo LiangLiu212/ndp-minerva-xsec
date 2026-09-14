@@ -1,0 +1,6 @@
+# Site configuration used on grid workers (NDP_CONFIG=$PAYLOAD/grid/ndp_grid.yaml): no local data
+# directory, no MINERvA exploration repo, no GENIE. Everything a worker needs is in the payload.
+minerva_repo: null
+data_dir: null
+genie_env_json: null
+genie_splines: null

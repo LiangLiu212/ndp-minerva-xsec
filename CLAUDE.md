@@ -44,6 +44,7 @@ channels/       channel manifests            models/      example model specs
 measurements/   observable pairs + binnings per channel (the published grid is implicit)
 surrogates/     trained detector surrogates  resources/   flux tables etc.
 runs/           run directories (see runs/README.md)
+grid/           grid worker, payload staging, campaigns (see grid/README.md)
 docs/           architecture, decisions, open_questions, roadmap
 tests/          pytest-style tests + run_tests.py fallback runner
 .claude/skills/ndp-model   the agent workflow for "test my model"
@@ -61,6 +62,9 @@ python -m ndp data status                    # are the AnaTuples / caches presen
 python -m ndp data cache --channel minerva_me_cc_inclusive_ptpz     # (re)build the truth/reco caches
 python -m ndp signal --channel minerva_me_ccqelike_1mu1p           # truth-level signal definition on the cached MC -> diagnostics run
 python -m ndp selection --channel minerva_me_ccqelike_1mu1p        # reco selection on cached data + MC: cutflow, purity/efficiency, data-vs-MC figures
+python -m ndp data cache --channel minerva_me_ccqelike_1mu1p --url root://... --kind mc --out DIR   # one streamed file, grid-style outputs
+python -m ndp grid plan <campaign> --channel <c> --beams FHC   # worklists; then grid/README.md: publish, submit, status, resubmit, harvest
+python -m ndp data merge --beam FHC --playlist 1A               # per-file products -> playlist products (+ pot_1A.json)
 python tests/run_tests.py                    # or, inside pixi: pixi run test
 pixi run build-genie && pixi run snapshot-genie-env   # (re)build the in-repo GENIE
 ```

@@ -22,17 +22,13 @@ from .parametric import SmearingSurrogate
 
 
 def load_training_cache(cfg, channel) -> dict:
-    """The cached MC tables of the channel's first reco_mc_file (built by `ndp data cache`)."""
-    from ..adapters.minerva_anatuple import cache_tag, load_reco_cache
-    data_dir = cfg.require("data_dir")
-    cache = data_dir / "cache"
-    mc_file = channel.data["reco_mc_files"][0]
-    tag = cache_tag(mc_file)
-    truth = TruthTable.load(cache / f"truth_{tag}.npz")
-    reco = load_reco_cache(cache / f"reco_{tag}.npz")
-    reco_truth = TruthTable.load(cache / f"reco_{tag}_truthcols.npz")
-    return {"truth": truth, "reco": reco, "reco_truth": reco_truth, "tag": tag, "mc_file": data_dir / mc_file,
-            "pot_mc": truth.norm.pot}
+    """The MC tables the surrogate is learned from: playlist products or the per-file caches (ndp.products)."""
+    from ..products import load_reco, load_reco_truth, load_truth, sources_fingerprints
+    truth = load_truth(cfg, channel)
+    reco, pot_mc, sources = load_reco(cfg, channel, "mc")
+    reco_truth = load_reco_truth(cfg, channel)
+    return {"truth": truth, "reco": reco, "reco_truth": reco_truth, "tag": ",".join(Path(s).stem for s in sources),
+            "sources": sources, "fingerprints": sources_fingerprints(cfg, channel), "pot_mc": truth.norm.pot or pot_mc}
 
 
 def training_arrays(channel, measurement, truth: TruthTable, reco: dict, reco_truth: TruthTable) -> dict:
@@ -62,7 +58,7 @@ def build_surrogates(channel, measurement, cfg, kinds=("binned", "parametric"), 
     b = measurement.binning
     root = Path(out_root) if out_root else measurement.surrogate_root(cfg)
     meta = {"channel": channel.name, "measurement": measurement.name, "measurement_spec": measurement.to_dict(),
-            "built": timestamp(), "training_mc": cheap_fingerprint(tc["mc_file"]), "pot_mc": tc["pot_mc"],
+            "built": timestamp(), "training_mc": tc["fingerprints"], "training_sources": tc["sources"], "pot_mc": tc["pot_mc"],
             "generator": tc["truth"].meta.get("generator"), "selection": channel.selection.get("name"),
             "phase_space": channel.phase_space, "signal": channel.signal, "training_counts": arrs["counts"]}
     results = []

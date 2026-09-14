@@ -8,6 +8,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE)); sys.path.insert(0, str(HERE.parent))
 from _helpers import Skip  # noqa: E402
+try:
+    from _pytest.outcomes import Skipped as _PytestSkipped   # _helpers.skip prefers pytest.skip when pytest is importable
+except ImportError:  # pragma: no cover
+    class _PytestSkipped(Exception): ...
 
 passed = failed = skipped = 0
 for f in sorted(HERE.glob("test_*.py")):
@@ -21,7 +25,7 @@ for f in sorted(HERE.glob("test_*.py")):
         fn = getattr(mod, name)
         try:
             fn(); passed += 1; print(f"PASS  {f.stem}::{name}")
-        except Skip as e:
+        except (Skip, _PytestSkipped) as e:
             skipped += 1; print(f"SKIP  {f.stem}::{name} ({e})")
         except Exception:
             failed += 1; print(f"FAIL  {f.stem}::{name}"); traceback.print_exc()

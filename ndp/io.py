@@ -60,13 +60,23 @@ def sha256_file(path: str | Path, chunk: int = 1 << 22) -> str:
     return h.hexdigest()
 
 
-def cheap_fingerprint(path: str | Path, head: int = 1 << 20) -> dict:
+def is_url(path) -> bool:
+    """True for remote locations (root://, http://, ...) that must never go through Path()."""
+    return "://" in str(path)
+
+
+def cheap_fingerprint(path: str | Path, head: int = 1 << 20, file=None) -> dict:
     """Size + mtime + sha256 of the first and last MiB.
 
     A full sha256 of a 20 GB AnaTuple costs minutes; this fingerprint costs
     milliseconds and still detects truncation, replacement and most corruption.
     The manifest records which kind was used, so nobody mistakes one for the other.
+    Remote files (`root://...`) are fingerprinted through uproot's byte source with the
+    same recipe (`mtime` is None), so a streamed and a downloaded copy compare equal;
+    pass an already-open uproot file as `file=` to avoid a second connection.
     """
+    if is_url(path) or file is not None:
+        return remote_fingerprint(str(path), head=head, file=file)
     path = Path(path)
     st = path.stat()
     h = hashlib.sha256()
@@ -76,6 +86,21 @@ def cheap_fingerprint(path: str | Path, head: int = 1 << 20) -> dict:
             fh.seek(st.st_size - head)
             h.update(fh.read(head))
     return {"path": str(path), "size_bytes": st.st_size, "mtime": int(st.st_mtime),
+            "fingerprint": "sha256(head1MiB+tail1MiB)", "sha256_partial": h.hexdigest()}
+
+
+def remote_fingerprint(url: str, head: int = 1 << 20, file=None, timeout: float = 300.0) -> dict:
+    """The cheap_fingerprint recipe over an XRootD/HTTP byte source (uproot)."""
+    if file is None:
+        import uproot
+        file = uproot.open(url, timeout=int(timeout))
+    src = file.file.source
+    size = int(src.num_bytes)
+    h = hashlib.sha256()
+    h.update(bytes(src.chunk(0, min(head, size)).raw_data))
+    if size > 2 * head:
+        h.update(bytes(src.chunk(size - head, size).raw_data))
+    return {"path": url, "size_bytes": size, "mtime": None,
             "fingerprint": "sha256(head1MiB+tail1MiB)", "sha256_partial": h.hexdigest()}
 
 
