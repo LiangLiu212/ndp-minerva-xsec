@@ -59,6 +59,8 @@ python -m ndp run models/<m>.yaml --channel minerva_me_cc_inclusive_ptpz [--meas
 python -m ndp surrogate build --channel minerva_me_cc_inclusive_ptpz [--measurement <name>] --kind all
 python -m ndp data status                    # are the AnaTuples / caches present (and current)
 python -m ndp data cache --channel minerva_me_cc_inclusive_ptpz     # (re)build the truth/reco caches
+python -m ndp signal --channel minerva_me_ccqelike_1mu1p           # truth-level signal definition on the cached MC -> diagnostics run
+python -m ndp selection --channel minerva_me_ccqelike_1mu1p        # reco selection on cached data + MC: cutflow, purity/efficiency, data-vs-MC figures
 python tests/run_tests.py                    # or, inside pixi: pixi run test
 pixi run build-genie && pixi run snapshot-genie-env   # (re)build the in-repo GENIE
 ```

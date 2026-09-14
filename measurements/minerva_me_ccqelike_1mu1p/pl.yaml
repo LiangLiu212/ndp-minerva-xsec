@@ -1,0 +1,13 @@
+# arXiv:2503.15047 released grid `pl` (edges verified 2026-09-14 from anc/tki_release.root, histogram
+# absolute_xsec_pl_ch). Truth side = ndp.channels.observables, reco side = ndp.channels.reco_observables
+# (leading proton candidate + TKI in the beam frame). Folded comparison only until the release is wired in
+# as a manifest (benchmark/papers/2503.15047.yaml does not exist yet).
+name: pl
+channel: minerva_me_ccqelike_1mu1p
+status: user
+author: ndp-platform (grid = the paper's release; adopted for the 2503.15047 reproduction)
+description: >
+  d sigma / dδp_L of the CCQE-like 1mu1p sample on CH, arXiv:2503.15047 binning (8 bins).
+x: {observable: dpL, reco: reco_dpL, units: GeV/c, label: "δp_L", edges: [-1.0, -0.25, 0, 0.1, 0.2, 0.3, 0.4, 0.6, 1.0]}
+notes:
+  - "release file: papers/minerva/2503.15047/anc/absolute/pl/absolute_xsec_pl_ch.txt (cm^2/unit/nucleon, total error), covariance alongside"

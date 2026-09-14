@@ -34,7 +34,7 @@ MEV = 1e-3
 MEV2 = 1e-6
 
 #: bump when the cached reco columns change; readers refuse older caches.
-RECO_CACHE_VERSION = 2
+RECO_CACHE_VERSION = 3
 
 # --- selection constants (MINERvA-101 tutorial; mirror of tools/cc_inclusive_selector.py) ----
 Z_MIN, Z_MAX = 5980.0, 8422.0
@@ -62,10 +62,41 @@ RECO_EXTRA_BRANCHES = (
     ("MasterAnaDev_visible_E", "reco_visible_E", MEV),
     ("n_prongs", "reco_n_prongs", 1.0),
     ("MasterAnaDev_hadron_number", "reco_n_hadron_tracks", 1.0),
+    # --- cache v3: leading proton candidate, Michel electrons, isolated blobs (1mu1p selections) ---
+    # MasterAnaDev_proton_* are event-level scalars of the tool's primary proton candidate (the
+    # highest-momentum one: MasterAnaDev_sec_protons_P_fromdEdx never exceeds it on the open-data MC).
+    # Momentum components are detector-frame (like MasterAnaDev_leptonE); MasterAnaDev_proton_theta is
+    # beam-frame (== the rotated vector's angle, like muon_thetaX/Y). Sentinels (-9999 / -1) -> NaN.
+    ("MasterAnaDev_proton_P_fromdEdx", "reco_proton_p", MEV),
+    ("MasterAnaDev_proton_Px_fromdEdx", "reco_proton_px", MEV),
+    ("MasterAnaDev_proton_Py_fromdEdx", "reco_proton_py", MEV),
+    ("MasterAnaDev_proton_Pz_fromdEdx", "reco_proton_pz", MEV),
+    ("MasterAnaDev_proton_E_fromdEdx", "reco_proton_E", MEV),
+    ("MasterAnaDev_proton_T_fromdEdx", "reco_proton_T", MEV),
+    ("MasterAnaDev_proton_theta", "reco_proton_theta_beam", 1.0),
+    ("MasterAnaDev_proton_score1", "reco_proton_score1", 1.0),
+    ("MasterAnaDev_proton_score2", "reco_proton_score2", 1.0),
+    ("MasterAnaDev_pion_score1", "reco_pion_score1", 1.0),
+    ("MasterAnaDev_proton_startPointZ", "reco_proton_start_z", 1.0),
+    ("MasterAnaDev_proton_endPointZ", "reco_proton_end_z", 1.0),
+    ("MasterAnaDev_proton_patternRec", "reco_proton_pattern_rec", 1.0),
+    ("MasterAnaDev_sec_protons_P_fromdEdx_sz", "reco_n_sec_protons", 1.0),
+    ("improved_nmichel", "reco_n_michel", 1.0),
+    ("n_nonvtx_iso_blobs", "reco_n_iso_blobs", 1.0),
+    ("n_nonvtx_iso_blobs_all", "reco_n_iso_blobs_all", 1.0),
+    ("nonvtx_iso_blobs_energy", "reco_iso_blobs_E", MEV),
+    ("proton_prong_PDG", "reco_proton_truth_pdg", 1.0),            # MC: truth PDG of the candidate; data: -1
 )
-RECO_CACHE_COLUMNS = ("passed", "failing_cut", "reco_p", "reco_theta", "reco_pT", "reco_pz", "reco_E_mu",
+#: columns whose tuple sentinel (-9999, or -1 for the end point) means "no candidate" -> NaN in the cache
+RECO_SENTINEL_NAN = ("reco_proton_p", "reco_proton_px", "reco_proton_py", "reco_proton_pz", "reco_proton_E", "reco_proton_T",
+                     "reco_proton_theta_beam", "reco_proton_score1", "reco_proton_score2", "reco_pion_score1",
+                     "reco_proton_start_z", "reco_proton_end_z")
+#: fixed-size array branches cached as one element: (branch, index, cache column)
+RECO_ARRAY_ELEMENTS = (("MasterAnaDev_hadron_isExiting", 0, "reco_proton_exiting"),)
+RECO_CACHE_COLUMNS = ("passed", "failing_cut", "reco_minos_matched", "reco_p", "reco_theta", "reco_pT", "reco_pz", "reco_E_mu",
                       "reco_thetaX", "reco_thetaY", "reco_minos_qp", "reco_vtx_x", "reco_vtx_y", "reco_vtx_z",
-                      *[c for _, c, _ in RECO_EXTRA_BRANCHES])
+                      "reco_mu_px", "reco_mu_py", "reco_mu_pz", "reco_n_dead_discr",
+                      *[c for _, c, _ in RECO_EXTRA_BRANCHES], *[c for _, _, c in RECO_ARRAY_ELEMENTS])
 TRUTH_SCALARS = ("mc_incoming", "mc_current", "mc_intType", "mc_targetZ", "mc_targetA",
                  "mc_incomingE", "mc_Q2", "mc_w", "mc_primaryLepton")
 TRUTH_VECTORS = ("mc_primFSLepton", "mc_vtx")
@@ -132,6 +163,49 @@ def cc_inclusive_cutflow(a: dict) -> tuple[np.ndarray, np.ndarray]:
     return alive, failing
 
 
+# --- CCQE-like 1mu1p selection (arXiv:2503.15047 Sec. "Analysis and results"), on cached columns ---
+CCQELIKE_1MU1P_LABELS = ("ZRange", "Apothem", "HasMINOSMatch", "NoDeadtime", "IsNeutrino", "MuonWindow",
+                         "HasProtonCandidate", "ProtonContained", "ProtonScore", "ProtonWindow", "NoMichel", "IsoBlobs")
+
+
+def ccqelike_1mu1p_cutflow(r: dict, params: dict) -> tuple[np.ndarray, np.ndarray]:
+    """Vectorised 1mu1p chain on a v3 reco cache. Returns (passed, failing_cut_index; -1 = passed).
+
+    params (all from the channel manifest, none defaulted here):
+        muon:   {theta_max_deg, p_min_gev, p_max_gev}          reco muon window (beam-frame angle)
+        proton: {theta_max_deg, p_min_gev, p_max_gev}          reco proton window (beam-frame angle, dE/dx momentum)
+        proton_score1_min, require_contained (bool), n_michel_max, n_iso_blobs_max
+    A NaN kinematic (no candidate) fails the cut it is tested in, as in the tool.
+    """
+    mu, pr = params["muon"], params["proton"]
+    vx, vy, vz = r["reco_vtx_x"], r["reco_vtx_y"], r["reco_vtx_z"]
+    th_mu, p_mu = np.asarray(r["reco_theta"], float), np.asarray(r["reco_p"], float)
+    p_p, th_p = np.asarray(r["reco_proton_p"], float), np.asarray(r["reco_proton_theta_beam"], float)
+    score = np.asarray(r["reco_proton_score1"], float)
+    with np.errstate(invalid="ignore"):
+        fail = [
+            ~((Z_MIN <= vz) & (vz <= Z_MAX)),
+            ~((np.abs(vx) < APOTHEM) & (np.abs(vy) < APOTHEM_SLOPE * np.abs(vx) + APOTHEM_INTERCEPT)),
+            ~np.asarray(r["reco_minos_matched"], bool),
+            np.asarray(r["reco_n_dead_discr"], float) > DEAD_MAX,
+            ~(np.asarray(r["reco_minos_qp"], float) < 0),
+            ~((th_mu < np.deg2rad(mu["theta_max_deg"])) & (p_mu > mu["p_min_gev"]) & (p_mu < mu["p_max_gev"])),
+            ~(p_p > 0),
+            (np.asarray(r["reco_proton_exiting"], float) == 1) if params.get("require_contained", True) else np.zeros(len(vz), bool),
+            ~(score > params["proton_score1_min"]),
+            ~((th_p < np.deg2rad(pr["theta_max_deg"])) & (p_p > pr["p_min_gev"]) & (p_p < pr["p_max_gev"])),
+            ~(np.asarray(r["reco_n_michel"], float) <= params["n_michel_max"]),
+            ~(np.asarray(r["reco_n_iso_blobs"], float) <= params["n_iso_blobs_max"]),
+        ]
+    failing = np.full(len(vz), -1, dtype=np.int64)
+    alive = np.ones(len(vz), dtype=bool)
+    for i, f in enumerate(fail):
+        killed = alive & f
+        failing[killed] = i
+        alive &= ~f
+    return alive, failing
+
+
 def reco_muon_kinematics(a: dict) -> dict:
     """Reco muon (p, theta, pT, pz, E) in GeV from MasterAnaDev_leptonE + projected angles."""
     le = a["MasterAnaDev_leptonE"]
@@ -145,17 +219,30 @@ def reco_columns(a: dict) -> dict:
     passed, failing = cc_inclusive_cutflow(a)
     k = reco_muon_kinematics(a)
     vtx = a["vtx"]
-    out = {"passed": passed, "failing_cut": failing, "reco_p": k["p"], "reco_theta": k["theta"], "reco_pT": k["pT"],
+    out = {"passed": passed, "failing_cut": failing, "reco_minos_matched": np.asarray(a["isMinosMatchTrack"]) == 1,
+           "reco_p": k["p"], "reco_theta": k["theta"], "reco_pT": k["pT"],
            "reco_pz": k["pz"], "reco_E_mu": k["E"], "reco_thetaX": np.asarray(a["muon_thetaX"], float),
            "reco_thetaY": np.asarray(a["muon_thetaY"], float), "reco_minos_qp": np.asarray(a["MasterAnaDev_minos_trk_qp"], float),
            "reco_vtx_x": vtx[:, 0].astype(float), "reco_vtx_y": vtx[:, 1].astype(float), "reco_vtx_z": vtx[:, 2].astype(float)}
+    le = a["MasterAnaDev_leptonE"]
+    out["reco_mu_px"], out["reco_mu_py"], out["reco_mu_pz"] = le[:, 0] * MEV, le[:, 1] * MEV, le[:, 2] * MEV   # detector frame
+    out["reco_n_dead_discr"] = np.asarray(a["phys_n_dead_discr_pair_upstream_prim_track_proj"], float)
     for branch, col, scale in RECO_EXTRA_BRANCHES:
         if branch in a:
-            out[col] = np.asarray(a[branch], float) * scale
+            v = np.asarray(a[branch], float)
+            if col in RECO_SENTINEL_NAN:
+                v = np.where(v <= -999.0, np.nan, v)
+                if col == "reco_proton_end_z":
+                    v = np.where(v == -1.0, np.nan, v)
+            out[col] = v * scale
+    for branch, idx, col in RECO_ARRAY_ELEMENTS:
+        if branch in a:
+            arr = np.asarray(a[branch])
+            out[col] = arr[:, idx].astype(float) if arr.ndim == 2 else np.full(len(vtx), np.nan)
     return out
 
 
-def read_reco(path: str | Path, is_mc: bool, entry_stop: int | None = None, extra: bool = True) -> dict:
+def read_reco(path: str | Path, is_mc: bool, entry_stop: int | None = None, extra: bool = True, with_fs: bool = True) -> dict:
     """Read the `MasterAnaDev` tree -> dict of arrays with selection + kinematics.
 
     Keys: `passed`, `failing_cut`, `reco` (dict p/theta/pT/pz/E), `columns` (the cache
@@ -167,6 +254,7 @@ def read_reco(path: str | Path, is_mc: bool, entry_stop: int | None = None, extr
     branches = list(RECO_BRANCHES)
     if extra:
         branches += [b for b, _, _ in RECO_EXTRA_BRANCHES if b in keys]
+        branches += [b for b, _, _ in RECO_ARRAY_ELEMENTS if b in keys]
     if is_mc:
         branches += list(TRUTH_SCALARS) + list(TRUTH_VECTORS)
     a = tree.arrays(branches, library="np", entry_stop=entry_stop)
@@ -175,7 +263,8 @@ def read_reco(path: str | Path, is_mc: bool, entry_stop: int | None = None, extr
            "reco": reco_muon_kinematics(a), "columns": cols, "path": str(path),
            "missing_extra_branches": [b for b, _, _ in RECO_EXTRA_BRANCHES if b not in keys]}
     if is_mc:
-        out["truth"] = _truth_table_from_arrays(a, source=f"{path}:MasterAnaDev")
+        fs = _read_fs(tree, entry_stop) if with_fs else None
+        out["truth"] = _truth_table_from_arrays(a, source=f"{path}:MasterAnaDev", fs=fs)
     return out
 
 
@@ -222,6 +311,22 @@ def _truth_table_from_arrays(a: dict, source: str, fs: dict | None = None,
     return TruthTable(cols, meta)
 
 
+def _read_fs(tree, entry_stop: int | None = None) -> dict:
+    """Jagged mc_FSPart* branches of a tree -> CSR final-state columns in GeV."""
+    import awkward as ak
+    parts = tree.arrays(["mc_FSPartPDG", "mc_FSPartE", "mc_FSPartPx", "mc_FSPartPy", "mc_FSPartPz"],
+                        library="ak", entry_stop=entry_stop)
+    counts = ak.num(parts["mc_FSPartPDG"], axis=1).to_numpy()
+    return {
+        "fs_offsets": np.concatenate([[0], np.cumsum(counts)]).astype(np.int64),
+        "fs_pdg": ak.flatten(parts["mc_FSPartPDG"]).to_numpy(),
+        "fs_E": ak.flatten(parts["mc_FSPartE"]).to_numpy() * MEV,
+        "fs_px": ak.flatten(parts["mc_FSPartPx"]).to_numpy() * MEV,
+        "fs_py": ak.flatten(parts["mc_FSPartPy"]).to_numpy() * MEV,
+        "fs_pz": ak.flatten(parts["mc_FSPartPz"]).to_numpy() * MEV,
+    }
+
+
 def read_truth(path: str | Path, entry_stop: int | None = None, with_fs: bool = True,
                step_size: str = "200 MB") -> TruthTable:
     """Read the `Truth` tree (all generated events) into a TruthTable, GeV units.
@@ -234,20 +339,7 @@ def read_truth(path: str | Path, entry_stop: int | None = None, with_fs: bool = 
     tree = f["Truth"]
     branches = list(TRUTH_SCALARS) + list(TRUTH_VECTORS)
     a = tree.arrays(branches, library="np", entry_stop=entry_stop)
-    fs = None
-    if with_fs:
-        import awkward as ak
-        parts = tree.arrays(["mc_FSPartPDG", "mc_FSPartE", "mc_FSPartPx", "mc_FSPartPy", "mc_FSPartPz"],
-                            library="ak", entry_stop=entry_stop)
-        counts = ak.num(parts["mc_FSPartPDG"], axis=1).to_numpy()
-        fs = {
-            "fs_offsets": np.concatenate([[0], np.cumsum(counts)]).astype(np.int64),
-            "fs_pdg": ak.flatten(parts["mc_FSPartPDG"]).to_numpy(),
-            "fs_E": ak.flatten(parts["mc_FSPartE"]).to_numpy() * MEV,
-            "fs_px": ak.flatten(parts["mc_FSPartPx"]).to_numpy() * MEV,
-            "fs_py": ak.flatten(parts["mc_FSPartPy"]).to_numpy() * MEV,
-            "fs_pz": ak.flatten(parts["mc_FSPartPz"]).to_numpy() * MEV,
-        }
+    fs = _read_fs(tree, entry_stop) if with_fs else None
     pot = read_pot(path)["pot_used"]
     t = _truth_table_from_arrays(a, source=f"{path}:Truth", fs=fs, pot=pot)
     t.meta["n_truth_entries_in_file"] = int(tree.num_entries)

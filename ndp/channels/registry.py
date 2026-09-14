@@ -18,6 +18,7 @@ from ..io import load_yaml_or_json
 from ..events import TruthTable
 from .binning import Binning
 from . import observables as obs
+from . import signal as sig
 
 _CHANNELS_DIR = Path(__file__).resolve().parents[2] / "channels"
 
@@ -38,10 +39,17 @@ class ChannelSpec:
     path: Path | None = None
 
     # ---- truth-level predicates ---------------------------------------------------
+    @property
+    def frame(self) -> str:
+        return self.phase_space.get("frame", "detector")
+
     def is_signal(self, t: TruthTable) -> np.ndarray:
-        nu = np.isin(t["nu_pdg"], self.signal.get("nu_pdg", [14]))
-        cur = {"CC": 1, "NC": 2}.get(str(self.signal.get("current", "CC")).upper(), 1)
-        return nu & (t["current"] == cur)
+        """The manifest's `signal:` block evaluated on truth (see ndp.channels.signal)."""
+        return sig.evaluate_signal(self.signal, t, self.frame)
+
+    def signal_cutflow(self, t: TruthTable) -> list[tuple[str, np.ndarray]]:
+        """Ordered (label, cumulative mask) steps of the signal definition."""
+        return sig.signal_cutflow(self.signal, t, self.frame)
 
     def in_phase_space(self, t: TruthTable) -> np.ndarray:
         """True-kinematics + true-vertex phase space (the efficiency denominator)."""
@@ -69,10 +77,17 @@ class ChannelSpec:
             ok &= obs.lep_p(t, frame) <= ps["p_max_gev"]
         return ok
 
+    @property
+    def observable_params(self) -> dict:
+        """Constants an observable needs that are physics choices (e.g. `tki: {m_A_gev, ...}`)."""
+        return self.raw.get("observable_params", {}) or {}
+
+    def evaluate(self, name_or_expr: str, t: TruthTable) -> np.ndarray:
+        """A truth observable in this channel's frame, with its signal block and observable params."""
+        return obs.evaluate(name_or_expr, t, frame=self.frame, signal=self.signal, params=self.observable_params)
+
     def observables(self, t: TruthTable):
-        frame = self.phase_space.get("frame", "detector")
-        return (obs.evaluate(self.binning.x_name, t, frame=frame),
-                obs.evaluate(self.binning.y_name, t, frame=frame))
+        return self.evaluate(self.binning.x_name, t), self.evaluate(self.binning.y_name, t)
 
     def truth_cells(self, t: TruthTable, weights: np.ndarray | None = None, require_signal=True):
         """Histogram signal-and-in-phase-space events in true cells -> (sumw, sumw2, n_out, mask)."""

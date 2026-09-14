@@ -59,6 +59,29 @@ The paper-covariance-only χ² of the truth-sample models is inflated by their o
 (1/500 of the paper's exposure for the reference MC); the "+model stat" column is the like-for-like
 number. The folded comparison has ~35 % statistical error per cell at this exposure.
 
+## Done (2026-09-14) — 1mu1p channel: reference paper and truth-level signal
+
+- Reference analysis chosen by the user: **arXiv:2503.15047** (CCQE-like μ + leading proton, TKI and
+  muon/proton kinematics on C/CH/H₂O/Fe/Pb, ME ν-mode, 10.61e20 POT). Extracted in the MINERvA repo
+  (`papers/minerva/2503.15047/`); the 14 released CH grids' edges verified from `anc/tki_release.root`.
+- `channels/minerva_me_ccqelike_1mu1p.yaml` (draft): signal block decided verbatim from the paper;
+  fiducial / n_nucleons, published grid and reco selection are `open` (see `docs/open_questions.md`).
+- `ndp/channels/signal.py`: signal definitions dispatched by `signal.type` (`cc_lepton` default keeps
+  the certified inclusive behaviour; `minerva_ccqelike_1mu1p` with PDG-range vetoes and the
+  leading-proton window); `proton_p/theta/pT` observables; `ndp signal --channel <c>` diagnostics run.
+  Certified on truth_mc110040: 21369 signal events (5392 in the tracker fiducial), 6-event
+  disagreement with MAT's enumerated `IsQELike` explained (`docs/decisions.md`).
+- TKI truth observables `dpT`, `dpTx`, `dpTy`, `dalphaT`, `dphiT`, `dpL`, `pn` (Lu / Furmanski–Sobczyk
+  conventions; nuclear masses from `observable_params.tki`, status default); `ndp signal` reports them.
+- Reco cache v3 (proton candidate, Michel, isolated blobs, final-state particles on the reco-side
+  truth), the selection registry, `minerva_ccqelike_1mu1p_v0` (paper cut list; thresholds default),
+  reco-level proton/TKI observables, the 14 released grids as measurement manifests, and
+  `ndp selection --channel <c>`: cutflow, purity/efficiency, score scan, data-vs-MC per grid.
+  Result on the local files: efficiency 0.35 / purity 0.49 (paper 0.28 / 0.60), 64 data events.
+- Still to do for this channel: settle the purity gap and the default thresholds, more data
+  (playlist 1A), MC weights, surrogates per measurement, a `benchmark/papers/2503.15047.yaml`
+  release manifest for the unfolded comparison.
+
 ## Next
 
 1. **Ratify the defaults** in `docs/open_questions.md` (beam frame, Φ for POT-normalised MC,

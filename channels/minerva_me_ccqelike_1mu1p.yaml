@@ -1,0 +1,105 @@
+# Channel: MINERvA ME FHC CCQE-like numu with a tracked proton ("1mu1p"), muon + leading-proton
+# kinematics and transverse kinematic imbalance, on the scintillator tracker (CH).
+# Data reference: arXiv:2503.15047 (Phys. Rev. D 112, 052005 (2025) — journal ref supplied by the
+# user, not in the tex). Extraction: MINERvA repo papers/minerva/2503.15047/paper_2503.15047.md.
+#
+# STATUS: draft. The truth-level signal definition is decided (the user chose this paper as the
+# reference on 2026-09-14 and the block below is the paper's definition verbatim). Everything
+# else is a placeholder or open: the published grid to adopt (14 one-dimensional results are
+# released), the reconstruction-level selection (needs proton-candidate columns the reco cache
+# does not yet carry), the CH fiducial volume / n_nucleons for this paper, and the surrogate.
+name: minerva_me_ccqelike_1mu1p
+experiment: MINERvA
+status: draft
+description: >
+  CCQE-like numu scattering on the MINERvA tracker (CH), medium-energy NuMI FHC beam: one muon
+  and at least one proton in the tracked-proton window, no mesons, no baryons heavier than the
+  neutron, no photons above 10 MeV. Reported vs muon and leading-proton kinematics and TKI.
+
+signal:                      # truth-level signal definition, ndp.channels.signal::minerva_ccqelike_1mu1p
+  type: minerva_ccqelike_1mu1p
+  nu_pdg: [14]
+  current: CC
+  lep_pdg: 13
+  muon:   {theta_max_deg: 17.0, p_min_gev: 2.0, p_max_gev: 20.0}        # "angle with respect to the beam of <17 deg", "2 GeV/c < p_mu < 20 GeV/c"
+  proton: {theta_max_deg: 70.0, p_min_gev: 0.5, p_max_gev: 1.1, min_count: 1}   # "angle <70 deg", "500 MeV/c < p_p < 1100 MeV/c"; leading = highest-momentum proton in the window
+  veto:   {mesons: true, heavy_baryons: true, photon_E_max_gev: 0.010}  # "must not have mesons, baryons heavier than neutrons, or photons above 10 MeV"
+  status: decided            # arXiv:2503.15047 Sec. "Analysis and results", lines 293-301 of NuclTargTKI_PRD.tex; docs/decisions.md 2026-09-14
+  notes: >
+    Angles for the muon and the protons are evaluated in phase_space.frame (the paper says "with
+    respect to the beam"). Antinucleons are not "heavier than the neutron" and are not vetoed
+    (same as MAT's IsQELike); neutrons, sub-threshold photons, nuclear remnants and GENIE
+    bookkeeping particles are ignored. Protons outside the window do not veto the event.
+
+phase_space:                 # true phase space beyond the signal block = the fiducial vertex only
+  frame: beam                # same default and evidence as minerva_me_cc_inclusive_ptpz (docs/decisions.md 2026-09-04)
+  vertex: {z_min_mm: 5980.0, z_max_mm: 8422.0, apothem_mm: 850.0}   # tracker fiducial of the inclusive channel
+  status: open               # the paper never states its CH fiducial volume (papers/minerva/2503.15047/open_questions.md #2, #5)
+
+observable_params:           # constants the TKI observables need (ndp.channels.observables: dpL, pn)
+  tki:
+    m_A_gev: 11.174864       # 12C nuclear mass: 12 u (931.49410242 MeV) minus 6 m_e, + ~1 keV electron binding
+    m_n_gev: 0.93956542
+    excitation_b_gev: 0.02713   # b = +27.13 MeV for carbon, arXiv:1805.05486 (Furmanski & Sobczyk probabilistic excitation model)
+    # m_A' = m_A - m_n + b = 10.262429 GeV. Used for every event (the CH hydrogen fraction included), as the
+    # measurement does: p_n and dpL are inferred quantities under the carbon one-nucleon-knockout hypothesis.
+  status: default            # arXiv:2503.15047 states no masses ("masses of the atomic nucleus before and after"); values follow the LE paper
+
+binning:                     # PLACEHOLDER published grid: one of the 14 released 1D results (edges verified from anc/tki_release.root)
+  x: {observable: proton_p, reco: reco_proton_p, units: GeV/c, label: "leading proton p",
+      edges: [0.5, 0.625, 0.75, 0.875, 1.0, 1.1]}
+  y: {observable: unit, reco: unit, edges: [0.0, 1.0]}
+  global_cell_formula: "ix*n_y + iy"
+  status: open               # which released result is the channel's `published` measurement is the analyst's choice; reco_proton_p does not exist yet
+
+selection:                   # reconstruction-level selection: ndp.channels.selections::minerva_ccqelike_1mu1p_v0
+  # Transcription of arXiv:2503.15047 Sec. "Analysis and results" (paper_2503.15047.md Sec. 4) onto the
+  # MasterAnaDev AnaTuple (reco cache v3). Paper wording -> tuple branch:
+  #   fiducial vertex (tracker)                     -> ZRange + Apothem (inclusive channel's decided box)
+  #   "negatively charged muon candidate reconstructed in MINOS" -> HasMINOSMatch, NoDeadtime, IsNeutrino (MINOS q/p < 0)
+  #   muon window (commented tex line 309: 17 deg, 2-20 GeV/c) -> MuonWindow on reco_theta (beam frame), reco_p
+  #   "at least one proton candidate" (energy by range)          -> HasProtonCandidate: MasterAnaDev_proton_P_fromdEdx > 0
+  #   "protons that exit the detector ... not well reconstructed" -> ProtonContained: MasterAnaDev_hadron_isExiting[0] == 0
+  #   "hit pattern consistent with the expected Bragg peak", pion veto by Bragg-peak shape
+  #                                                              -> ProtonScore: MasterAnaDev_proton_score1 > proton_score1_min
+  #   reco proton window (commented tex line 314: 90 deg, 400-1300 MeV/c) -> ProtonWindow on MasterAnaDev_proton_theta (beam), P_fromdEdx
+  #   "no electron candidates from pion decays (Michel electrons) near the vertex or any track endpoint" -> NoMichel: improved_nmichel == 0
+  #   "no more than one isolated cluster of energy"              -> IsoBlobs: n_nonvtx_iso_blobs <= 1
+  name: minerva_ccqelike_1mu1p_v0
+  cuts: [ZRange, Apothem, HasMINOSMatch, NoDeadtime, IsNeutrino, MuonWindow, HasProtonCandidate, ProtonContained,
+         ProtonScore, ProtonWindow, NoMichel, IsoBlobs]
+  params:
+    muon:   {theta_max_deg: 17.0, p_min_gev: 2.0, p_max_gev: 20.0}      # status default: only a commented tex line states the reco muon cuts
+    proton: {theta_max_deg: 90.0, p_min_gev: 0.4, p_max_gev: 1.3}       # status default: commented tex line ("larger fiducial to avoid cutting on the efficiency edge")
+    proton_score1_min: 0.35     # status default: the paper gives no number; purity/efficiency vs threshold is tabulated by `ndp selection` (docs/decisions.md 2026-09-14)
+    require_contained: true     # status default: MasterAnaDev_hadron_isExiting[0] is the slot-0 hadron, which is the proton candidate in ~93% of events (exploration repo audit)
+    n_michel_max: 0             # decided (paper)
+    n_iso_blobs_max: 1          # decided (paper); n_nonvtx_iso_blobs vs n_nonvtx_iso_blobs_all is an open question (they agree in 95% of candidate events)
+  status: default              # cut *values* not printed in the paper are defaults awaiting the analyst; the cut *list* is the paper's
+  source: ndp/adapters/minerva_anatuple.py::ccqelike_1mu1p_cutflow (no upstream tool to certify against; MC purity/efficiency reported per run)
+
+data:
+  paper_manifest: null                              # no benchmark/papers/2503.15047.yaml in the MINERvA repo yet
+  reco_data_files: ["MasterAnaDev_data_AnaTuple_run00010066_Playlist.root"]   # relative to site data_dir
+  reco_mc_files:   ["MasterAnaDev_mc_AnaTuple_run00110040_Playlist.root"]
+  playlist: minervame1A
+  mc_generator: "GENIE 2.12.6 (Open Data StandardMC; tune tag not embedded in the tuple — open question)"
+  pot_status: "read from the Meta tree at run time, never typed in"
+  paper_pot: 10.61e20        # arXiv:2503.15047: "10.61e20 POT in the neutrino enhanced ME configuration"
+
+normalization:
+  phi_per_pot_cm2: 6.32e-8          # inherited from the inclusive channel (arXiv:2106.16210); this paper states no flux integral
+  phi_frac_unc: 0.039
+  n_nucleons: null                  # open: depends on the paper's CH fiducial volume
+  flux_table: resources/flux/arXiv2110.13372_supplemental.txt
+  target_mix_mass_fractions:
+    1000060120: 0.8851
+    1000010010: 0.0818
+    1000080160: 0.0250
+    1000220480: 0.0047
+    1000170350: 0.0020
+    1000130270: 0.0007
+    1000140280: 0.0007
+  status: open
+
+surrogate: {}

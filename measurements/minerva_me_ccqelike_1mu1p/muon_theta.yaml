@@ -1,0 +1,13 @@
+# arXiv:2503.15047 released grid `muon_theta` (edges verified 2026-09-14 from anc/tki_release.root, histogram
+# absolute_xsec_muon_theta_ch). Truth side = ndp.channels.observables, reco side = ndp.channels.reco_observables
+# (leading proton candidate + TKI in the beam frame). Folded comparison only until the release is wired in
+# as a manifest (benchmark/papers/2503.15047.yaml does not exist yet).
+name: muon_theta
+channel: minerva_me_ccqelike_1mu1p
+status: user
+author: ndp-platform (grid = the paper's release; adopted for the 2503.15047 reproduction)
+description: >
+  d sigma / dmuon θ of the CCQE-like 1mu1p sample on CH, arXiv:2503.15047 binning (14 bins).
+x: {observable: lep_theta_deg, reco: reco_theta_deg, units: deg, label: "muon θ", edges: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 17]}
+notes:
+  - "release file: papers/minerva/2503.15047/anc/absolute/muon/absolute_xsec_muon_theta_ch.txt (cm^2/unit/nucleon, total error), covariance alongside"

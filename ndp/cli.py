@@ -177,6 +177,22 @@ def _cmd_flux(a):
     return 0
 
 
+def _cmd_signal(a):
+    from .diagnostics import run_signal_diagnostics
+    run_dir = run_signal_diagnostics(a.channel, load_site_config(), cache=a.cache, out_root=a.out, slug=a.slug)
+    print((run_dir / "report.md").read_text())
+    print(f"run directory: {run_dir}")
+    return 0
+
+
+def _cmd_selection(a):
+    from .diagnostics import run_selection_comparison
+    run_dir = run_selection_comparison(a.channel, load_site_config(), out_root=a.out, slug=a.slug)
+    print((run_dir / "report.md").read_text())
+    print(f"run directory: {run_dir}")
+    return 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="ndp", description=f"Neutrino Discovery Platform {__version__}")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -204,6 +220,11 @@ def main(argv=None) -> int:
     p.add_argument("--reco-only", action="store_true", help="skip the (slow) Truth tree"); p.add_argument("--entry-stop", type=int)
     p.set_defaults(fn=_cmd_data_cache)
     p = sub.add_parser("flux", help="channel flux table summary / export"); p.add_argument("--channel", required=True); p.add_argument("--out"); p.set_defaults(fn=_cmd_flux)
+    p = sub.add_parser("signal", help="apply a channel's truth-level signal definition to the cached MC; writes a diagnostics run")
+    p.add_argument("--channel", required=True); p.add_argument("--cache", help="truth .npz (default: the channel's MC cache)")
+    p.add_argument("--out"); p.add_argument("--slug"); p.set_defaults(fn=_cmd_signal)
+    p = sub.add_parser("selection", help="apply a channel's reco selection to the cached data + MC; cutflow, purity/efficiency, data-vs-MC figures")
+    p.add_argument("--channel", required=True); p.add_argument("--out"); p.add_argument("--slug"); p.set_defaults(fn=_cmd_selection)
     a = ap.parse_args(argv)
     return a.fn(a)
 

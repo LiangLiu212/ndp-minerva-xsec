@@ -55,8 +55,9 @@ def data_reco_cells(channel: ChannelSpec, measurement: Measurement, cfg, reco_ca
             r = load_reco_cache(cache); sources.append(str(cache))
         else:
             r = read_reco(path, is_mc=False)["columns"]; sources.append(str(path))
-        passed = np.asarray(r["passed"], bool)
-        x, y = measurement.reco_observables(r)
+        from ..channels.selections import select
+        passed = select(channel, r)
+        x, y = measurement.reco_observables(r, params=channel.observable_params)
         h, _, out = measurement.binning.histogram(x[passed], y[passed])
         cells += h; n_sel += int(passed.sum()); n_out += out
         pot += read_pot(path)["pot_used"]

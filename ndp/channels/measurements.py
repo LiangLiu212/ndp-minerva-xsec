@@ -81,10 +81,13 @@ class Measurement:
     # ---- evaluation ---------------------------------------------------------------------
     def truth_observables(self, channel, t: TruthTable):
         frame = channel.phase_space.get("frame", "detector")
-        return obs.evaluate(self.x.truth, t, frame=frame), obs.evaluate(self.y.truth, t, frame=frame)
+        sig = getattr(channel, "signal", None)
+        params = getattr(channel, "observable_params", None)
+        return (obs.evaluate(self.x.truth, t, frame=frame, signal=sig, params=params),
+                obs.evaluate(self.y.truth, t, frame=frame, signal=sig, params=params))
 
-    def reco_observables(self, r: dict):
-        return robs.evaluate(self.x.reco, r), robs.evaluate(self.y.reco, r)
+    def reco_observables(self, r: dict, params: dict | None = None):
+        return robs.evaluate(self.x.reco, r, params=params), robs.evaluate(self.y.reco, r, params=params)
 
     def truth_cells(self, channel, t: TruthTable, weights=None, require_signal=True):
         """Histogram signal-and-in-phase-space events in true cells -> (sumw, sumw2, n_out, mask)."""

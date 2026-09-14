@@ -8,6 +8,7 @@ without touching the code: `"sqrt(Q2)"`, `"E_nu - lep_E"`, `"lep_p*cos(lep_theta
 """
 from __future__ import annotations
 
+import json
 import keyword
 import re
 
@@ -55,28 +56,28 @@ def _lep_p3(t: TruthTable, frame: str = "detector"):
     return px, py, pz
 
 
-def lep_p(t: TruthTable, frame: str = "detector") -> np.ndarray:
+def lep_p(t: TruthTable, frame: str = "detector", **_) -> np.ndarray:
     px, py, pz = _lep_p3(t, frame)
     return np.sqrt(px * px + py * py + pz * pz)
 
 
-def lep_pT(t: TruthTable, frame: str = "detector") -> np.ndarray:
+def lep_pT(t: TruthTable, frame: str = "detector", **_) -> np.ndarray:
     px, py, _ = _lep_p3(t, frame)
     return np.sqrt(px * px + py * py)
 
 
-def lep_pz(t: TruthTable, frame: str = "detector") -> np.ndarray:
+def lep_pz(t: TruthTable, frame: str = "detector", **_) -> np.ndarray:
     return _lep_p3(t, frame)[2]
 
 
-def lep_theta(t: TruthTable, frame: str = "detector") -> np.ndarray:
+def lep_theta(t: TruthTable, frame: str = "detector", **_) -> np.ndarray:
     p = lep_p(t, frame)
     with np.errstate(invalid="ignore", divide="ignore"):
         c = np.where(p > 0, _lep_p3(t, frame)[2] / p, 1.0)
     return np.arccos(np.clip(c, -1.0, 1.0))
 
 
-def lep_theta_deg(t: TruthTable, frame: str = "detector") -> np.ndarray:
+def lep_theta_deg(t: TruthTable, frame: str = "detector", **_) -> np.ndarray:
     return np.rad2deg(lep_theta(t, frame))
 
 
@@ -155,20 +156,160 @@ def unit(t: TruthTable, **_) -> np.ndarray:
     return np.full(t.n, 0.5)
 
 
+# ---- leading proton (the channel's signal block says which protons count) -----------------
+def _leading(t: TruthTable, frame: str, signal: dict | None):
+    from .signal import leading_proton  # local import: signal.py imports this module
+    window = (signal or {}).get("proton") if isinstance(signal, dict) else None
+    return leading_proton(t, frame, window)
+
+
+def proton_p(t: TruthTable, frame: str = "detector", signal: dict | None = None, **_) -> np.ndarray:
+    """Momentum [GeV/c] of the leading proton inside the signal block's proton window (NaN if none)."""
+    return _leading(t, frame, signal)["p"]
+
+
+def proton_theta(t: TruthTable, frame: str = "detector", signal: dict | None = None, **_) -> np.ndarray:
+    return _leading(t, frame, signal)["theta"]
+
+
+def proton_theta_deg(t: TruthTable, frame: str = "detector", signal: dict | None = None, **_) -> np.ndarray:
+    return np.rad2deg(_leading(t, frame, signal)["theta"])
+
+
+def proton_pT(t: TruthTable, frame: str = "detector", signal: dict | None = None, **_) -> np.ndarray:
+    return _leading(t, frame, signal)["pT"]
+
+
+def n_protons_in_window(t: TruthTable, frame: str = "detector", signal: dict | None = None, **_) -> np.ndarray:
+    return _leading(t, frame, signal)["n_in_window"].astype(float)
+
+
+# ---- transverse kinematic imbalance (muon + leading proton) --------------------------------
+# Definitions follow Lu et al., PRC 94 (2016) 015503 and Furmanski & Sobczyk, PRC 95 (2017) 065501,
+# as used by MINERvA (arXiv:1805.05486 Eqs. 1-6; arXiv:2503.15047 Fig. 1 and Eqs. pl/pn). With
+# z = neutrino direction (the frame's z axis after the beam rotation), pT the transverse momenta:
+#     dpT_vec  = pT_mu + pT_p                       missing transverse momentum
+#     dpT      = |dpT_vec|
+#     dalphaT  = arccos( -pT_mu . dpT_vec / (|pT_mu| dpT) )          angle between -pT_mu and dpT_vec
+#     dphiT    = arccos( -pT_mu . pT_p  / (|pT_mu| |pT_p|) )         deviation from back-to-back ("coplanarity")
+#     dpTx     = (z x pT_mu_hat) . dpT_vec         component perpendicular to the muon transverse direction
+#     dpTy     = -pT_mu_hat . dpT_vec              component along -pT_mu (negative: the proton carries less pT)
+#     dpL      = R/2 - (m_A'^2 + dpT^2)/(2R),  R = m_A + pL_mu + pL_p - E_mu - E_p
+#     pn       = sqrt(dpT^2 + dpL^2)               inferred initial-state neutron momentum
+# m_A (target nucleus) and m_A' (residual nucleus, = m_A - m_n + b) come from the channel manifest's
+# `observable_params.tki` block, never from code. MAT's legacy MnvRecoShifter::Calc_tki_vars uses the
+# opposite sign for both dpTx and dpTy (its x axis is pT_mu x z, its y axis along +pT_mu); the
+# released dpTy binning (tail to -6.5 GeV/c) is the Lu convention used here.
+_TKI_CACHE = {}
+
+
+def _tki(t: TruthTable, frame: str, signal: dict | None, params: dict | None) -> dict:
+    from .signal import leading_proton, rotate_to_frame
+    window = (signal or {}).get("proton") if isinstance(signal, dict) else None
+    key = (id(t), frame, json.dumps(window, sort_keys=True))
+    hit = _TKI_CACHE.get(key)
+    if hit is not None and hit[0] is t:
+        return hit[1]
+    lp = leading_proton(t, frame, window)
+    mx, my, mz = _lep_p3(t, frame)
+    mE = t["lep_E"]
+    px, py, pz, pE = lp["px"], lp["py"], lp["pz"], lp["E"]
+    mT = np.sqrt(mx * mx + my * my)
+    pT = np.sqrt(px * px + py * py)
+    dx, dy = mx + px, my + py
+    dpt = np.sqrt(dx * dx + dy * dy)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        ux, uy = mx / mT, my / mT                                  # pT_mu_hat
+        cos_alpha = -(ux * dx + uy * dy) / dpt
+        cos_phi = -(ux * px + uy * py) / pT
+        dalpha = np.where(dpt > 0, np.arccos(np.clip(cos_alpha, -1.0, 1.0)), np.nan)
+        dphi = np.where(pT > 0, np.arccos(np.clip(cos_phi, -1.0, 1.0)), np.nan)
+    dptx = -uy * dx + ux * dy                                      # (z x pT_mu_hat) . dpT_vec
+    dpty = -(ux * dx + uy * dy)                                    # -pT_mu_hat . dpT_vec
+    out = {"dpT": dpt, "dpTx": dptx, "dpTy": dpty, "dalphaT": dalpha, "dphiT": dphi,
+           "_mz": mz, "_mE": mE, "_pz": pz, "_pE": pE}
+    _TKI_CACHE.clear()
+    _TKI_CACHE[key] = (t, out)
+    return out
+
+
+def _tki_masses(params: dict | None) -> tuple[float, float]:
+    tki = (params or {}).get("tki") if isinstance(params, dict) else None
+    if not tki or "m_A_gev" not in tki:
+        raise KeyError("dpL / pn need the channel's `observable_params.tki` block (m_A_gev and m_Aprime_gev, "
+                       "or m_A_gev + m_n_gev + excitation_b_gev); the platform carries no nuclear-mass defaults")
+    m_A = float(tki["m_A_gev"])
+    if "m_Aprime_gev" in tki:
+        m_Ap = float(tki["m_Aprime_gev"])
+    else:
+        m_Ap = m_A - float(tki.get("m_n_gev", M_N)) + float(tki["excitation_b_gev"])
+    return m_A, m_Ap
+
+
+def dpT(t: TruthTable, frame: str = "detector", signal: dict | None = None, params: dict | None = None, **_) -> np.ndarray:
+    """|pT_mu + pT_p| [GeV/c] with the leading proton of the signal block's window (NaN if none)."""
+    return _tki(t, frame, signal, params)["dpT"]
+
+
+def dpTx(t: TruthTable, frame: str = "detector", signal: dict | None = None, params: dict | None = None, **_) -> np.ndarray:
+    return _tki(t, frame, signal, params)["dpTx"]
+
+
+def dpTy(t: TruthTable, frame: str = "detector", signal: dict | None = None, params: dict | None = None, **_) -> np.ndarray:
+    return _tki(t, frame, signal, params)["dpTy"]
+
+
+def dalphaT(t: TruthTable, frame: str = "detector", signal: dict | None = None, params: dict | None = None, **_) -> np.ndarray:
+    """Transverse boosting angle [rad]; NaN when dpT == 0."""
+    return _tki(t, frame, signal, params)["dalphaT"]
+
+
+def dalphaT_deg(t: TruthTable, frame: str = "detector", signal: dict | None = None, params: dict | None = None, **_) -> np.ndarray:
+    return np.rad2deg(_tki(t, frame, signal, params)["dalphaT"])
+
+
+def dphiT(t: TruthTable, frame: str = "detector", signal: dict | None = None, params: dict | None = None, **_) -> np.ndarray:
+    """Coplanarity angle [rad]: deviation of the proton from back-to-back with the muon in the transverse plane."""
+    return _tki(t, frame, signal, params)["dphiT"]
+
+
+def dphiT_deg(t: TruthTable, frame: str = "detector", signal: dict | None = None, params: dict | None = None, **_) -> np.ndarray:
+    return np.rad2deg(_tki(t, frame, signal, params)["dphiT"])
+
+
+def dpL(t: TruthTable, frame: str = "detector", signal: dict | None = None, params: dict | None = None, **_) -> np.ndarray:
+    """Longitudinal momentum imbalance [GeV/c] under the one-nucleon-knockout hypothesis (needs observable_params.tki)."""
+    m_A, m_Ap = _tki_masses(params)
+    k = _tki(t, frame, signal, params)
+    R = m_A + k["_mz"] + k["_pz"] - k["_mE"] - k["_pE"]
+    with np.errstate(invalid="ignore", divide="ignore"):
+        return 0.5 * R - (m_Ap * m_Ap + k["dpT"] ** 2) / (2.0 * R)
+
+
+def pn(t: TruthTable, frame: str = "detector", signal: dict | None = None, params: dict | None = None, **_) -> np.ndarray:
+    """Inferred initial-state neutron momentum sqrt(dpT^2 + dpL^2) [GeV/c]."""
+    k = _tki(t, frame, signal, params)
+    return np.sqrt(k["dpT"] ** 2 + dpL(t, frame, signal, params) ** 2)
+
+
 OBSERVABLES = {
     "lep_p": lep_p, "lep_pT": lep_pT, "lep_pz": lep_pz, "lep_theta": lep_theta, "lep_theta_deg": lep_theta_deg,
     "lep_E": lep_E, "E_nu": E_nu, "Q2": Q2, "W": W, "q0": q0, "q3": q3, "x_bj": x_bj, "y_inel": y_inel,
     "E_avail": E_avail, "E_had_fs": E_had_fs, "unit": unit,
+    "proton_p": proton_p, "proton_theta": proton_theta, "proton_theta_deg": proton_theta_deg, "proton_pT": proton_pT,
+    "n_protons_in_window": n_protons_in_window,
+    "dpT": dpT, "dpTx": dpTx, "dpTy": dpTy, "dalphaT": dalphaT, "dalphaT_deg": dalphaT_deg,
+    "dphiT": dphiT, "dphiT_deg": dphiT_deg, "dpL": dpL, "pn": pn,
 }
 
 
-def namespace(t: TruthTable, frame: str = "detector") -> dict:
+def namespace(t: TruthTable, frame: str = "detector", signal: dict | None = None, params: dict | None = None) -> dict:
     """Every truth column and every evaluable observable (in `frame`), plus the interaction codes."""
     ns = {k: t[k] for k in t.columns if k != "fs_offsets" and not k.startswith("fs_")}
     for name, f in OBSERVABLES.items():
         try:
-            ns[name] = f(t, frame=frame)
-        except Exception:  # e.g. E_avail on a sample without final-state particles
+            ns[name] = f(t, frame=frame, signal=signal, params=params)
+        except Exception:  # e.g. E_avail on a sample without final-state particles, dpL without tki masses
             pass
     ns.update(INT_CODE)          # QE, RES, DIS, COH, MEC as codes
     ns["M_MU"], ns["M_P"], ns["M_N"] = M_MU, M_P, M_N
@@ -184,4 +325,4 @@ def evaluate(name_or_expr: str, t: TruthTable, **kw) -> np.ndarray:
         if s in t:
             return np.asarray(t[s], float)
         raise KeyError(f"unknown observable {s!r}; known: {sorted(OBSERVABLES)} or any truth column")
-    return eval_expr(s, namespace(t, kw.get("frame", "detector")), t.n)
+    return eval_expr(s, namespace(t, kw.get("frame", "detector"), kw.get("signal"), kw.get("params")), t.n)

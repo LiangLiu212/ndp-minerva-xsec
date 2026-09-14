@@ -1,0 +1,13 @@
+# arXiv:2503.15047 released grid `alpha` (edges verified 2026-09-14 from anc/tki_release.root, histogram
+# absolute_xsec_alpha_ch). Truth side = ndp.channels.observables, reco side = ndp.channels.reco_observables
+# (leading proton candidate + TKI in the beam frame). Folded comparison only until the release is wired in
+# as a manifest (benchmark/papers/2503.15047.yaml does not exist yet).
+name: alpha
+channel: minerva_me_ccqelike_1mu1p
+status: user
+author: ndp-platform (grid = the paper's release; adopted for the 2503.15047 reproduction)
+description: >
+  d sigma / dδα_T of the CCQE-like 1mu1p sample on CH, arXiv:2503.15047 binning (5 bins).
+x: {observable: dalphaT_deg, reco: reco_dalphaT_deg, units: deg, label: "δα_T", edges: [0, 40, 80, 120, 150, 180]}
+notes:
+  - "release file: papers/minerva/2503.15047/anc/absolute/alpha/absolute_xsec_alpha_ch.txt (cm^2/unit/nucleon, total error), covariance alongside"

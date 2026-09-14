@@ -1,0 +1,13 @@
+# arXiv:2503.15047 released grid `phi` (edges verified 2026-09-14 from anc/tki_release.root, histogram
+# absolute_xsec_phi_ch). Truth side = ndp.channels.observables, reco side = ndp.channels.reco_observables
+# (leading proton candidate + TKI in the beam frame). Folded comparison only until the release is wired in
+# as a manifest (benchmark/papers/2503.15047.yaml does not exist yet).
+name: phi
+channel: minerva_me_ccqelike_1mu1p
+status: user
+author: ndp-platform (grid = the paper's release; adopted for the 2503.15047 reproduction)
+description: >
+  d sigma / dφ_T of the CCQE-like 1mu1p sample on CH, arXiv:2503.15047 binning (6 bins).
+x: {observable: dphiT_deg, reco: reco_dphiT_deg, units: deg, label: "φ_T", edges: [0, 10, 30, 50, 80, 120, 180]}
+notes:
+  - "release file: papers/minerva/2503.15047/anc/absolute/phi/absolute_xsec_phi_ch.txt (cm^2/unit/nucleon, total error), covariance alongside"

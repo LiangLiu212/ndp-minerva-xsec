@@ -1,0 +1,13 @@
+# arXiv:2503.15047 released grid `dpty` (edges verified 2026-09-14 from anc/tki_release.root, histogram
+# absolute_xsec_dpty_ch). Truth side = ndp.channels.observables, reco side = ndp.channels.reco_observables
+# (leading proton candidate + TKI in the beam frame). Folded comparison only until the release is wired in
+# as a manifest (benchmark/papers/2503.15047.yaml does not exist yet).
+name: dpty
+channel: minerva_me_ccqelike_1mu1p
+status: user
+author: ndp-platform (grid = the paper's release; adopted for the 2503.15047 reproduction)
+description: >
+  d sigma / dδp_Ty of the CCQE-like 1mu1p sample on CH, arXiv:2503.15047 binning (12 bins).
+x: {observable: dpTy, reco: reco_dpTy, units: GeV/c, label: "δp_Ty", edges: [-6.5, -3.5, -2.0, -1.1, -0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4, 1.3, 3.0]}
+notes:
+  - "release file: papers/minerva/2503.15047/anc/absolute/dpty/absolute_xsec_dpty_ch.txt (cm^2/unit/nucleon, total error), covariance alongside"

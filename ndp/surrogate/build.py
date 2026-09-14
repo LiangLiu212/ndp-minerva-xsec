@@ -38,12 +38,13 @@ def load_training_cache(cfg, channel) -> dict:
 def training_arrays(channel, measurement, truth: TruthTable, reco: dict, reco_truth: TruthTable) -> dict:
     """The fit() keyword arrays for both surrogate kinds, plus the background sample."""
     sig_den = channel.is_signal(truth) & channel.in_phase_space(truth)
+    from ..channels.selections import select
     xd, yd = measurement.truth_observables(channel, truth)
-    passed = np.asarray(reco["passed"], bool)
+    passed = select(channel, reco)
     sig_rt = channel.is_signal(reco_truth) & channel.in_phase_space(reco_truth)
     sig_num = passed & sig_rt
     xn, yn = measurement.truth_observables(channel, reco_truth)
-    xr, yr = measurement.reco_observables(reco)
+    xr, yr = measurement.reco_observables(reco, params=channel.observable_params)
     bkg = passed & ~sig_rt                                       # non-signal + out-of-phase-space signal
     return {"kw": dict(x_true_den=xd[sig_den], y_true_den=yd[sig_den], x_true_num=xn[sig_num], y_true_num=yn[sig_num],
                        x_reco_num=xr[sig_num], y_reco_num=yr[sig_num]),
@@ -93,8 +94,9 @@ def closure(channel, measurement, surrogate, truth: TruthTable, reco: dict, reco
         mask = channel.in_phase_space(truth) & channel.is_signal(truth)
         x, y = measurement.truth_observables(channel, truth)
         pred = surrogate.fold_events(x[mask], y[mask], truth["weight"][mask], np.random.default_rng(0))
-    passed = np.asarray(reco["passed"], bool)
-    xr, yr = measurement.reco_observables(reco)
+    from ..channels.selections import select
+    passed = select(channel, reco)
+    xr, yr = measurement.reco_observables(reco, params=channel.observable_params)
     target = "all selected candidates"
     if surrogate.kind != "binned_response" and reco_truth is not None:
         # a smearing model predicts signal only: compare with the selected signal (in phase space)
