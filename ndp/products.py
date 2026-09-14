@@ -7,11 +7,11 @@ Two layouts are supported, chosen by the channel manifest's `data:` block:
    `products_dir`, default `<data_dir>/products`). Under `<products_dir>/<beam>/<playlist>/`
    a merge (`merge_playlist`) has written
 
-       truth_<pl>_skim.npz              TruthTable skim of the Truth trees (derived columns, no fs_*)
-       reco_<pl>.npz                    the concatenated reco tables (cache v3 columns)
-       reco_<pl>_truthcols_skim.npz     TruthTable of the reco rows' truth (derived columns)
-       pot_<pl>.json                    {pot_used, pot_total, n_files, files: [{tag, pot_used, ...}]}
-       merge_<pl>.json                  fingerprints of the merged per-file products
+       reco_<pl>_data.npz / reco_<pl>_mc.npz     the concatenated reco tables (cache v3 columns), per kind
+       truth_<pl>_skim.npz                       TruthTable skim of the MC Truth trees (derived columns, no fs_*)
+       reco_<pl>_truthcols_skim.npz              TruthTable of the MC reco rows' truth (derived columns)
+       pot_<pl>_data.json / pot_<pl>_mc.json     {pot_used, pot_total, n_files, files: [{tag, pot_used, ...}]}
+       merge_<pl>_data.json / merge_<pl>_mc.json fingerprints of the merged per-file products
 
    and the per-file products live in `<products_dir>/<beam>/<playlist>/files/<tag>/`.
    Several playlists are concatenated on load (POT summed).
@@ -120,11 +120,12 @@ def load_reco(cfg, channel, kind: str) -> tuple[dict, float, list[str]]:
         tables, srcs, pots = [], [], []
         for beam, pl in playlists(channel, kind):
             d = playlist_dir(cfg, channel, beam, pl)
-            p = d / f"reco_{pl}.npz"
+            p = d / f"reco_{pl}_{kind}.npz"
             if not p.exists():
-                raise FileNotFoundError(f"missing playlist product {p} (run `ndp grid merge --beam {beam} --playlist {pl}`)")
+                raise FileNotFoundError(f"missing playlist product {p} (run `ndp data merge --beam {beam} --playlist {pl} --kind {kind}`)")
             t = load_reco_npz(p)
-            pot = read_json(d / f"pot_{pl}.json")["pot_used"] if (d / f"pot_{pl}.json").exists() else t["__meta__"].get("pot")
+            pj = d / f"pot_{pl}_{kind}.json"
+            pot = read_json(pj)["pot_used"] if pj.exists() else t["__meta__"].get("pot")
             tables.append(t); srcs.append(str(p)); pots.append(float(pot))
         if not tables:
             raise FileNotFoundError(f"channel {channel.name} lists no {kind} playlists")
@@ -157,7 +158,7 @@ def load_truth(cfg, channel) -> TruthTable:
         for beam, pl in playlists(channel, "mc"):
             p = playlist_dir(cfg, channel, beam, pl) / f"truth_{pl}_skim.npz"
             if not p.exists():
-                raise FileNotFoundError(f"missing playlist product {p} (run `ndp grid merge --beam {beam} --playlist {pl}`)")
+                raise FileNotFoundError(f"missing playlist product {p} (run `ndp data merge --beam {beam} --playlist {pl} --kind mc`)")
             tabs.append(TruthTable.load(p))
         if not tabs:
             raise FileNotFoundError(f"channel {channel.name} lists no mc playlists")
@@ -201,7 +202,7 @@ def sources_fingerprints(cfg, channel) -> list[dict]:
         for kind in ("data", "mc"):
             for beam, pl in playlists(channel, kind):
                 d = playlist_dir(cfg, channel, beam, pl)
-                for name in ([f"reco_{pl}.npz", f"pot_{pl}.json"] + ([f"truth_{pl}_skim.npz", f"reco_{pl}_truthcols_skim.npz"] if kind == "mc" else [])):
+                for name in ([f"reco_{pl}_{kind}.npz", f"pot_{pl}_{kind}.json"] + ([f"truth_{pl}_skim.npz", f"reco_{pl}_truthcols_skim.npz"] if kind == "mc" else [])):
                     if (d / name).exists():
                         out.append({"role": f"{kind}_product", **cheap_fingerprint(d / name)})
         return out
@@ -223,20 +224,24 @@ def merge_playlist(products_dir: Path, beam: str, playlist: str, kind: str, log=
     fsum of every file's `manifest_<tag>.json` pot_used; a file without a sidecar is refused.
     """
     from .io import cheap_fingerprint, timestamp
+    if kind not in ("data", "mc"):
+        raise ValueError(f"kind must be 'data' or 'mc', not {kind!r}")
     d = Path(products_dir) / beam / playlist
     fdir = d / "files"
-    tags = sorted(p.name for p in fdir.iterdir() if p.is_dir()) if fdir.exists() else []
-    if not tags:
-        raise FileNotFoundError(f"no per-file products under {fdir}")
-    sides = []
-    for tag in tags:
+    all_tags = sorted(p.name for p in fdir.iterdir() if p.is_dir()) if fdir.exists() else []
+    tags, sides = [], []
+    for tag in all_tags:                                  # data and MC files share files/<tag>/: pick by kind
         sp = fdir / tag / f"manifest_{tag}.json"
         if not sp.exists():
             raise FileNotFoundError(f"{sp} missing: harvest the sidecar before merging")
         s = read_json(sp)
+        if s.get("kind", "mc" if tag.startswith("mc") else "data") != kind:
+            continue
         if s.get("status") != "ok":
             raise ValueError(f"file {tag} has status {s.get('status')!r}; resubmit it before merging")
-        sides.append(s)
+        tags.append(tag); sides.append(s)
+    if not tags:
+        raise FileNotFoundError(f"no per-file {kind} products under {fdir}")
     pots = [float(s["pot_used"]) for s in sides]
     written = []
     # reco
@@ -245,11 +250,16 @@ def merge_playlist(products_dir: Path, beam: str, playlist: str, kind: str, log=
     if len(recos) == 1:
         r["__meta__"] = dict(r.get("__meta__", {}), pot=pots[0], sources=[{"source": str(fdir / tags[0]), "pot": pots[0]}])
     meta = r.pop("__meta__")
-    np.savez_compressed(d / f"reco_{playlist}.npz", __meta__=json.dumps(meta, default=str), **r)
-    written.append(str(d / f"reco_{playlist}.npz"))
+    np.savez_compressed(d / f"reco_{playlist}_{kind}.npz", __meta__=json.dumps(meta, default=str), **r)
+    written.append(str(d / f"reco_{playlist}_{kind}.npz"))
     if kind == "mc":
         for stem, out_name in ((f"truth_{{tag}}_skim", f"truth_{playlist}_skim"), (f"reco_{{tag}}_truthcols_skim", f"reco_{playlist}_truthcols_skim")):
             tabs = [TruthTable.load(fdir / tag / (stem.format(tag=tag) + ".npz")) for tag in tags]
+            if stem.startswith("reco_"):                       # the reco-side truth must align with the reco rows, file by file
+                for tag, t, rt in zip(tags, tabs, recos):
+                    n_reco = int(len(next(v for k, v in rt.items() if k != "__meta__")))
+                    if t.n != n_reco:
+                        raise ValueError(f"{tag}: reco_{tag}_truthcols_skim has {t.n} rows but reco_{tag} has {n_reco}; rebuild that file")
             t = tabs[0] if len(tabs) == 1 else TruthTable.concatenate(tabs)
             if stem.startswith("truth_"):
                 t.meta["norm"] = {"kind": "pot", "pot": float(math.fsum(pots)), "xsec_per_unit_weight": None,
@@ -259,13 +269,13 @@ def merge_playlist(products_dir: Path, beam: str, playlist: str, kind: str, log=
            "pot_total": float(math.fsum(float(s.get("pot_total", 0.0)) for s in sides)),
            "files": [{"tag": s["tag"], "source": s.get("source"), "pot_used": s["pot_used"], "pot_total": s.get("pot_total"),
                       "n_reco": s.get("n_reco"), "n_truth": s.get("n_truth")} for s in sides]}
-    (d / f"pot_{playlist}.json").write_text(json.dumps(pot, indent=2))
+    (d / f"pot_{playlist}_{kind}.json").write_text(json.dumps(pot, indent=2))
     mf = {"merged": timestamp(), "beam": beam, "playlist": playlist, "kind": kind, "tags": tags,
           "inputs": [cheap_fingerprint(fdir / tag / f"manifest_{tag}.json") for tag in tags],
           "outputs": [cheap_fingerprint(w) for w in written], "pot": pot["pot_used"],
           "selection_cutflow_sum": _sum_cutflows(sides, "selection_cutflow"),
           "signal_cutflow_sum": _sum_signal_cutflows(sides)}
-    (d / f"merge_{playlist}.json").write_text(json.dumps(mf, indent=2, default=str))
+    (d / f"merge_{playlist}_{kind}.json").write_text(json.dumps(mf, indent=2, default=str))
     log(f"merged {beam}/{playlist} {kind}: {len(tags)} files, POT_Used {pot['pot_used']:.4e} -> {d}")
     return mf
 

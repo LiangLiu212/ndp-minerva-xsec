@@ -416,14 +416,16 @@ def skim_mask(t: TruthTable, box: dict | None = None, current: int | None = 1) -
     return m
 
 
-def skim_truth(t: TruthTable, box: dict | None = None, current: int | None = 1) -> TruthTable:
-    """Skim of a derived table: rows by `skim_mask`, fs_* columns dropped, derived columns kept."""
+def skim_truth(t: TruthTable, box: dict | None = None, current: int | None = 1, keep_all_rows: bool = False) -> TruthTable:
+    """Skim of a derived table: rows by `skim_mask` (or every row with `keep_all_rows`, as the reco-side
+    truth must stay aligned with the reco table), fs_* columns dropped, derived columns kept."""
     if "derived" not in t.meta:
         raise ValueError("skim_truth expects a table from derive_fs_columns")
-    m = skim_mask(t, box, current)
+    m = np.ones(t.n, bool) if keep_all_rows else skim_mask(t, box, current)
     cols = {k: v[m] for k, v in t.columns.items() if k not in FS_COLUMNS_ALL}
     meta = json.loads(json.dumps(t.meta, default=str))
-    meta["skim"] = {"box": dict(box or DEFAULT_SKIM_BOX), "current": current, "n_before": int(t.n), "n_after": int(m.sum())}
+    meta["skim"] = {"box": None if keep_all_rows else dict(box or DEFAULT_SKIM_BOX), "current": None if keep_all_rows else current,
+                    "keep_all_rows": keep_all_rows, "n_before": int(t.n), "n_after": int(m.sum())}
     return TruthTable(cols, meta)
 
 
@@ -502,7 +504,7 @@ def build_cache(path: str | Path, cache_dir: str | Path, is_mc: bool, *, truth: 
                 side["n_selected_signal"] = int((steps[-1][1] & sig_rt).sum())
                 if skim:
                     rd = derive_fs_columns(rt, channel)
-                    rs = skim_truth(rd, skim_box, current=None)          # keep every reco row's truth
+                    rs = skim_truth(rd, keep_all_rows=True)               # one row per reco row: stays aligned with reco_<tag>.npz
                     p3 = cache_dir / f"reco_{tag}_truthcols_skim.npz"
                     rs.save(p3); out["written"].append(str(p3))
         out["reco_s"] = round(time.time() - t0, 1); out["n_reco"] = int(r["n_entries"]); out["n_passed"] = int(cols["passed"].sum())

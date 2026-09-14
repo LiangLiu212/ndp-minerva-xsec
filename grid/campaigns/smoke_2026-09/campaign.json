@@ -53,9 +53,15 @@
    "worklist": "FHC_data_1A",
    "line": 0,
    "process": 0,
-   "status": "planned",
+   "status": "done",
    "pot_used_harvest": 4.8283761550736435e+17,
-   "attempts": 0
+   "attempts": 0,
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-stream/smoke_2026-09/FHC_data_1A/0000",
+   "cluster": "71954805",
+   "process_id": "0",
+   "error": null,
+   "pot_used": 4.8283761550736435e+17,
+   "harvested": "/tmp/claude-12900/-exp-dune-data-users-liangliu-ndp-dev/267e774a-c0ba-48ec-a819-8377dcf3bd05/scratchpad/products_smoke/FHC/1A/files/data6038"
   },
   "data6040": {
    "beam": "FHC",
@@ -66,9 +72,15 @@
    "worklist": "FHC_data_1A",
    "line": 1,
    "process": 0,
-   "status": "planned",
+   "status": "done",
    "pot_used_harvest": 2.5840281999588012e+16,
-   "attempts": 0
+   "attempts": 0,
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-stream/smoke_2026-09/FHC_data_1A/0000",
+   "cluster": "71954805",
+   "process_id": "0",
+   "error": null,
+   "pot_used": 2.5840281999588012e+16,
+   "harvested": "/tmp/claude-12900/-exp-dune-data-users-liangliu-ndp-dev/267e774a-c0ba-48ec-a819-8377dcf3bd05/scratchpad/products_smoke/FHC/1A/files/data6040"
   },
   "data10066": {
    "beam": "FHC",
@@ -79,9 +91,15 @@
    "worklist": "FHC_data_1A",
    "line": 2,
    "process": 0,
-   "status": "planned",
+   "status": "done",
    "pot_used_harvest": 2.0497721920490272e+17,
-   "attempts": 0
+   "attempts": 0,
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-stream/smoke_2026-09/FHC_data_1A/0000",
+   "cluster": "71954805",
+   "process_id": "0",
+   "error": null,
+   "pot_used": 2.0497721920490272e+17,
+   "harvested": "/tmp/claude-12900/-exp-dune-data-users-liangliu-ndp-dev/267e774a-c0ba-48ec-a819-8377dcf3bd05/scratchpad/products_smoke/FHC/1A/files/data10066"
   },
   "mc110040": {
    "beam": "FHC",
@@ -92,9 +110,15 @@
    "worklist": "FHC_mc_1A",
    "line": 0,
    "process": 0,
-   "status": "planned",
+   "status": "done",
    "pot_used_harvest": 9.988796749584837e+18,
-   "attempts": 0
+   "attempts": 0,
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-stream/smoke_2026-09/FHC_mc_1A/0000",
+   "cluster": "29939605",
+   "process_id": "0",
+   "error": null,
+   "pot_used": 9.988796749584837e+18,
+   "harvested": "/tmp/claude-12900/-exp-dune-data-users-liangliu-ndp-dev/267e774a-c0ba-48ec-a819-8377dcf3bd05/scratchpad/products_smoke/FHC/1A/files/mc110040"
   }
  },
  "staged_worklists": {

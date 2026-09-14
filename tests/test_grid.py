@@ -53,6 +53,8 @@ def test_derived_skim_reproduces_the_fs_path():
     d = derive_fs_columns(t, ch)
     assert d.meta["derived"]["frame"] == ch.frame and "signal_minerva_ccqelike_1mu1p" in d
     assert np.array_equal(d["signal_minerva_ccqelike_1mu1p"], ch.is_signal(t))
+    ka = skim_truth(d, keep_all_rows=True)
+    assert ka.n == t.n and not ka.has_fs and ka.meta["skim"]["keep_all_rows"]
     s = skim_truth(d, DEFAULT_SKIM_BOX)
     m = skim_mask(d, DEFAULT_SKIM_BOX)
     assert not s.has_fs and s.n == int(m.sum()) and s.meta["skim"]["n_after"] == s.n and (s["current"] == 1).all()
@@ -122,17 +124,22 @@ def test_merge_playlist_from_per_file_products():
         d = root / "FHC" / "1A" / "files" / tag; d.mkdir(parents=True)
         t = _fs_truth(200, seed=int(tag[-1])); t.meta["norm"] = Normalization(kind="pot", pot=pot).to_dict()
         skim_truth(derive_fs_columns(t, ch)).save(d / f"truth_{tag}_skim.npz")
-        skim_truth(derive_fs_columns(t, ch), current=None).save(d / f"reco_{tag}_truthcols_skim.npz")
+        skim_truth(derive_fs_columns(t, ch), keep_all_rows=True).save(d / f"reco_{tag}_truthcols_skim.npz")
         meta = {"cache_version": 3, "is_mc": True, "pot": {"pot_used": pot}}
-        np.savez_compressed(d / f"reco_{tag}.npz", __meta__=json.dumps(meta), passed=np.ones(10, bool), reco_p=np.arange(10.0))
-        (d / f"manifest_{tag}.json").write_text(json.dumps({"tag": tag, "status": "ok", "pot_used": pot, "pot_total": pot * 1.1, "n_reco": 10,
-                                                            "selection_cutflow": {"all_candidates": 10, "IsoBlobs": 3},
+        np.savez_compressed(d / f"reco_{tag}.npz", __meta__=json.dumps(meta), passed=np.ones(200, bool), reco_p=np.arange(200.0))
+        (d / f"manifest_{tag}.json").write_text(json.dumps({"tag": tag, "kind": "mc", "status": "ok", "pot_used": pot, "pot_total": pot * 1.1, "n_reco": 10,
+                                                            "selection_cutflow": {"all_candidates": 200, "IsoBlobs": 3},
                                                             "signal_cutflow": {"numu_cc_muon": {"n": 100, "n_fiducial": 40}}}))
+    dd = root / "FHC" / "1A" / "files" / "data7"; dd.mkdir(parents=True)          # a data file sharing the directory is ignored
+    np.savez_compressed(dd / "reco_data7.npz", __meta__=json.dumps({"cache_version": 3, "is_mc": False}), passed=np.ones(4, bool), reco_p=np.arange(4.0))
+    (dd / "manifest_data7.json").write_text(json.dumps({"tag": "data7", "kind": "data", "status": "ok", "pot_used": 7.0e17, "n_reco": 4}))
     mf = merge_playlist(root, "FHC", "1A", "mc", log=lambda *a: None)
-    pl = json.loads((root / "FHC/1A/pot_1A.json").read_text())
+    md = merge_playlist(root, "FHC", "1A", "data", log=lambda *a: None)
+    assert md["tags"] == ["data7"] and abs(json.loads((root / "FHC/1A/pot_1A_data.json").read_text())["pot_used"] - 7.0e17) < 1
+    pl = json.loads((root / "FHC/1A/pot_1A_mc.json").read_text())
     assert abs(pl["pot_used"] - 4.0e18) < 1 and pl["n_files"] == 2 and mf["selection_cutflow_sum"]["IsoBlobs"] == 6
-    r = load_reco_npz(root / "FHC/1A/reco_1A.npz")
-    assert len(r["reco_p"]) == 20 and abs(r["__meta__"]["pot"] - 4.0e18) < 1
+    r = load_reco_npz(root / "FHC/1A/reco_1A_mc.npz")
+    assert len(r["reco_p"]) == 400 and abs(r["__meta__"]["pot"] - 4.0e18) < 1
     t = TruthTable.load(root / "FHC/1A/truth_1A_skim.npz")
     assert abs(t.norm.pot - 4.0e18) < 1 and not t.has_fs and "lp_p" in t
     assert mf["signal_cutflow_sum"]["numu_cc_muon"] == {"n": 200, "n_fiducial": 80}
@@ -181,3 +188,4 @@ def test_streamed_build_matches_local_cache_on_first_entries():
     sa, sb = json.loads((a / "manifest_mc110040.json").read_text()), json.loads((b / "manifest_mc110040.json").read_text())
     assert sa["selection_cutflow"] == sb["selection_cutflow"] and sa["signal_cutflow"] == sb["signal_cutflow"]
     assert sa["status"] == "ok" and "n_truth_skim" in sa and sa["total_truth_entries"] == 544600
+    assert TruthTable.load(b / "reco_mc110040_truthcols_skim.npz").n == len(load_reco_cache(b / "reco_mc110040.npz")["passed"])
