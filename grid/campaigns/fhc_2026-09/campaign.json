@@ -43198,9 +43198,15 @@
    "worklist": "FHC_mc_1N",
    "line": 8,
    "process": 1,
-   "status": "submitted",
+   "status": "done",
    "pot_used_harvest": 1.668748131258629e+19,
-   "attempts": 0
+   "attempts": 0,
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-stream/fhc_2026-09/FHC_mc_1N/0000",
+   "cluster": "29940314",
+   "process_id": "0",
+   "error": null,
+   "pot_used": 1.668748131258629e+19,
+   "harvested": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/files/mc113278"
   },
   "mc113279": {
    "beam": "FHC",
@@ -43211,9 +43217,15 @@
    "worklist": "FHC_mc_1N",
    "line": 9,
    "process": 1,
-   "status": "submitted",
+   "status": "done",
    "pot_used_harvest": 1.5951414666445953e+19,
-   "attempts": 0
+   "attempts": 0,
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-stream/fhc_2026-09/FHC_mc_1N/0000",
+   "cluster": "29940314",
+   "process_id": "0",
+   "error": null,
+   "pot_used": 1.5951414666445953e+19,
+   "harvested": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/files/mc113279"
   },
   "mc113280": {
    "beam": "FHC",
@@ -43224,9 +43236,15 @@
    "worklist": "FHC_mc_1N",
    "line": 10,
    "process": 1,
-   "status": "submitted",
+   "status": "done",
    "pot_used_harvest": 1.6501886684342565e+19,
-   "attempts": 0
+   "attempts": 0,
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-stream/fhc_2026-09/FHC_mc_1N/0000",
+   "cluster": "29940314",
+   "process_id": "0",
+   "error": null,
+   "pot_used": 1.6501886684342565e+19,
+   "harvested": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/files/mc113280"
   },
   "mc113281": {
    "beam": "FHC",
@@ -43237,9 +43255,15 @@
    "worklist": "FHC_mc_1N",
    "line": 11,
    "process": 1,
-   "status": "submitted",
+   "status": "done",
    "pot_used_harvest": 1.6711864791418153e+19,
-   "attempts": 0
+   "attempts": 0,
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-stream/fhc_2026-09/FHC_mc_1N/0000",
+   "cluster": "29940314",
+   "process_id": "0",
+   "error": null,
+   "pot_used": 1.6711864791418153e+19,
+   "harvested": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/files/mc113281"
   },
   "mc113282": {
    "beam": "FHC",
@@ -43250,9 +43274,15 @@
    "worklist": "FHC_mc_1N",
    "line": 12,
    "process": 1,
-   "status": "submitted",
+   "status": "done",
    "pot_used_harvest": 1.5593027217443357e+19,
-   "attempts": 0
+   "attempts": 0,
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-stream/fhc_2026-09/FHC_mc_1N/0000",
+   "cluster": "29940314",
+   "process_id": "0",
+   "error": null,
+   "pot_used": 1.5593027217443357e+19,
+   "harvested": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/files/mc113282"
   },
   "mc113283": {
    "beam": "FHC",
@@ -43263,9 +43293,15 @@
    "worklist": "FHC_mc_1N",
    "line": 13,
    "process": 1,
-   "status": "submitted",
+   "status": "done",
    "pot_used_harvest": 1.6371132608751909e+19,
-   "attempts": 0
+   "attempts": 0,
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-stream/fhc_2026-09/FHC_mc_1N/0000",
+   "cluster": "29940314",
+   "process_id": "0",
+   "error": null,
+   "pot_used": 1.6371132608751909e+19,
+   "harvested": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/files/mc113283"
   },
   "mc113284": {
    "beam": "FHC",
@@ -43276,9 +43312,15 @@
    "worklist": "FHC_mc_1N",
    "line": 14,
    "process": 1,
-   "status": "submitted",
+   "status": "done",
    "pot_used_harvest": 1.642629079597552e+19,
-   "attempts": 0
+   "attempts": 0,
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-stream/fhc_2026-09/FHC_mc_1N/0000",
+   "cluster": "29940314",
+   "process_id": "0",
+   "error": null,
+   "pot_used": 1.642629079597552e+19,
+   "harvested": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/files/mc113284"
   },
   "mc113285": {
    "beam": "FHC",
@@ -43289,9 +43331,15 @@
    "worklist": "FHC_mc_1N",
    "line": 15,
    "process": 1,
-   "status": "submitted",
+   "status": "done",
    "pot_used_harvest": 1.6479144567229366e+19,
-   "attempts": 0
+   "attempts": 0,
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-stream/fhc_2026-09/FHC_mc_1N/0000",
+   "cluster": "29940314",
+   "process_id": "0",
+   "error": null,
+   "pot_used": 1.6479144567229366e+19,
+   "harvested": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/files/mc113285"
   },
   "mc113286": {
    "beam": "FHC",
@@ -43302,9 +43350,15 @@
    "worklist": "FHC_mc_1N",
    "line": 16,
    "process": 2,
-   "status": "submitted",
+   "status": "done",
    "pot_used_harvest": 1.6690728652244548e+19,
-   "attempts": 0
+   "attempts": 0,
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-stream/fhc_2026-09/FHC_mc_1N/0001",
+   "cluster": "29940314",
+   "process_id": "1",
+   "error": null,
+   "pot_used": 1.6690728652244548e+19,
+   "harvested": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/files/mc113286"
   },
   "mc113287": {
    "beam": "FHC",
@@ -43315,9 +43369,15 @@
    "worklist": "FHC_mc_1N",
    "line": 17,
    "process": 2,
-   "status": "submitted",
+   "status": "done",
    "pot_used_harvest": 1.6724218405896843e+19,
-   "attempts": 0
+   "attempts": 0,
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-stream/fhc_2026-09/FHC_mc_1N/0001",
+   "cluster": "29940314",
+   "process_id": "1",
+   "error": null,
+   "pot_used": 1.6724218405896843e+19,
+   "harvested": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/files/mc113287"
   },
   "mc113288": {
    "beam": "FHC",
@@ -43328,9 +43388,15 @@
    "worklist": "FHC_mc_1N",
    "line": 18,
    "process": 2,
-   "status": "submitted",
+   "status": "done",
    "pot_used_harvest": 1.6788222788169562e+19,
-   "attempts": 0
+   "attempts": 0,
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-stream/fhc_2026-09/FHC_mc_1N/0001",
+   "cluster": "29940314",
+   "process_id": "1",
+   "error": null,
+   "pot_used": 1.6788222788169562e+19,
+   "harvested": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/files/mc113288"
   },
   "mc113289": {
    "beam": "FHC",
@@ -43341,9 +43407,15 @@
    "worklist": "FHC_mc_1N",
    "line": 19,
    "process": 2,
-   "status": "submitted",
+   "status": "done",
    "pot_used_harvest": 1.6698798263433566e+19,
-   "attempts": 0
+   "attempts": 0,
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-stream/fhc_2026-09/FHC_mc_1N/0001",
+   "cluster": "29940314",
+   "process_id": "1",
+   "error": null,
+   "pot_used": 1.6698798263433566e+19,
+   "harvested": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/files/mc113289"
   },
   "mc113290": {
    "beam": "FHC",
@@ -43354,9 +43426,15 @@
    "worklist": "FHC_mc_1N",
    "line": 20,
    "process": 2,
-   "status": "submitted",
+   "status": "done",
    "pot_used_harvest": 1.6746410185070457e+19,
-   "attempts": 0
+   "attempts": 0,
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-stream/fhc_2026-09/FHC_mc_1N/0001",
+   "cluster": "29940314",
+   "process_id": "1",
+   "error": null,
+   "pot_used": 1.6746410185070457e+19,
+   "harvested": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/files/mc113290"
   },
   "mc113291": {
    "beam": "FHC",
@@ -43367,9 +43445,15 @@
    "worklist": "FHC_mc_1N",
    "line": 21,
    "process": 2,
-   "status": "submitted",
+   "status": "done",
    "pot_used_harvest": 1.6712166475669012e+19,
-   "attempts": 0
+   "attempts": 0,
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-stream/fhc_2026-09/FHC_mc_1N/0001",
+   "cluster": "29940314",
+   "process_id": "1",
+   "error": null,
+   "pot_used": 1.6712166475669012e+19,
+   "harvested": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/files/mc113291"
   },
   "mc113292": {
    "beam": "FHC",
@@ -43380,9 +43464,15 @@
    "worklist": "FHC_mc_1N",
    "line": 22,
    "process": 2,
-   "status": "submitted",
+   "status": "done",
    "pot_used_harvest": 1.671620419913021e+19,
-   "attempts": 0
+   "attempts": 0,
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-stream/fhc_2026-09/FHC_mc_1N/0001",
+   "cluster": "29940314",
+   "process_id": "1",
+   "error": null,
+   "pot_used": 1.671620419913021e+19,
+   "harvested": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/files/mc113292"
   },
   "mc113293": {
    "beam": "FHC",
@@ -43393,9 +43483,15 @@
    "worklist": "FHC_mc_1N",
    "line": 23,
    "process": 2,
-   "status": "submitted",
+   "status": "done",
    "pot_used_harvest": 1.6752226605589187e+19,
-   "attempts": 0
+   "attempts": 0,
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-stream/fhc_2026-09/FHC_mc_1N/0001",
+   "cluster": "29940314",
+   "process_id": "1",
+   "error": null,
+   "pot_used": 1.6752226605589187e+19,
+   "harvested": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/files/mc113293"
   },
   "mc113294": {
    "beam": "FHC",
