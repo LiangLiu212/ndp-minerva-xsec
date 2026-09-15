@@ -295,7 +295,9 @@ def _cmd_gibuu(a):
         from .channels import load_channel
         from .theory.gibuu import GibuuSpec, read_job, run_local
         from .theory.models import ModelSpec
-        ch = load_channel(a.channel); g = GibuuSpec.from_params(ModelSpec.load(a.model).params)
+        from .theory.gibuu import stratum_specs
+        ch = load_channel(a.channel); strata = stratum_specs(ModelSpec.load(a.model).params)
+        g = strata[a.stratum] if a.stratum else next(iter(strata.values()))
         job = run_local(g, ch, cfg, num_ensembles=a.ensembles, seed=a.seed, job_name=a.job_name)
         t, info = read_job(job, g)
         sig = ch.is_signal(t)
@@ -303,7 +305,7 @@ def _cmd_gibuu(a):
                           "manifest": json.loads((job / "manifest_job.json").read_text())}, indent=2))
         return 0
     if a.gcmd == "plan":
-        gc.plan(a.name, a.model, a.channel, cfg, n_jobs=a.n_jobs, num_ensembles=a.ensembles); return 0
+        gc.plan(a.name, a.model, a.channel, cfg, stratum=a.stratum, n_jobs=a.n_jobs, num_ensembles=a.ensembles); return 0
     if a.gcmd == "submit-cmd":
         print(gc.submit_cmd(a.name, a.tar_label, memory=a.memory, disk=a.disk, lifetime=a.lifetime, n=a.n, stem=a.stem,
                             processes=[p.strip() for p in a.processes.split(",")] if a.processes else None)); return 0
@@ -384,8 +386,10 @@ def main(argv=None) -> int:
     p.add_argument("--out"); p.add_argument("--slug"); p.set_defaults(fn=_cmd_signal)
     pg2 = sub.add_parser("gibuu", help="GiBUU generation: local smoke job, grid campaign plan/submit/status/harvest/merge").add_subparsers(dest="gcmd", required=True)
     p = pg2.add_parser("smoke", help="one local GiBUU job through the runner"); p.add_argument("model"); p.add_argument("--channel", required=True)
-    p.add_argument("--ensembles", type=int, default=100); p.add_argument("--seed", type=int); p.add_argument("--job-name", default="smoke"); p.set_defaults(fn=_cmd_gibuu)
+    p.add_argument("--ensembles", type=int, default=100); p.add_argument("--seed", type=int); p.add_argument("--job-name", default="smoke")
+    p.add_argument("--stratum"); p.set_defaults(fn=_cmd_gibuu)
     p = pg2.add_parser("plan", help="campaign record + card template + flux file"); p.add_argument("name"); p.add_argument("model"); p.add_argument("--channel", required=True)
+    p.add_argument("--stratum", help="stratum of the model spec (models with a `strata:` block)")
     p.add_argument("--n-jobs", type=int); p.add_argument("--ensembles", type=int); p.set_defaults(fn=_cmd_gibuu)
     p = pg2.add_parser("submit-cmd", help="print the jobsub-lite submit command"); p.add_argument("name"); p.add_argument("--tar-label", required=True)
     p.add_argument("--memory", default="2500MB"); p.add_argument("--disk", default="2GB"); p.add_argument("--lifetime", default="3h")

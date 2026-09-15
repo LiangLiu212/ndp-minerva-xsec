@@ -105,6 +105,58 @@ class GibuuSpec:
         return self.target_A * self.num_ensembles * self.num_runs
 
 
+def stratum_specs(params: dict) -> dict:
+    """{stratum name: GibuuSpec}. A model spec may split the generation into strata (e.g. `qe` and `rest`,
+    each with its own `include` flags, equal-weights ceiling, ensembles, jobs and seed) whose weights are
+    normalised per stratum and simply concatenated: sigma_total = sum of the strata's cross sections.
+    Without a `strata:` block the whole spec is one stratum named `all`."""
+    strata = params.get("strata")
+    if not strata:
+        return {"all": GibuuSpec.from_params(params)}
+    out = {}
+    for name, over in strata.items():
+        merged = {k: v for k, v in params.items() if k != "strata"}
+        over = over or {}
+        for k, v in over.items():
+            if isinstance(v, dict) and isinstance(merged.get(k), dict):
+                merged[k] = {**merged[k], **v}
+            else:
+                merged[k] = v
+        out[str(name)] = GibuuSpec.from_params(merged)
+    incl = [tuple(sorted(k for k, v in g.include.items() if v)) for g in out.values()]
+    if len(set(incl)) != len(incl):
+        raise ValueError("GiBUU strata must include disjoint sets of channels")
+    for a in range(len(incl)):
+        for b in range(a + 1, len(incl)):
+            if set(incl[a]) & set(incl[b]):
+                raise ValueError(f"GiBUU strata overlap in channels {sorted(set(incl[a]) & set(incl[b]))}")
+    return out
+
+
+def concatenate_strata(tables: dict, log=print) -> TruthTable:
+    """Strata tables (each normalised to its own cross section) -> one table; weights are NOT rescaled."""
+    names = list(tables)
+    if len(names) == 1:
+        return tables[names[0]]
+    for t in tables.values():
+        t.columns["stratum"] = None
+    parts = []
+    for i, n in enumerate(names):
+        t = tables[n]
+        t.columns.pop("stratum", None)
+        t.columns["gibuu_stratum"] = np.full(t.n, i, dtype=np.int64)
+        parts.append(t)
+    merged = TruthTable.concatenate(parts)
+    sig = {n: float(tables[n]["weight"].sum()) * 1e-38 for n in names}
+    merged.meta.update({"gibuu_strata": {n: {"index": i, "sigma_flux_avg_per_nucleon_cm2": sig[n], "n_events": int(tables[n].n),
+                                            "fingerprint": tables[n].meta.get("fingerprint"), "gibuu_spec": tables[n].meta.get("gibuu_spec")}
+                                        for i, n in enumerate(names)},
+                        "sigma_flux_avg_per_nucleon_cm2": float(sum(sig.values())), "n_generated": int(merged.n),
+                        "source": "; ".join(str(tables[n].meta.get("source")) for n in names)})
+    log(f"strata {names}: sigma_CC = {sum(sig.values()):.4e} cm^2/nucleon over {merged.n} events")
+    return merged
+
+
 def _fb(b: bool) -> str:
     return "T" if b else "F"
 

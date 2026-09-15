@@ -84,13 +84,21 @@ so a weighted GiBUU sample is useless for a QE-dominated selection: 328 signal e
 statistical power of 21 (the QE part: 4). Per-nucleon weights (× A × numEnsembles): mean 8.5, median
 5.1, 99 % 54, 99.9 % 160, max 463 in 5 759 events.
 
+On the 4000-ensemble pilot (23 107 events): per-nucleon weights mean 8.5, 99 % 55, 99.9 % 161,
+99.99 % 628, max 779; QE alone: mean 8.8, 99 % 201, 99.9 % 697, max 779, effective events 30 of
+1 140, and **55 % of σ_QE is carried by events with w > 200** — the QE cross section is concentrated in
+rare, very heavy events (all ten heaviest events of the pilot are QE, Q² 0.1–0.8 GeV²).
+
 `equalWeights_Mode = 2` applies MC rejection against `equalWeights_Max` (per-nucleon σ units): an
 event is kept with probability w/Max and then carries perweight Max/(A × numEnsembles), i.e. all
 weights equal; the acceptance is ⟨w⟩/Max. **GiBUU aborts the run if an event's weight exceeds
 `equalWeights_Max`** (`initNeutrino.f90`: "You have to increase 'equalWeights_Max'"), so the ceiling
 must be set from a pilot in mode 1 (which prints the running maximum to unit 87 / `fort.87`) with a
-safety margin; the cost is acceptance. Mode 2 measurements: see the "Gotchas" and the campaign record
-`grid/campaigns/gibuu_*/campaign.json` (filled in when the campaign runs).
+safety margin; the cost is acceptance. Measured: a ceiling of 500 aborted after 6 s (an event of
+weight 530 in the first few hundred test nucleons); a rejected test nucleon costs ~1.5 ms (400
+ensembles = 4 800 nucleons with nothing accepted: 12 s including the ~5 s start-up) against ~9 ms
+for an accepted event's transport, so a low acceptance is cheap in CPU but expensive in ensembles
+(`numEnsembles × num_runs_SameEnergy` test nucleons per job).
 
 ## 2.5 Grid campaigns
 

@@ -28,16 +28,22 @@ def load(name: str) -> dict:
     return c
 
 
-def plan(name: str, model_path: str, channel_name: str, cfg, *, n_jobs: int | None = None, num_ensembles: int | None = None,
-         pnfs_base: str | None = None, log=print) -> dict:
-    """Prepare the cache directory (flux file, card template with the worker's placeholders) and the campaign record."""
+def plan(name: str, model_path: str, channel_name: str, cfg, *, stratum: str | None = None, n_jobs: int | None = None,
+         num_ensembles: int | None = None, pnfs_base: str | None = None, log=print) -> dict:
+    """Prepare the cache directory (flux file, card template with the worker's placeholders) and the campaign record
+    for one stratum of the model spec (`--stratum`; a spec without strata has the single stratum `all`)."""
     from ..channels import load_channel
-    from ..theory.gibuu import GibuuSpec, gibuu_paths, prepare
+    from ..theory.gibuu import gibuu_paths, prepare, stratum_specs
     from ..theory.models import ModelSpec
     spec_m = ModelSpec.load(model_path)
     if spec_m.kind != "gibuu":
         raise ValueError(f"{model_path}: kind {spec_m.kind!r} is not gibuu")
-    g = GibuuSpec.from_params(spec_m.params)
+    strata = stratum_specs(spec_m.params)
+    if stratum is None and len(strata) == 1:
+        stratum = next(iter(strata))
+    if stratum not in strata:
+        raise ValueError(f"model {spec_m.name} has strata {list(strata)}; pass --stratum")
+    g = strata[stratum]
     if n_jobs:
         g.n_jobs = int(n_jobs)
     if num_ensembles:
@@ -50,13 +56,14 @@ def plan(name: str, model_path: str, channel_name: str, cfg, *, n_jobs: int | No
     user = getpass.getuser()
     base = pnfs_base or f"/pnfs/dune/scratch/users/{user}/ndp-gibuu"
     c = {"name": name, "kind": "gibuu", "created": timestamp(), "model": str(Path(model_path).resolve()), "model_name": spec_m.name,
-         "channel": ch.name, "spec": g.to_dict(), "fingerprint": prep["fingerprint"], "cache_dir": str(prep["dir"]),
+         "stratum": stratum, "channel": ch.name, "spec": g.to_dict(), "fingerprint": prep["fingerprint"], "cache_dir": str(prep["dir"]),
          "card_template": str(tmpl), "flux_file": prep["flux_file"], "n_jobs": g.n_jobs, "seed_base": g.seed,
          "expected_events_per_job": g.events_per_job(), "pnfs_out": f"{base}/{name}", "jobs": [],
          "processes": {f"{k:04d}": {"seed": g.seed + k, "status": "planned", "attempts": 0} for k in range(g.n_jobs)},
          "gibuu_paths": {k: str(v) for k, v in gibuu_paths(cfg.repo_root).items()}}
     save_campaign(c)
-    log(f"campaign {name}: {g.n_jobs} jobs x {g.num_ensembles} ensembles (~{g.events_per_job()} test events each), fingerprint {prep['fingerprint']}")
+    log(f"campaign {name} (stratum {stratum}): {g.n_jobs} jobs x {g.num_ensembles} ensembles x {g.num_runs} run(s) "
+        f"(~{g.events_per_job()} test nucleons each), equal-weights mode {g.equal_weights_mode} ceiling {g.equal_weights_max}, fingerprint {prep['fingerprint']}")
     log(f"card template {tmpl}; flux {prep['flux_file']}; outputs -> {c['pnfs_out']}")
     return c
 

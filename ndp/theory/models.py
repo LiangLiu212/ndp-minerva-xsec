@@ -194,27 +194,32 @@ def _genie(spec, channel, ctx) -> Prediction:
 
 
 def _gibuu(spec, channel, ctx) -> Prediction:
-    """A GiBUU sample: the cached merge under runs/_generator_cache/gibuu_<fingerprint>/ when it exists;
-    a local single-job run when the spec says `local: true` (smoke tests); otherwise the grid recipe."""
-    from .gibuu import GibuuSpec, merge_jobs, prepare, run_local
-    g = GibuuSpec.from_params(spec.params)
-    prep = prepare(g, channel, ctx.cfg)
-    truth_npz = prep["dir"] / "truth.npz"
-    if truth_npz.exists():
-        t = TruthTable.load(truth_npz)
-        t.meta["cache_hit"] = True
-    elif spec.params.get("local"):
-        loc = spec.params["local"] if isinstance(spec.params["local"], dict) else {}
-        job = run_local(g, channel, ctx.cfg, num_ensembles=loc.get("num_ensembles"), seed=loc.get("seed"), job_name="local")
-        t = merge_jobs([job], g, channel, ctx.cfg)
-    else:
-        raise FileNotFoundError(f"no merged GiBUU sample for fingerprint {prep['fingerprint']} ({truth_npz}); generate it on the grid: "
-                                f"`ndp gibuu plan <name> {spec.path}` -> submit-cmd -> status -> harvest -> merge (grid/README.md), "
-                                "or set `local: {num_ensembles: N}` in the model spec for a single local job")
-    return Prediction(spec, truth=t, provenance={"gibuu": t.meta.get("gibuu_spec"), "source": t.meta.get("source"),
-                                                 "fingerprint": prep["fingerprint"], "n_jobs_merged": t.meta.get("n_jobs_merged"),
+    """A GiBUU sample, per stratum: the cached merge under runs/_generator_cache/gibuu_<fingerprint>/ when it
+    exists; a local single-job run when the spec says `local: {num_ensembles: N}` (smoke tests); otherwise
+    the grid recipe. Strata (e.g. QE / rest with different equal-weights ceilings) are concatenated."""
+    from .gibuu import concatenate_strata, merge_jobs, prepare, run_local, stratum_specs
+    tables, fps = {}, {}
+    for name, g in stratum_specs(spec.params).items():
+        prep = prepare(g, channel, ctx.cfg)
+        truth_npz = prep["dir"] / "truth.npz"
+        fps[name] = prep["fingerprint"]
+        if truth_npz.exists():
+            t = TruthTable.load(truth_npz)
+            t.meta["cache_hit"] = True
+        elif spec.params.get("local"):
+            loc = spec.params["local"] if isinstance(spec.params["local"], dict) else {}
+            job = run_local(g, channel, ctx.cfg, num_ensembles=loc.get("num_ensembles"), seed=loc.get("seed"), job_name="local")
+            t = merge_jobs([job], g, channel, ctx.cfg)
+        else:
+            raise FileNotFoundError(f"no merged GiBUU sample for stratum {name!r}, fingerprint {prep['fingerprint']} ({truth_npz}); generate it on the grid: "
+                                    f"`ndp gibuu plan <name> {spec.path} --stratum {name}` -> submit-cmd -> status -> harvest -> merge (grid/README.md), "
+                                    "or set `local: {num_ensembles: N}` in the model spec for a single local job per stratum")
+        tables[name] = t
+    t = concatenate_strata(tables)
+    return Prediction(spec, truth=t, provenance={"gibuu": t.meta.get("gibuu_spec"), "strata": t.meta.get("gibuu_strata"), "source": t.meta.get("source"),
+                                                 "fingerprints": fps, "n_jobs_merged": t.meta.get("n_jobs_merged"),
                                                  "sigma_flux_avg_per_nucleon_cm2": t.meta.get("sigma_flux_avg_per_nucleon_cm2"),
-                                                 "cache_hit": t.meta.get("cache_hit", False)})
+                                                 "cache_hit": all(tb.meta.get("cache_hit", False) for tb in tables.values())})
 
 
 def _external(spec, channel, ctx) -> Prediction:
