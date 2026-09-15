@@ -1,0 +1,39 @@
+# GiBUU Release 2025 (patch 5) numu CC on carbon under the MINERvA ME FHC flux — the truth-level
+# generator sample for the 1mu1p / TKI channel (arXiv:2503.15047 reproduction). Every value below is a
+# physics default taken from GiBUU's own MINERvA-ME card (testRun/jobCards/005_Neutrino_MINERvA_ME-nu.job)
+# unless noted; the analyst ratifies them (docs/decisions.md 2026-09-15). The sample is generated on
+# the FNAL grid (`ndp gibuu plan/submit-cmd/status/harvest/merge`, grid/README.md) and cached under
+# runs/_generator_cache/gibuu_<fingerprint>/truth.npz; `ndp run` refuses to launch a campaign itself.
+#
+# Target: carbon only. Hydrogen (8.2 % of CH by mass) cannot produce a 1mu1p signal event (no neutron,
+# no final-state interactions to absorb the pion), so a C12 sample scaled by the channel's n_nucleons
+# (all nucleons of the fiducial CH volume, the paper's per-nucleon convention) stands for the CH target.
+name: gibuu_2025_me_fhc_c12
+kind: gibuu
+description: >
+  GiBUU 2025 numu CC on 12C, NuMI ME FHC flux (channel flux table rebinned to 0.5 GeV), in-medium
+  resonance widths on, 2p2h and two-pion background on; 100 grid jobs x 1000 ensembles.
+author: ndp-platform (defaults from GiBUU's 005_Neutrino_MINERvA_ME-nu.job; analyst to ratify)
+target: {Z: 6, A: 12}
+process_ID: 2            # CC
+flavor_ID: 2             # numu
+include: {QE: true, DELTA: true, RES: true, 1pi: true, DIS: true, 2p2hQE: true, 2pi: true}
+card:
+  num_ensembles: 1000    # events ~ A x numEnsembles x num_runs per job (~12k)
+  num_time_steps: 150    # 150 x 0.2 fm = 30 fm of hadron transport
+  delta_T: 0.2
+  num_runs: 1            # num_runs_SameEnergy
+  medium_switch: true          # &width_Baryon mediumSwitch (GiBUU's MINERvA card; the platform smoke card had it off)
+  medium_switch_delta: true    # Oset broadening of the Delta
+  medium_switch_coll: false
+  eqs_type: 5            # medium momentum-dependent potential
+  delta_pot: 1           # 2/3 of the nucleon potential
+  density_switch_static: 2
+  apply_cuts: 2          # only unbound particles are written to FinalEvents.dat
+flux: {source: channel, bin_width_gev: 0.5, e_max_gev: 100.0}   # resources/flux/arXiv2110.13372_supplemental.txt Table I, rebinned
+n_jobs: 100              # grid processes; job k runs with seed + k
+seed: 20260915
+notes:
+  - "status default: card physics = GiBUU's own MINERvA-ME card; ratify before quoting the sample"
+  - "status default: 0.5 GeV flux rebinning (the table has 0.1 GeV bins through the peak) and 0-100 GeV range (= phi_per_pot_cm2's range)"
+  - "status default: statistics 100 x 1000 ensembles (~1.2M CC events, ~5.5 % 1mu1p signal)"

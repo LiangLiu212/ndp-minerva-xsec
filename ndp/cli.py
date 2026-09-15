@@ -69,8 +69,20 @@ def _cmd_validate(a):
 
 
 def _cmd_run(a):
-    from .pipeline import run_model
+    from .pipeline import run_model, run_model_multi
     modes = tuple(a.modes.split(","))
+    want = (a.measurement or "").strip()
+    if want == "all" or "," in want:
+        names = None if want == "all" else [n.strip() for n in want.split(",")]
+        rd = run_model_multi(a.model, a.channel, measurements=names, out_root=a.out, efficiency_run=a.efficiency_run, slug=a.slug)
+        man = json.loads((rd / "manifest.json").read_text())
+        print(f"run dir: {rd}")
+        if man["warnings"]:
+            print("warnings:")
+            for w in man["warnings"]:
+                print("  -", w)
+        print((rd / "report.md").read_text())
+        return 0
     rd = run_model(a.model, a.channel, measurement=a.measurement, out_root=a.out, surrogate_path=a.surrogate, modes=modes,
                    fold_events=a.fold_events, slug=a.slug)
     man = json.loads((rd / "manifest.json").read_text())
@@ -258,6 +270,54 @@ def _cmd_signal(a):
     return 0
 
 
+def _cmd_efficiency(a):
+    from .efficiency import run_efficiency, EfficiencyMaps
+    if a.ecmd == "apply":
+        from .events import TruthTable
+        from .channels import load_channel
+        ch = load_channel(a.channel); t = TruthTable.load(a.sample)
+        w = EfficiencyMaps.load(a.run).weights(ch, t)
+        np.savez_compressed(a.out, weight=w)
+        print(f"wrote {a.out}: {t.n} events, sum of ansatz weights {w.sum():.4f} (signal in the maps: {(w > 0).sum()})")
+        return 0
+    grids = None if a.grids in (None, "all") else [g.strip() for g in a.grids.split(",")]
+    run_dir = run_efficiency(a.channel, load_site_config(), maps=tuple(a.maps.split(",")), grids=grids, out_root=a.out, slug=a.slug,
+                             closure=not a.no_closure)
+    print((run_dir / "report.md").read_text())
+    print(f"run directory: {run_dir}")
+    return 0
+
+
+def _cmd_gibuu(a):
+    from .grid import gibuu_campaign as gc
+    cfg = load_site_config()
+    if a.gcmd == "smoke":
+        from .channels import load_channel
+        from .theory.gibuu import GibuuSpec, read_job, run_local
+        from .theory.models import ModelSpec
+        ch = load_channel(a.channel); g = GibuuSpec.from_params(ModelSpec.load(a.model).params)
+        job = run_local(g, ch, cfg, num_ensembles=a.ensembles, seed=a.seed, job_name=a.job_name)
+        t, info = read_job(job, g)
+        sig = ch.is_signal(t)
+        print(json.dumps({"job": str(job), **info, "n_signal": int(sig.sum()), "sigma_signal_1e-38cm2": float(t["weight"][sig].sum()),
+                          "manifest": json.loads((job / "manifest_job.json").read_text())}, indent=2))
+        return 0
+    if a.gcmd == "plan":
+        gc.plan(a.name, a.model, a.channel, cfg, n_jobs=a.n_jobs, num_ensembles=a.ensembles); return 0
+    if a.gcmd == "submit-cmd":
+        print(gc.submit_cmd(a.name, a.tar_label, memory=a.memory, disk=a.disk, lifetime=a.lifetime, n=a.n, stem=a.stem,
+                            processes=[p.strip() for p in a.processes.split(",")] if a.processes else None)); return 0
+    if a.gcmd == "record":
+        gc.record_submission(a.name, a.jobid, a.cluster, a.tar_label, [p.strip() for p in a.processes.split(",")] if a.processes else None); return 0
+    if a.gcmd == "status":
+        gc.status(a.name); return 0
+    if a.gcmd == "harvest":
+        print(json.dumps(gc.harvest(a.name, workers=a.workers), indent=2)); return 0
+    if a.gcmd == "merge":
+        t = gc.merge(a.name, a.channel, cfg); print(json.dumps(t.meta.get("sigma_per_job_1e-38cm2"), indent=2)); return 0
+    return 2
+
+
 def _cmd_selection(a):
     from .diagnostics import run_selection_comparison
     run_dir = run_selection_comparison(a.channel, load_site_config(), out_root=a.out, slug=a.slug)
@@ -279,6 +339,7 @@ def main(argv=None) -> int:
     p.add_argument("--measurement", help="measurement name or YAML path (default: the channel's published grid)")
     p.add_argument("--out"); p.add_argument("--surrogate"); p.add_argument("--modes", default="folded,unfolded")
     p.add_argument("--fold-events", action="store_true", help="smear truth events (parametric surrogate) instead of folding true cells")
+    p.add_argument("--efficiency-run", help="with --measurement all|a,b: an `ndp efficiency run` directory whose maps give the ansatz prediction")
     p.add_argument("--slug"); p.set_defaults(fn=_cmd_run)
     ps = sub.add_parser("surrogate", help="build / inspect detector surrogates").add_subparsers(dest="scmd", required=True)
     p = ps.add_parser("build"); p.add_argument("--channel", required=True)
@@ -321,6 +382,29 @@ def main(argv=None) -> int:
     p = sub.add_parser("signal", help="apply a channel's truth-level signal definition to the cached MC; writes a diagnostics run")
     p.add_argument("--channel", required=True); p.add_argument("--cache", help="truth .npz (default: the channel's MC cache)")
     p.add_argument("--out"); p.add_argument("--slug"); p.set_defaults(fn=_cmd_signal)
+    pg2 = sub.add_parser("gibuu", help="GiBUU generation: local smoke job, grid campaign plan/submit/status/harvest/merge").add_subparsers(dest="gcmd", required=True)
+    p = pg2.add_parser("smoke", help="one local GiBUU job through the runner"); p.add_argument("model"); p.add_argument("--channel", required=True)
+    p.add_argument("--ensembles", type=int, default=100); p.add_argument("--seed", type=int); p.add_argument("--job-name", default="smoke"); p.set_defaults(fn=_cmd_gibuu)
+    p = pg2.add_parser("plan", help="campaign record + card template + flux file"); p.add_argument("name"); p.add_argument("model"); p.add_argument("--channel", required=True)
+    p.add_argument("--n-jobs", type=int); p.add_argument("--ensembles", type=int); p.set_defaults(fn=_cmd_gibuu)
+    p = pg2.add_parser("submit-cmd", help="print the jobsub-lite submit command"); p.add_argument("name"); p.add_argument("--tar-label", required=True)
+    p.add_argument("--memory", default="2500MB"); p.add_argument("--disk", default="2GB"); p.add_argument("--lifetime", default="3h")
+    p.add_argument("--n", type=int); p.add_argument("--stem"); p.add_argument("--processes", help="comma list of 4-digit process ids to rerun"); p.set_defaults(fn=_cmd_gibuu)
+    p = pg2.add_parser("record", help="record a submission in campaign.json"); p.add_argument("name"); p.add_argument("--jobid", required=True)
+    p.add_argument("--cluster"); p.add_argument("--tar-label", required=True); p.add_argument("--processes"); p.set_defaults(fn=_cmd_gibuu)
+    p = pg2.add_parser("status"); p.add_argument("name"); p.set_defaults(fn=_cmd_gibuu)
+    p = pg2.add_parser("harvest"); p.add_argument("name"); p.add_argument("--workers", type=int, default=4); p.set_defaults(fn=_cmd_gibuu)
+    p = pg2.add_parser("merge"); p.add_argument("name"); p.add_argument("--channel", required=True); p.set_defaults(fn=_cmd_gibuu)
+    pe = sub.add_parser("efficiency", help="selection-efficiency maps, background tables and the factorised-ansatz closure from the binned surrogates")
+    pes = pe.add_subparsers(dest="ecmd")
+    p = pes.add_parser("run", help="write runs/<date>_efficiency_<channel>/"); p.add_argument("--channel", required=True)
+    p.add_argument("--maps", default="muon_p_costheta,proton_p_costheta,muon_costheta,proton_costheta")
+    p.add_argument("--grids", default="all", help="released grids to export (comma list or `all`)")
+    p.add_argument("--no-closure", action="store_true", help="skip the ansatz closure pass over the MC")
+    p.add_argument("--out"); p.add_argument("--slug"); p.set_defaults(fn=_cmd_efficiency)
+    p = pes.add_parser("apply", help="weight a truth sample (TruthTable npz) with the maps of an efficiency run")
+    p.add_argument("--channel", required=True); p.add_argument("--run", required=True); p.add_argument("--sample", required=True)
+    p.add_argument("--out", required=True); p.set_defaults(fn=_cmd_efficiency)
     p = sub.add_parser("selection", help="apply a channel's reco selection to the cached data + MC; cutflow, purity/efficiency, data-vs-MC figures")
     p.add_argument("--channel", required=True); p.add_argument("--out"); p.add_argument("--slug"); p.set_defaults(fn=_cmd_selection)
     a = ap.parse_args(argv)

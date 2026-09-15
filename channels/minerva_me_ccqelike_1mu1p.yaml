@@ -80,15 +80,16 @@ selection:                   # reconstruction-level selection: ndp.channels.sele
 
 data:
   paper_manifest: null                              # no benchmark/papers/2503.15047.yaml in the MINERvA repo yet
-  reco_data_files: ["MasterAnaDev_data_AnaTuple_run00010066_Playlist.root"]   # relative to site data_dir (single-file mode)
+  reco_data_files: ["MasterAnaDev_data_AnaTuple_run00010066_Playlist.root"]   # single-file fallback (certification tests) when the products below are absent
   reco_mc_files:   ["MasterAnaDev_mc_AnaTuple_run00110040_Playlist.root"]
   playlist: minervame1A
-  # Playlist products from the grid campaign (ndp.products): uncomment to switch every consumer from
-  # the single-file caches above to <products_dir>/<beam>/<playlist>/ (POT summed over playlists).
-  # Which playlists enter the analysis is the analyst's choice (status: open until then).
-  # beam: FHC
-  # playlists: {mc: [1A], data: [1A]}
-  # products_dir: /exp/dune/data/users/liangliu/minerva-open-data/products
+  # Playlist products from the grid campaign fhc_2026-09 (ndp.products): every consumer reads
+  # <products_dir>/<beam>/<playlist>/ with the POT summed over playlists. All 12 ME FHC playlists
+  # (1818 data + 489 MC files, 1.0574e21 / 4.9784e21 POT_Used): the user's choice, 2026-09-15.
+  beam: FHC
+  playlists: {mc: [1A, 1B, 1C, 1D, 1E, 1F, 1G, 1L, 1M, 1N, 1O, 1P], data: [1A, 1B, 1C, 1D, 1E, 1F, 1G, 1L, 1M, 1N, 1O, 1P]}
+  products_dir: /exp/dune/data/users/liangliu/minerva-open-data/products
+  playlists_status: decided     # user, 2026-09-15 (docs/decisions.md)
   mc_generator: "GENIE 2.12.6 (Open Data StandardMC; tune tag not embedded in the tuple — open question)"
   pot_status: "read from the Meta tree at run time, never typed in"
   paper_pot: 10.61e20        # arXiv:2503.15047: "10.61e20 POT in the neutrino enhanced ME configuration"
@@ -96,7 +97,9 @@ data:
 normalization:
   phi_per_pot_cm2: 6.32e-8          # inherited from the inclusive channel (arXiv:2106.16210); this paper states no flux integral
   phi_frac_unc: 0.039
-  n_nucleons: null                  # open: depends on the paper's CH fiducial volume
+  n_nucleons: 3.23e+30              # default (user, 2026-09-15): the inclusive channel's decided count for the same tracker box
+                                    # (z 5980-8422 mm, apothem 850 mm); all nucleons of CH, the paper's per-nucleon convention.
+                                    # The paper's own CH fiducial volume is still unstated (phase_space.status: open).
   flux_table: resources/flux/arXiv2110.13372_supplemental.txt
   target_mix_mass_fractions:
     1000060120: 0.8851
@@ -106,6 +109,6 @@ normalization:
     1000170350: 0.0020
     1000130270: 0.0007
     1000140280: 0.0007
-  status: open
+  status: default                   # phi decided (inclusive channel); n_nucleons default (2026-09-15); flux_table default
 
 surrogate: {}

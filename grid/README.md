@@ -51,3 +51,31 @@ per-job MB/s from the sidecars' `timings_s` / `bytes_requested` before scaling u
 Harvest and status need PNFS access from the login node: `ifdh` (CVMFS larsoft spack) or
 `xrdfs`/`xrdcp` against `root://fndca1.fnal.gov:1094` with a DUNE bearer token
 (`htgettoken -a htvaultprod.fnal.gov -i dune`).
+
+## GiBUU generation campaigns (`ndp gibuu ...`, worker `gibuu_worker.sh`)
+
+A generator sample for a model spec of `kind: gibuu` (e.g. `models/gibuu_2025_me_fhc_c12.yaml`) is
+N independent GiBUU jobs, one seed each, merged by `ndp.theory.gibuu.merge_jobs` into
+`runs/_generator_cache/gibuu_<fingerprint>/truth.npz` (weights prescaled by 1/N so they still sum to
+the mean flux-averaged cross section per nucleon). The payload is the in-repo `GiBUU.x`, the four
+shared libraries it needs from the pixi env, the `buuinput2025` tables (65 MB) and the card template
+whose only run-time placeholders are the input path, the flux file and the seed.
+
+```bash
+python -m ndp gibuu smoke models/gibuu_2025_me_fhc_c12.yaml --channel minerva_me_ccqelike_1mu1p --ensembles 100   # local job, ~30 s
+python -m ndp gibuu plan gibuu_me_c12_2026-09 models/gibuu_2025_me_fhc_c12.yaml --channel minerva_me_ccqelike_1mu1p [--n-jobs N --ensembles E]
+grid/stage_gibuu_payload.sh runs/_generator_cache/gibuu_<fingerprint>          # -> /exp/dune/data/users/$USER/ndp-gibuu-payload (+ scrubbed ldd check)
+python3 $SKILL tarball build --build-dir /exp/dune/data/users/$USER/ndp-gibuu-payload --include GiBUU.x lib buuinput cards gibuu_payload.json --name-prefix ndp-gibuu
+python3 $SKILL publish --tarball .jobsub/tarballs/ndp-gibuu_<hash>.tar --label ndp-gibuu-v1 && python3 $SKILL verify --label ndp-gibuu-v1
+python -m ndp gibuu submit-cmd gibuu_me_c12_2026-09 --tar-label ndp-gibuu-v1 [--n 1]   # prints the submit line; run it (-N 1 first)
+python -m ndp gibuu record gibuu_me_c12_2026-09 --jobid <jobid> --cluster <cluster> --tar-label ndp-gibuu-v1
+python -m ndp gibuu status gibuu_me_c12_2026-09                                  # sidecars on PNFS -> done / failed per process
+python -m ndp gibuu submit-cmd gibuu_me_c12_2026-09 --tar-label ndp-gibuu-v1 --processes 0007,0042   # rerun failures with fresh seeds
+python -m ndp gibuu harvest gibuu_me_c12_2026-09                                 # PNFS -> runs/_generator_cache/gibuu_<fp>/jobs/<%04d>/
+python -m ndp gibuu merge gibuu_me_c12_2026-09 --channel minerva_me_ccqelike_1mu1p   # -> truth.npz (per-job sigma check vs the absorption file)
+python -m ndp run models/gibuu_2025_me_fhc_c12.yaml --channel minerva_me_ccqelike_1mu1p --measurement all --modes folded --efficiency-run runs/<eff run>
+```
+Job outputs per process: `FinalEvents.dat.gz`, `neutrino_absorption_cross_section_ALL.dat` (the
+merge refuses a job whose summed weights disagree with it), `neutrino_initialized_energyFlux.dat`,
+`job.card`, `gibuu.log.gz`, `manifest_<%04d>.json`. Sizing and the weighted-vs-equal-weights choice:
+`.claude/skills/gibuu/references/running.md` (measured on the EAF node, 2026-09-15).

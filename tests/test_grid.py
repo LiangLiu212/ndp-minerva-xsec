@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 
 import numpy as np
-from _helpers import site, toy_truth, have_mc_cache, have_data_file, skip
+from _helpers import legacy_channel, site, toy_truth, have_mc_cache, have_data_file, skip
 from ndp.channels import load_channel
 from ndp.channels import signal as sig
 from ndp.channels import observables as obs
@@ -160,7 +160,7 @@ def test_products_loader_legacy_matches_direct_caches():
         skip("needs the cached data + MC tables")
     from ndp.products import load_reco, load_truth, load_reco_truth
     from ndp.adapters.minerva_anatuple import load_reco_cache
-    cfg = site(); ch = load_channel("minerva_me_ccqelike_1mu1p")
+    cfg = site(); ch = legacy_channel("minerva_me_ccqelike_1mu1p")
     rd, pot_d, _ = load_reco(cfg, ch, "data")
     rm, pot_m, _ = load_reco(cfg, ch, "mc")
     assert abs(pot_d - 2.0497721920490272e17) / pot_d < 1e-12 and abs(pot_m - 9.988796749584837e18) / pot_m < 1e-12

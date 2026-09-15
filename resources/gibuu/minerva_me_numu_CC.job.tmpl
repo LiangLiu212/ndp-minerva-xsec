@@ -1,0 +1,90 @@
+!--------------------------------------------------------- -*- fortran -*- ----
+! ndp-platform GiBUU job-card template: numu CC on a nucleus, flux-averaged (nuXsectionMode 16)
+! with a user flux file (nuExp 99). Trimmed from GiBUU Release 2025
+! testRun/jobCards/005_Neutrino_MINERvA_ME-nu.job; every double-underscore token is substituted by
+! ndp.theory.gibuu.write_card from the model spec (models/*.yaml, kind: gibuu). Comments there
+! and in docs/decisions.md record which values are physics defaults (status: default).
+!------------------------------------------------------------------------------
+&neutrino_induced
+      process_ID      = __PROCESS_ID__      ! 2:CC, 3:NC, -2:antiCC, -3:antiNC
+      flavor_ID       = __FLAVOR_ID__       ! 1:electron, 2:muon, 3:tau
+      nuXsectionMode  = 16                  ! 16: EXP_dSigmaMC (flux-averaged)
+      nuExp           = 99                  ! own flux file (absolute path)
+      FileNameFlux    = '__FLUX_FILE__'
+      includeQE       = __INCLUDE_QE__
+      includeDELTA    = __INCLUDE_DELTA__
+      includeRES      = __INCLUDE_RES__
+      include1pi      = __INCLUDE_1PI__
+      includeDIS      = __INCLUDE_DIS__
+      include2p2hQE   = __INCLUDE_2P2HQE__
+      include2pi      = __INCLUDE_2PI__
+      printAbsorptionXS = T
+      equalWeights_Mode = __EQUAL_WEIGHTS_MODE__   ! 0: weighted events (perweight = sigma/(A numEnsembles)); 1: same, max printed; 2: rejection -> equal weights
+      equalWeights_Max  = __EQUAL_WEIGHTS_MAX__    ! the rejection ceiling for mode 2 (per-nucleon sigma units, 1e-38 cm^2); the run aborts above it
+/
+&target
+      Z=__TARGET_Z__
+      A=__TARGET_A__
+      densitySwitch_Static=__DENSITY_SWITCH_STATIC__
+      fermiMotion=.true.
+/
+&initDensity
+      densitySwitch=2
+/
+&initPauli
+      pauliSwitch=2
+/
+&input
+      eventtype=5
+      numEnsembles=__NUM_ENSEMBLES__
+      numTimeSteps=__NUM_TIME_STEPS__
+      delta_T=__DELTA_T__
+      fullensemble=.true.
+      localEnsemble=.true.
+      num_runs_SameEnergy=__NUM_RUNS__
+      num_Energies=1
+      printParticleVectors=.false.
+      freezeRealParticles=.true.
+      LRF_equals_CALC_frame=.true.
+      path_to_input='__PATH_TO_INPUT__'
+      version = 2025
+/
+&nl_SigmaMC
+      enu=1.0
+/
+&width_Baryon
+      mediumSwitch=__MEDIUM_SWITCH__
+      mediumSwitch_Delta=__MEDIUM_SWITCH_DELTA__
+      mediumSwitch_coll=__MEDIUM_SWITCH_COLL__
+/
+&spectralFunction
+      nuclwidth=0.001
+/
+&baryonPotential
+      EQS_Type=__EQS_TYPE__
+      DeltaPot=__DELTA_POT__
+/
+&insertion
+      minimumEnergy=0.005
+/
+&neutrinoAnalysis
+      outputEvents=.true.
+      include_W_dist=.false.
+      DoOutChannels = .true.
+      ZeroPion_analysis=.false.
+      detailed_diff_output=.false.
+      kineticEnergyDetectionThreshold_nucleon=0.
+      kineticEnergyDetectionThreshold_chargedpion=0.
+      kineticEnergyDetectionThreshold_neutralpion=0.
+      applyCuts = __APPLY_CUTS__
+      reconstruct_neutrino_energy=.false.
+      specificEvent_analysis=.false.
+/
+&EventOutput
+/
+&pythia
+      PARP(91)=0.44
+/
+&initRandom
+      SEED=__SEED__
+/

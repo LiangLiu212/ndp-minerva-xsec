@@ -53,6 +53,24 @@ def data_reco_cells(channel: ChannelSpec, measurement: Measurement, cfg, reco_ca
             "files": files, "sources": sources}
 
 
+def data_reco_cells_multi(channel: ChannelSpec, measurements: list, cfg) -> dict:
+    """`data_reco_cells` for several measurements in one pass over the data inputs (one playlist at a time)."""
+    from ..channels.selections import select
+    from ..products import iter_reco_chunks
+    cells = {m.name: np.zeros(m.binning.n_cells) for m in measurements}
+    n_sel = 0; n_out = {m.name: 0 for m in measurements}; pot = 0.0; sources = []
+    for label, r, p, src in iter_reco_chunks(cfg, channel, "data"):
+        sel = select(channel, r)
+        n_sel += int(sel.sum()); pot += float(p); sources.append(src)
+        for m in measurements:
+            x, y = m.reco_observables(r, params=channel.observable_params)
+            h, _, no = m.binning.histogram(x[sel], y[sel])
+            cells[m.name] += h; n_out[m.name] += int(no)
+        del r
+    return {m.name: {"cells": cells[m.name], "n_selected": n_sel, "n_out_of_grid": n_out[m.name], "pot": pot,
+                     "files": list(sources), "sources": list(sources)} for m in measurements}
+
+
 def poisson_gof(data: np.ndarray, pred: np.ndarray, var_mc: np.ndarray | None = None) -> dict:
     data = np.asarray(data, float); pred = np.asarray(pred, float)
     use = pred > 0
@@ -70,19 +88,30 @@ def poisson_gof(data: np.ndarray, pred: np.ndarray, var_mc: np.ndarray | None = 
 
 
 def compare_folded(channel: ChannelSpec, measurement: Measurement, t: TruthTable, surrogate: Surrogate, data: dict, *,
-                   phi_per_pot=None, n_nucleons=None, use_events: bool = False, rng=None) -> dict:
+                   phi_per_pot=None, n_nucleons=None, use_events: bool = False, rng=None, folding: str = "full",
+                   truth_weights=None) -> dict:
+    """folding = "full" (efficiency x migration), "eff_only" (efficiency, no migration: truth bins taken as reco bins)
+    or "weighted" (the truth events carry their own per-event efficiency weights `truth_weights`, e.g. the factorised
+    ansatz; histogrammed in truth bins and added to the background)."""
     if surrogate.binning != measurement.binning:
         raise ValueError(f"surrogate was built on a different grid ({surrogate.binning.x_name} x {surrogate.binning.y_name}, "
                          f"{surrogate.binning.n_cells} cells) than measurement {measurement.name} ({measurement.binning.n_cells} cells)")
     exp = expected_true_cells(channel, measurement, t, data["pot"], phi_per_pot=phi_per_pot, n_nucleons=n_nucleons)
-    if use_events and hasattr(surrogate, "sample_reco"):
+    if folding == "eff_only":
+        pred_sig = surrogate.fold_eff_only(exp["N_true"]); folding_how = "true cells x efficiency (no migration)"
+    elif folding == "weighted":
+        if truth_weights is None:
+            raise ValueError("folding='weighted' needs truth_weights (one per truth event)")
+        sumw, _, _, mask = measurement.truth_cells(channel, t, weights=np.asarray(truth_weights) * t["weight"])
+        pred_sig = sumw * exp["scale"]; folding_how = "truth events x per-event efficiency weights (no migration)"
+    elif use_events and hasattr(surrogate, "sample_reco"):
         mask = channel.in_phase_space(t) & channel.is_signal(t)
         x, y = measurement.truth_observables(channel, t)
         pred_sig = surrogate.fold_events(x[mask], y[mask], t["weight"][mask] * exp["scale"], rng)
-        folding = "event-level smearing of the truth events"
+        folding_how = "event-level smearing of the truth events"
     else:
         pred_sig = surrogate.fold(exp["N_true"])
-        folding = "true cells x response"
+        folding_how = "true cells x response"
     bkg = surrogate.background(data["pot"])
     pred = pred_sig + bkg
     var_mc = surrogate.fold_variance(exp["N_true"])
@@ -91,7 +120,7 @@ def compare_folded(channel: ChannelSpec, measurement: Measurement, t: TruthTable
     out = {
         "pred_cells": pred, "pred_signal_cells": pred_sig, "bkg_cells": bkg, "data_cells": data["cells"],
         "var_mc_cells": var_mc, "N_true_cells": exp["N_true"], "expected": {k: v for k, v in exp.items() if k not in ("N_true", "var")},
-        "folding": folding,
+        "folding": folding_how, "folding_mode": folding,
         "totals": {"data": float(data["cells"].sum()), "pred": float(pred.sum()), "pred_signal": float(pred_sig.sum()),
                    "bkg": float(bkg.sum()), "ratio_data_over_pred": float(data["cells"].sum() / pred.sum()) if pred.sum() else None},
         "gof": gof,

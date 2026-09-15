@@ -9,7 +9,7 @@ import numpy as np
 from ndp.channels.binning import Binning
 from ndp.surrogate.base import load_surrogate
 from ndp.surrogate.binned import BinnedResponse, add_counts, count_pairs
-from _helpers import have_mc_cache, have_data_file, site, skip
+from _helpers import legacy_channel, have_mc_cache, have_data_file, site, skip
 
 
 def _sample(n, rng):
@@ -62,7 +62,7 @@ def test_chunked_builder_matches_one_shot_on_legacy_caches():
     from ndp.channels import load_channel, load_measurement
     from ndp.surrogate.build import build_surrogates
     from ndp.surrogate.chunked import build_surrogates_chunked
-    cfg = site(); ch = load_channel("minerva_me_ccqelike_1mu1p"); m = load_measurement(ch, "muon_p")
+    cfg = site(); ch = legacy_channel("minerva_me_ccqelike_1mu1p"); m = load_measurement(ch, "muon_p")
     root = Path(tempfile.mkdtemp())
     one = build_surrogates(ch, m, cfg, kinds=("binned",), out_root=root / "one", log=lambda *a: None)[0]
     chk = build_surrogates_chunked(ch, [m], cfg, out_root=root / "chunk", log=lambda *a: None)["muon_p"]

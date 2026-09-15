@@ -193,6 +193,29 @@ def load_reco_truth(cfg, channel) -> TruthTable:
     return tabs[0] if len(tabs) == 1 else TruthTable.concatenate(tabs)
 
 
+def total_pot(cfg, channel, kind: str) -> float:
+    """POT_Used summed over the channel's inputs of `kind`, from the merged `pot_<pl>_<kind>.json` files
+    (or the legacy caches' meta) without loading any table."""
+    from .adapters.minerva_anatuple import cache_tag
+    if has_products(channel):
+        tot = 0.0
+        for beam, pl in playlists(channel, kind):
+            pj = playlist_dir(cfg, channel, beam, pl) / f"pot_{pl}_{kind}.json"
+            if not pj.exists():
+                raise FileNotFoundError(f"missing {pj} (run `ndp data merge --beam {beam} --playlist {pl} --kind {kind}`)")
+            tot += float(read_json(pj)["pot_used"])
+        return tot
+    data_dir = cfg.require("data_dir"); cache = data_dir / "cache"
+    tot = 0.0
+    for fn in legacy_files(channel, kind):
+        tag = cache_tag(fn)
+        t = load_reco_npz(cache / f"reco_{tag}.npz")
+        tm = cache / f"truth_{tag}.npz"
+        truth_meta = TruthTable.load(tm).meta if (kind == "mc" and tm.exists()) else None
+        tot += float(legacy_pot(cfg, tag, data_dir / fn, t.get("__meta__"), truth_meta))
+    return tot
+
+
 # ---- chunked access (one playlist / legacy file at a time) ------------------------------------
 def iter_reco_chunks(cfg, channel, kind: str):
     """Yield (label, reco table, POT_Used, source) one playlist product (or legacy cache) at a time.

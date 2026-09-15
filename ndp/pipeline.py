@@ -27,7 +27,7 @@ from . import __version__
 from .config import load_site_config, SiteConfig
 from .io import (dump_json, dump_yaml_or_json, cheap_fingerprint, git_state, versions, timestamp, unique_run_dir,
                  ensure_dir)
-from .channels import load_channel, ChannelSpec, Measurement, load_measurement
+from .channels import list_measurements, load_channel, ChannelSpec, Measurement, load_measurement
 from .theory.models import ModelSpec, realize, RealizeContext, Prediction
 from .surrogate.base import load_surrogate
 from .compare import unfolded as unf, folded as fld, plots, report
@@ -184,6 +184,112 @@ def run_model(model: str | Path | ModelSpec, channel_name: str, *, measurement: 
     }
     dump_json(manifest, run_dir / "manifest.json")
     return run_dir
+
+
+def run_model_multi(model: str | Path | ModelSpec, channel_name: str, *, measurements: list | None = None, cfg: SiteConfig | None = None,
+                    out_root: str | Path | None = None, efficiency_run: str | Path | None = None, slug: str | None = None) -> Path:
+    """One model against several measurements in folded space, in one run directory: the model is realised once,
+    the data is read once (one playlist at a time), and per grid three predictions are compared with the data —
+    the full fold (efficiency x migration + background), the efficiency-only fold, and, when an efficiency run
+    is given, the factorised-ansatz weighting of the truth events (ndp.efficiency.EfficiencyMaps)."""
+    from .compare.folded import compare_folded, data_reco_cells_multi
+    from .surrogate.binned import BinnedResponse
+    t_start = time.time()
+    cfg = cfg or load_site_config()
+    channel = load_channel(channel_name)
+    names = [n for n in list_measurements(channel) if n != "published"] if not measurements else list(measurements)
+    meas = [load_measurement(channel, n) for n in names]
+    spec = model if isinstance(model, ModelSpec) else ModelSpec.load(model)
+    run_dir = unique_run_dir(out_root or cfg.runs, slug or f"{spec.name}__{channel.name}__all{len(meas)}")
+    figs = ensure_dir(run_dir / "figs"); mdir = ensure_dir(run_dir / "measurements")
+    warnings: list[str] = []; timings: dict = {}
+    dump_yaml_or_json(spec.to_dict(), run_dir / ("model.yaml" if spec.path and spec.path.suffix in (".yaml", ".yml") else "model.json"))
+    dump_json(channel.to_dict(), run_dir / "channel.json")
+    t0 = time.time()
+    ctx = RealizeContext(cfg, workdir=cfg.runs / "_generator_cache")
+    pred: Prediction = realize(spec, channel, ctx)
+    timings["realize_s"] = round(time.time() - t0, 1)
+    if pred.truth is None:
+        raise ValueError("run_model_multi needs a model with truth events")
+    dump_json({"summary": pred.truth.summary(), "meta": pred.truth.meta}, run_dir / "truth_summary.json")
+    warnings += pred.notes
+    if pred.truth.meta.get("has_geometry") is False and channel.phase_space.get("vertex"):
+        warnings.append("model sample has no detector geometry: the fiducial-vertex phase-space cut was not applied "
+                        "(the sample is taken as generated on the fiducial target; normalisation uses n_nucleons)")
+    maps = None
+    if efficiency_run:
+        from .efficiency import EfficiencyMaps
+        maps = EfficiencyMaps.load(efficiency_run)
+        ansatz_w = maps.weights(channel, pred.truth)
+    t0 = time.time()
+    data = data_reco_cells_multi(channel, meas, cfg)
+    timings["data_s"] = round(time.time() - t0, 1)
+    results, fig_paths = {}, []
+    t0 = time.time()
+    for m in meas:
+        dump_json(m.to_dict(), mdir / f"{m.name}.json")
+        sur, sur_path = resolve_surrogate(channel, m, cfg)
+        if sur is None or not isinstance(sur, BinnedResponse):
+            warnings.append(f"no binned surrogate for measurement {m.name!r}"); continue
+        try:
+            full = compare_folded(channel, m, pred.truth, sur, data[m.name], folding="full")
+            eff = compare_folded(channel, m, pred.truth, sur, data[m.name], folding="eff_only")
+            ans = compare_folded(channel, m, pred.truth, sur, data[m.name], folding="weighted", truth_weights=ansatz_w) if maps else None
+        except Exception as e:  # keep the run alive; report the failure loudly
+            warnings.append(f"{m.name}: folded comparison failed: {type(e).__name__}: {e}"); continue
+        bkg_cat = sur.background_by_category(data[m.name]["pot"])
+        bkg_cat_proj = {c: m.binning.project(v, "x", False).tolist() for c, v in bkg_cat.items()} if bkg_cat else None
+        entry = {"surrogate": str(sur_path), "pot_data": data[m.name]["pot"], "n_data_selected": data[m.name]["n_selected"],
+                 "expected": full["expected"], "totals": {"full": full["totals"], "eff_only": eff["totals"], "ansatz": ans["totals"] if ans else None},
+                 "gof": {"full": full["gof"], "eff_only": eff["gof"], "ansatz": ans["gof"] if ans else None},
+                 "projections": {"full": full["projections"]["x"], "eff_only": eff["projections"]["x"], "ansatz": ans["projections"]["x"] if ans else None,
+                                 "background_by_category": bkg_cat_proj}, "is_1d": m.is_1d}
+        results[m.name] = entry
+        np.savez(run_dir / f"folded_cells_{m.name}.npz", **{f"full_{k}": v for k, v in full.items() if k.endswith("_cells")},
+                 **{f"eff_only_{k}": v for k, v in eff.items() if k.endswith("_cells")},
+                 **({f"ansatz_{k}": v for k, v in ans.items() if k.endswith("_cells")} if ans else {}))
+        if m.is_1d:
+            fig_paths.append(plots.overlay_figure(full, figs / f"overlay_{m.name}.png", f"{spec.name} → {channel.experiment} data: {m.x.axis_label('reco')}",
+                                                  res_eff=eff, res_ansatz=ans, bkg_by_category=bkg_cat_proj, model_label=spec.name))
+        else:
+            fig_paths.append(plots.folded_projections(full, figs / f"folded_{m.name}.png", f"{spec.name} → surrogate → data ({m.name}, folded space)"))
+    timings["folded_s"] = round(time.time() - t0, 1)
+    ctx_out = {"platform_version": __version__, "model": spec.to_dict(), "channel": {"name": channel.name, "description": channel.description},
+               "measurements": results, "prediction_summary": {k: v for k, v in pred.truth.summary().items()}, "provenance": pred.provenance,
+               "efficiency_run": str(efficiency_run) if efficiency_run else None, "figures": [str(p.relative_to(run_dir)) for p in fig_paths],
+               "warnings": warnings}
+    dump_json(ctx_out, run_dir / "scorecard.json")
+    _write_multi_report(run_dir, ctx_out, channel)
+    from .products import sources_fingerprints
+    manifest = {"run_id": run_dir.name, "kind": "model_multi_folded", "timestamp": timestamp(), "platform_version": __version__,
+                "platform_git": git_state(cfg.repo_root), "model": spec.to_dict(), "model_fingerprint": spec.fingerprint(),
+                "channel": channel.name, "channel_file": str(channel.path), "measurements": names, "efficiency_run": str(efficiency_run) if efficiency_run else None,
+                "inputs": sources_fingerprints(cfg, channel) + ([{"role": "model_truth_source", "path": str(pred.truth.meta.get("source"))}] if pred.truth.meta.get("source") else []),
+                "versions": versions(), "site_config": cfg.as_dict(), "timings_s": timings | {"total_s": round(time.time() - t_start, 1)},
+                "outputs": ["scorecard.json", "report.md", "truth_summary.json", *ctx_out["figures"]], "warnings": warnings}
+    dump_json(manifest, run_dir / "manifest.json")
+    return run_dir
+
+
+def _write_multi_report(run_dir: Path, ctx: dict, channel) -> None:
+    m = ctx["model"]; ps = ctx.get("prediction_summary", {})
+    L = [f"# {m['name']} on {channel.name}: folded comparison on {len(ctx['measurements'])} grids", "",
+         f"*Model kind:* `{m['kind']}`. " + (m.get("description", "").strip()), "",
+         "## Model sample", ""] + [f"- **{k}**: {v}" for k, v in ps.items() if k != "norm"] + [f"- **normalisation**: {ps.get('norm')}", ""]
+    L += ["## Per grid: data vs prediction (full fold = signal × efficiency × migration + MC background; eff-only = no migration; "
+          "ansatz = signal weighted by the factorised efficiency maps)", "",
+          "| grid | data | full | eff-only | ansatz | background | data/full | −2lnL/ndf (full) | −2lnL/ndf (eff-only) |", "|---|---|---|---|---|---|---|---|---|"]
+    for n, r in ctx["measurements"].items():
+        tf, te, ta = r["totals"]["full"], r["totals"]["eff_only"], r["totals"]["ansatz"]
+        gf, ge = r["gof"]["full"], r["gof"]["eff_only"]
+        L.append(f"| {n} | {tf['data']:.0f} | {tf['pred']:.0f} | {te['pred']:.0f} | {ta['pred']:.0f} | {tf['bkg']:.0f} | {tf['ratio_data_over_pred']:.3f} | "
+                 f"{gf['minus2lnL']:.1f}/{gf['ndf']} | {ge['minus2lnL']:.1f}/{ge['ndf']} |" if ta else
+                 f"| {n} | {tf['data']:.0f} | {tf['pred']:.0f} | {te['pred']:.0f} | – | {tf['bkg']:.0f} | {tf['ratio_data_over_pred']:.3f} | "
+                 f"{gf['minus2lnL']:.1f}/{gf['ndf']} | {ge['minus2lnL']:.1f}/{ge['ndf']} |")
+    if ctx.get("warnings"):
+        L += ["", "## Warnings", ""] + [f"- {w}" for w in ctx["warnings"]]
+    L += ["", "## Figures", ""] + [f"![{Path(f).stem}]({f})" for f in ctx["figures"]]
+    (run_dir / "report.md").write_text("\n".join(L) + "\n")
 
 
 def _summary(ctx: dict) -> dict:

@@ -71,3 +71,13 @@ def toy_truth(n=20000, seed=0, with_fs=False) -> TruthTable:
         cols.update({"fs_offsets": np.concatenate([[0], np.cumsum(counts)]), "fs_pdg": pdg, "fs_E": KE + mass,
                      "fs_px": np.zeros(tot), "fs_py": np.zeros(tot), "fs_pz": np.sqrt((KE + mass) ** 2 - mass ** 2)})
     return TruthTable(cols, {"source": "toy", "norm": {"kind": "xsec_per_nucleon", "xsec_per_unit_weight": 4.0e-38 / n}})
+
+
+def legacy_channel(name="minerva_me_ccqelike_1mu1p"):
+    """The channel with its playlist-products block removed, so the loaders fall back to the single-file
+    caches the certified counts were measured on (the committed manifest now lists the FHC playlists)."""
+    from ndp.channels import load_channel
+    ch = load_channel(name)
+    for k in ("playlists", "beam", "products_dir", "playlists_status"):
+        ch.data.pop(k, None)
+    return ch

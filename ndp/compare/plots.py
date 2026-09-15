@@ -107,3 +107,58 @@ def response_figure(surrogate, out: Path, title: str) -> Path:
         axes[1].set_xlabel("true cell"); axes[1].set_ylabel("resolution"); axes[1].legend(); axes[1].set_title("smearing widths")
     fig.suptitle(title); fig.tight_layout(); fig.savefig(out, dpi=120); plt.close(fig)
     return out
+
+
+BKG_COLORS = {"bkg 1 pi+-": "#ff7f0e", "bkg 1 pi0": "#ffbb78", "bkg multi-pi": "#d62728", "bkg other (no pion)": "#9e9e9e", "feed-in": "#c7c7c7"}
+
+
+def overlay_figure(res_full: dict, out: Path, title: str, res_eff: dict | None = None, res_ansatz: dict | None = None,
+                   bkg_by_category: dict | None = None, model_label: str = "model") -> Path:
+    """Data vs (model signal folded + MC background): the background stacked by category, the folded signal on
+    top, the efficiency-only and ansatz predictions as lines; ratio panel data / full prediction with the MC-stat
+    band. 1D measurements only (x projection)."""
+    p = res_full["projections"]["x"]
+    edges = np.asarray(p["edges"]); d = np.asarray(p["data"]); full = np.asarray(p["pred"]); bk = np.asarray(p["bkg"])
+    centres = 0.5 * (edges[:-1] + edges[1:]); widths = np.diff(edges)
+    fig, axes = _ratio_axes(1, (7.5, 7))
+    ax, axr = axes[0, 0], axes[1, 0]
+    bottom = np.zeros(len(centres))
+    cats = bkg_by_category or {}
+    if cats:
+        for c, v in cats.items():
+            v = np.asarray(v)
+            if v.sum() > 0:
+                ax.bar(edges[:-1], v, width=widths, bottom=bottom, align="edge", color=BKG_COLORS.get(c, "#bbbbbb"), label=c, lw=0)
+                bottom += v
+        rest = bk - bottom
+        if rest.sum() > 1e-9:
+            ax.bar(edges[:-1], rest, width=widths, bottom=bottom, align="edge", color=BKG_COLORS["feed-in"], label="feed-in (signal outside grid)", lw=0)
+            bottom += rest
+    else:
+        ax.bar(edges[:-1], bk, width=widths, bottom=bottom, align="edge", color="#9e9e9e", label="background (MC, POT-scaled)", lw=0); bottom += bk
+    ax.bar(edges[:-1], full - bk, width=widths, bottom=bottom, align="edge", color="#2ca25f", alpha=0.85, lw=0,
+           label=f"{model_label} signal → surrogate (eff × migration)")
+    if res_eff is not None:
+        _step(ax, edges, np.asarray(res_eff["projections"]["x"]["pred"]), color="#a63603", lw=1.4, ls="--", label=f"{model_label} × ε (no migration) + bkg")
+    if res_ansatz is not None:
+        _step(ax, edges, np.asarray(res_ansatz["projections"]["x"]["pred"]), color="#54278f", lw=1.4, ls=":", label=f"{model_label} × ε_μ ε_p/⟨ε⟩ (maps) + bkg")
+    ax.errorbar(centres, d, xerr=widths / 2, yerr=np.sqrt(d), fmt="o", ms=4, color=DATA_COLOR, capsize=2, label=f"data ({res_full['n_data_selected']} selected)", zorder=5)
+    ax.set_ylabel("selected events / bin"); ax.legend(fontsize=7, ncol=2)
+    var = np.asarray(res_full.get("var_mc_cells", np.zeros_like(full)))
+    with np.errstate(invalid="ignore", divide="ignore"):
+        ratio = np.where(full > 0, d / full, np.nan); rerr = np.where(full > 0, np.sqrt(d) / full, np.nan)
+        band = np.where(full > 0, np.sqrt(var) / full, np.nan) if var.shape == full.shape else np.zeros_like(full)
+    axr.fill_between(edges, 1 - np.append(band, band[-1]), 1 + np.append(band, band[-1]), step="post", color="#9e9e9e", alpha=0.3, lw=0, label="MC stat")
+    axr.errorbar(centres, ratio, xerr=widths / 2, yerr=rerr, fmt="o", ms=4, color=DATA_COLOR, capsize=2)
+    if res_eff is not None:
+        with np.errstate(invalid="ignore", divide="ignore"):
+            _step(axr, edges, np.where(full > 0, d / np.asarray(res_eff["projections"]["x"]["pred"]), np.nan), color="#a63603", lw=1.2, ls="--")
+    axr.axhline(1, color="k", lw=0.8, ls="--"); axr.set_ylim(0.4, 1.6); axr.set_ylabel("data / prediction")
+    axr.set_xlabel(p.get("label", "x"))
+    if p.get("log") and edges[0] > 0:
+        ax.set_xscale("log"); axr.set_xscale("log")
+    g = res_full["gof"]; t = res_full["totals"]
+    fig.suptitle(f"{title}\n-2lnL/ndf = {g['minus2lnL']:.1f}/{g['ndf']}   data/pred = {t['ratio_data_over_pred']:.3f}   "
+                 f"signal {t['pred_signal']:.0f}, bkg {t['bkg']:.0f}, data {t['data']:.0f}", fontsize=9)
+    fig.tight_layout(); fig.savefig(out, dpi=120); plt.close(fig)
+    return out

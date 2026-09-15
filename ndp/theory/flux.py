@@ -84,6 +84,37 @@ def write_th1_root(path: str | Path, edges: np.ndarray, density: np.ndarray, nam
     return path
 
 
+def rebin_uniform(edges: np.ndarray, density: np.ndarray, width: float = 0.5, e_max: float = 100.0):
+    """Average a per-GeV density onto uniform bins [0, e_max) of the given width (overlap-weighted,
+    so the integral over any range covered by whole bins is conserved). Returns (centres, values)."""
+    edges, density = np.asarray(edges, float), np.asarray(density, float)
+    n = int(round(e_max / width))
+    if abs(n * width - e_max) > 1e-9:
+        raise ValueError(f"e_max {e_max} is not a multiple of the bin width {width}")
+    lo_u = np.arange(n) * width
+    hi_u = lo_u + width
+    lo = np.maximum(lo_u[:, None], edges[None, :-1])
+    hi = np.minimum(hi_u[:, None], edges[None, 1:])
+    overlap = np.maximum(hi - lo, 0.0)
+    values = (overlap * density[None, :]).sum(axis=1) / width
+    return 0.5 * (lo_u + hi_u), values
+
+
+def write_gibuu_flux(path: str | Path, centres: np.ndarray, values: np.ndarray, source: str = "") -> Path:
+    """Write a GiBUU `nuExp = 99` flux file: `#` comment lines, then `<bin centre [GeV]> <flux>` rows on
+    an equidistant grid (code/init/neutrino/esample.f90 reads the centres and samples E uniformly inside a
+    bin, so the values are bin-averaged densities; their absolute scale is irrelevant)."""
+    centres, values = np.asarray(centres, float), np.asarray(values, float)
+    if len(centres) < 2 or not np.allclose(np.diff(centres), centres[1] - centres[0]):
+        raise ValueError("GiBUU needs equidistant flux bin centres")
+    path = Path(path)
+    lines = [f"# {source}" if source else "# flux for GiBUU nuExp=99", "# columns: E_nu bin centre [GeV], flux density (arbitrary units)",
+             f"# {len(centres)} equidistant bins of {centres[1] - centres[0]:g} GeV"]
+    lines += [f"{c:.4f}\t{v:.6e}" for c, v in zip(centres, values)]
+    path.write_text("\n".join(lines) + "\n")
+    return path
+
+
 def load_channel_flux(channel, repo_root: Path) -> dict:
     """Resolve a channel's flux_table into converted arrays + the integrated flux."""
     rel = channel.normalization.get("flux_table")
