@@ -205,6 +205,21 @@ def _fig_ansatz(name: str, g: dict, out: Path, label: str):
 
 
 # ---- the run ------------------------------------------------------------------------------------------------
+def write_report_from_run(run_dir: str | Path, cfg: SiteConfig | None = None) -> Path:
+    """Re-render report.md of a finished efficiency run from the JSON tables it wrote."""
+    cfg = cfg or load_site_config()
+    d = Path(run_dir)
+    summary = json.loads((d / "summary.json").read_text())
+    ch = load_channel(summary["channel"])
+    names = list(summary["measurements"])
+    meas = {n: load_measurement(ch, n) for n in names}
+    tables = {n: json.loads((d / f"eff_{n}.json").read_text()) for n in names}
+    bkgs = {n: json.loads((d / f"background_{n}.json").read_text()) for n in names}
+    figs = sorted((d / "figs").glob("*.png"))
+    _write_report(d, ch, meas, tables, bkgs, summary, figs)
+    return d / "report.md"
+
+
 def run_efficiency(channel_name: str, cfg: SiteConfig | None = None, *, maps=DEFAULT_MAPS, grids: list | None = None,
                    out_root: str | Path | None = None, slug: str | None = None, closure: bool = True, log=print) -> Path:
     from .products import sources_fingerprints, total_pot
@@ -286,6 +301,20 @@ def _write_report(run_dir: Path, ch, meas: dict, tables: dict, bkgs: dict, summa
                   "|---|" + "---|" * (len(t["y"]["edges"]) - 1)]
             for i, (lo, hi) in enumerate(zip(t["x"]["edges"][:-1], t["x"]["edges"][1:])):
                 L.append(f"| [{lo:g}, {hi:g}) | " + " | ".join(f"{t['eff'][i][j]:.3f} ± {t['err'][i][j]:.3f}" for j in range(len(t["y"]["edges"]) - 1)) + " |")
+    one_d = [n for n, m in meas.items() if m.is_1d]
+    if one_d:
+        L += ["", "## Efficiency per bin of every one-dimensional grid", "",
+              "These are the numbers to weight a truth sample with when the weight is wanted in the bins of one released variable: "
+              "ε of a true bin is the fraction of that bin's fiducial signal events the selection keeps, so a prediction in that bin is "
+              "(truth events in the bin) × ε. They are exact for their own binning, unlike the factorised map product below.", ""]
+        for n in one_d:
+            t = tables[n]
+            lab = f"{t['x']['label']} [{t['x']['units']}]" if t["x"]["units"] else t["x"]["label"]
+            L += [f"**{n}** — ε vs true {lab}", "",
+                  "| bin | " + " | ".join(f"[{lo:.4g}, {hi:.4g})" for lo, hi in zip(t["x"]["edges"][:-1], t["x"]["edges"][1:])) + " |",
+                  "|---|" + "---|" * (len(t["x"]["edges"]) - 1),
+                  "| ε ± δ | " + " | ".join(f"{t['eff'][i][0]:.3f} ± {t['err'][i][0]:.3f}" for i in range(len(t["x"]["edges"]) - 1)) + " |",
+                  "| signal in bin | " + " | ".join(f"{int(t['den'][i][0])}" for i in range(len(t["x"]["edges"]) - 1)) + " |", ""]
     if summary.get("ansatz"):
         a = summary["ansatz"]
         L += ["", "## Factorised ansatz w = ε_μ(p_μ, cos θ_μ) · ε_p(p_p, cos θ_p) / ⟨ε⟩ — closure on the MC", "",

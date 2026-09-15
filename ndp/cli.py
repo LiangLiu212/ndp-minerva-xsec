@@ -271,7 +271,11 @@ def _cmd_signal(a):
 
 
 def _cmd_efficiency(a):
-    from .efficiency import run_efficiency, EfficiencyMaps
+    from .efficiency import run_efficiency, write_report_from_run, EfficiencyMaps
+    if a.ecmd == "report":
+        p = write_report_from_run(a.run)
+        print(p.read_text()); print("rewrote", p)
+        return 0
     if a.ecmd == "apply":
         from .events import TruthTable
         from .channels import load_channel
@@ -410,6 +414,8 @@ def main(argv=None) -> int:
     p.add_argument("--grids", default="all", help="released grids to export (comma list or `all`)")
     p.add_argument("--no-closure", action="store_true", help="skip the ansatz closure pass over the MC")
     p.add_argument("--out"); p.add_argument("--slug"); p.set_defaults(fn=_cmd_efficiency)
+    p = pes.add_parser("report", help="re-render report.md of a finished efficiency run from its JSON tables")
+    p.add_argument("--run", required=True); p.set_defaults(fn=_cmd_efficiency)
     p = pes.add_parser("apply", help="weight a truth sample (TruthTable npz) with the maps of an efficiency run")
     p.add_argument("--channel", required=True); p.add_argument("--run", required=True); p.add_argument("--sample", required=True)
     p.add_argument("--out", required=True); p.set_defaults(fn=_cmd_efficiency)
