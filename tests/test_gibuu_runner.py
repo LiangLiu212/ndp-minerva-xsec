@@ -145,3 +145,28 @@ def test_merge_energy_scan_weights_by_flux_fraction():
     expected = sum(3.0 * q["flux_fraction"] for q in pts)
     assert np.isclose(t["weight"].sum(), expected) and np.isclose(t.meta["sigma_flux_avg_per_nucleon_cm2"], expected * 1e-38)
     assert t.meta["mode"] == "energy_scan" and t.meta["energy_points_missing"] == [] and "gibuu_energy_k" in t
+
+
+def test_merge_energy_scan_handles_partial_points_and_missing_points():
+    """A point whose jobs are partly missing keeps its full flux weight (the present jobs share it);
+    a point with no job at all is reported as missing and lowers the covered flux."""
+    cfg = site()
+    from ndp.channels import load_channel
+    from ndp.theory.gibuu import energy_allocation
+    ch = load_channel("minerva_me_ccqelike_1mu1p")
+    spec = GibuuSpec(mode="energy_scan", total_ensembles=20000, energy_e_min_gev=2.0, energy_e_max_gev=4.0, energy_step_gev=1.0)
+    root = Path(tempfile.mkdtemp())
+    pts = energy_allocation(spec, fluxmod.load_channel_flux(ch, cfg.repo_root))
+    jobs = []
+    for i in range(2):                       # two jobs of the FIRST point only; the second point has none
+        d = root / f"J{i}"; d.mkdir()
+        _finalevents(d / "FinalEvents.dat", [(1.0, 1, pts[0]["energy"], [(1, 1, 1.2, 0.1, 0.0, 0.7)])] * 2)
+        _xsec_file(d / "neutrino_absorption_cross_section_ALL.dat", 2.0)
+        (d / "manifest_job.json").write_text(json.dumps({"energy_point": {k: v for k, v in pts[0].items() if k in ("k", "energy", "flux_fraction", "n_ensembles")}}))
+        jobs.append(d)
+    t = merge_energy_scan(jobs, spec, ch, cfg, out_dir=root / "merged", log=lambda *a: None)
+    assert t.n == 4
+    assert np.isclose(t["weight"].sum(), 2.0 * pts[0]["flux_fraction"])      # two jobs share one point's weight
+    assert t.meta["energy_points_missing"] == [pts[1]["k"]]
+    assert np.isclose(t.meta["flux_fraction_covered"], pts[0]["flux_fraction"])
+    assert t.meta["energy_points"][0]["n_jobs"] == 2
