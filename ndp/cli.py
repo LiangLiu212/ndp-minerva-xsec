@@ -91,7 +91,7 @@ def _cmd_surrogate_build(a):
     from .compare import plots
     from .io import timestamp
     cfg = load_site_config(); ch = load_channel(a.channel)
-    meas = load_measurement(ch, a.measurement)
+    meas = load_measurement(ch, a.measurement) if (a.measurement or "").strip() != "all" and "," not in (a.measurement or "") else None
     if a.source == "artifacts":
         if meas.name != "published":
             print("artifacts source only exists for the published grid"); return 2
@@ -104,6 +104,21 @@ def _cmd_surrogate_build(a):
         print(json.dumps(sur.diagnostics(), indent=2)); print("saved", out)
         return 0
     kinds = ("binned", "parametric") if a.kind == "all" else (a.kind,)
+    from .channels import list_measurements
+    from .products import has_products
+    want = (a.measurement or "").strip()
+    several = want == "all" or "," in want
+    if several or has_products(ch) or a.chunked:
+        # one pass over the MC, one playlist (or legacy file) at a time; binned responses only
+        from .surrogate.chunked import build_surrogates_chunked
+        if "parametric" in kinds and a.kind != "all":
+            print("parametric surrogates need the event arrays in memory: not available with playlist products / --chunked"); return 2
+        names = [n for n in list_measurements(ch) if n != "published"] if want == "all" else [n.strip() for n in want.split(",")]
+        ms = [load_measurement(ch, n) for n in names]
+        res = build_surrogates_chunked(ch, ms, cfg, out_root=a.out)
+        print(json.dumps(res, indent=2, default=str))
+        bad = [n for n, r in res.items() if not r["closure"]["exact"]]
+        return 1 if bad else 0
     results = build_surrogates(ch, meas, cfg, kinds=kinds, n_samples=a.n_samples, out_root=a.out)
     for r in results:
         print(json.dumps(r, indent=2, default=str))
@@ -266,7 +281,9 @@ def main(argv=None) -> int:
     p.add_argument("--fold-events", action="store_true", help="smear truth events (parametric surrogate) instead of folding true cells")
     p.add_argument("--slug"); p.set_defaults(fn=_cmd_run)
     ps = sub.add_parser("surrogate", help="build / inspect detector surrogates").add_subparsers(dest="scmd", required=True)
-    p = ps.add_parser("build"); p.add_argument("--channel", required=True); p.add_argument("--measurement")
+    p = ps.add_parser("build"); p.add_argument("--channel", required=True)
+    p.add_argument("--measurement", help="one name, a comma list, or `all` (every measurement YAML of the channel)")
+    p.add_argument("--chunked", action="store_true", help="accumulate one playlist / file at a time (automatic with playlist products or several measurements)")
     p.add_argument("--source", choices=("mc", "artifacts"), default="mc")
     p.add_argument("--kind", choices=("binned", "parametric", "all"), default="all"); p.add_argument("--n-samples", type=int, default=20)
     p.add_argument("--out", help="output root (default surrogates/<channel>[/<measurement>])"); p.set_defaults(fn=_cmd_surrogate_build)

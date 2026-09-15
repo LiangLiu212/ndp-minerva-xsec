@@ -35,14 +35,39 @@ def is_identifier(s: str) -> bool:
     return bool(_IDENT.match(s)) and not keyword.iskeyword(s)
 
 
+class LazyNamespace(dict):
+    """A dict of columns/constants whose missing names are computed on first use by `resolvers`
+    ({name: callable}). Lets `eval` see every observable without evaluating every observable."""
+
+    def __init__(self, base: dict, resolvers: dict):
+        super().__init__(base)
+        self._resolvers = resolvers
+
+    def __missing__(self, key):
+        f = self._resolvers.get(key)
+        if f is None:
+            raise KeyError(key)
+        v = f()
+        self[key] = v
+        return v
+
+    def known_names(self) -> list:
+        return sorted(set(self) | set(self._resolvers))
+
+
 def eval_expr(expr: str, ns: dict, n: int) -> np.ndarray:
     """Evaluate a manifest expression in a numpy-only namespace; broadcast scalars to n."""
-    scope = dict(MATH_NAMESPACE)
-    scope.update(ns)
+    if isinstance(ns, LazyNamespace):
+        scope = LazyNamespace(dict(MATH_NAMESPACE, **{k: ns[k] for k in dict.keys(ns)}), ns._resolvers)
+        known = ns.known_names()
+    else:
+        scope = dict(MATH_NAMESPACE)
+        scope.update(ns)
+        known = sorted(k for k in ns if not k.startswith("_"))
     try:
         v = eval(expr, {"__builtins__": {}}, scope)  # noqa: S307 — analyst-authored, numpy namespace only
-    except NameError as e:
-        raise KeyError(f"expression {expr!r}: {e}; known names: {sorted(k for k in ns if not k.startswith('_'))}") from None
+    except (NameError, KeyError) as e:
+        raise KeyError(f"expression {expr!r}: {e}; known names: {known}") from None
     return np.broadcast_to(np.asarray(v, float), (n,)).copy()
 
 
@@ -341,16 +366,14 @@ OBSERVABLES = {
 
 
 def namespace(t: TruthTable, frame: str = "detector", signal: dict | None = None, params: dict | None = None) -> dict:
-    """Every truth column and every evaluable observable (in `frame`), plus the interaction codes."""
+    """Every truth column and every observable (in `frame`), plus the interaction codes. Observables
+    are evaluated lazily, on first use by an expression (an unevaluable one, e.g. E_avail on a sample
+    without final-state particles or dpL without tki masses, only fails if the expression names it)."""
     ns = {k: t[k] for k in t.columns if k != "fs_offsets" and not k.startswith("fs_")}
-    for name, f in OBSERVABLES.items():
-        try:
-            ns[name] = f(t, frame=frame, signal=signal, params=params)
-        except Exception:  # e.g. E_avail on a sample without final-state particles, dpL without tki masses
-            pass
     ns.update(INT_CODE)          # QE, RES, DIS, COH, MEC as codes
     ns["M_MU"], ns["M_P"], ns["M_N"] = M_MU, M_P, M_N
-    return ns
+    resolvers = {name: (lambda f=f: f(t, frame=frame, signal=signal, params=params)) for name, f in OBSERVABLES.items()}
+    return LazyNamespace(ns, resolvers)
 
 
 def evaluate(name_or_expr: str, t: TruthTable, **kw) -> np.ndarray:

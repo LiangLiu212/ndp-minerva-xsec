@@ -154,14 +154,11 @@ RECO_OBSERVABLES = {
 
 
 def namespace(r: dict, params: dict | None = None) -> dict:
+    """Reco columns + reco observables, the latter evaluated lazily on first use by an expression."""
+    from .observables import LazyNamespace
     ns = {k: np.asarray(v) for k, v in r.items() if k != "__meta__"}
-    for name, f in RECO_OBSERVABLES.items():
-        try:
-            ns[name] = f(r, params=params)
-        except KeyError:
-            pass
     ns["M_MU"] = M_MU
-    return ns
+    return LazyNamespace(ns, {name: (lambda f=f: f(r, params=params)) for name, f in RECO_OBSERVABLES.items()})
 
 
 def evaluate(name_or_expr: str, r: dict, params: dict | None = None) -> np.ndarray:

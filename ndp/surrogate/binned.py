@@ -19,6 +19,57 @@ from .base import Surrogate
 from ..channels.binning import Binning
 
 
+def count_pairs(binning: Binning, *, x_true_den, y_true_den, w_den=None, x_true_num, y_true_num, x_reco_num, y_reco_num,
+                w_num=None, x_reco_bkg=None, y_reco_bkg=None, w_bkg=None, bkg_category=None, category_names=None) -> dict:
+    """The pure sums a binned response is made of; additive over independent chunks of one MC sample.
+
+    den[j]      signal events in the true phase space per true cell
+    num[j]      selected signal events per true cell (true cell inside the grid)
+    M[i, j]     selected signal events with reco cell i and true cell j (both inside)
+    feedin[i]   selected signal events whose true cell is outside the grid, per reco cell
+    bkg_explicit[i]  the explicit background sample (selected non-signal) per reco cell
+    bkg_by_category  {name: counts per reco cell} when `bkg_category` (a label per bkg event) is given
+    n_num_reco_out   selected signal inside the true grid that reconstructs outside the reco grid
+    """
+    n = binning.n_cells
+    den, _, _ = binning.histogram(x_true_den, y_true_den, w_den)
+    gt = binning.digitize(x_true_num, y_true_num)
+    gr = binning.digitize(x_reco_num, y_reco_num)
+    w = np.ones(len(gt)) if w_num is None else np.asarray(w_num, float)
+    in_true = gt >= 0
+    num = np.bincount(gt[in_true], weights=w[in_true], minlength=n)
+    both = in_true & (gr >= 0)
+    M = np.zeros((n, n))
+    np.add.at(M, (gr[both], gt[both]), w[both])
+    feed = (~in_true) & (gr >= 0)
+    feedin = np.bincount(gr[feed], weights=w[feed], minlength=n)
+    out = {"den": den, "num": num, "M": M, "feedin": feedin, "bkg_explicit": np.zeros(n),
+           "n_num_reco_out": float(w[in_true & (gr < 0)].sum()), "bkg_by_category": None}
+    if x_reco_bkg is not None:
+        out["bkg_explicit"], _, _ = binning.histogram(x_reco_bkg, y_reco_bkg, w_bkg)
+        if bkg_category is not None and category_names:
+            cat = np.asarray(bkg_category)
+            wb = None if w_bkg is None else np.asarray(w_bkg, float)
+            out["bkg_by_category"] = {c: binning.histogram(np.asarray(x_reco_bkg)[cat == c], np.asarray(y_reco_bkg)[cat == c],
+                                                           None if wb is None else wb[cat == c])[0] for c in category_names}
+    return out
+
+
+def add_counts(a: dict | None, b: dict) -> dict:
+    """Sum two `count_pairs` results (a may be None)."""
+    if a is None:
+        return {k: (dict(v) if isinstance(v, dict) else v) for k, v in b.items()}
+    out = {}
+    for k in ("den", "num", "M", "feedin", "bkg_explicit"):
+        out[k] = a[k] + b[k]
+    out["n_num_reco_out"] = a["n_num_reco_out"] + b["n_num_reco_out"]
+    if a.get("bkg_by_category") and b.get("bkg_by_category"):
+        out["bkg_by_category"] = {c: a["bkg_by_category"][c] + b["bkg_by_category"][c] for c in a["bkg_by_category"]}
+    else:
+        out["bkg_by_category"] = a.get("bkg_by_category") or b.get("bkg_by_category")
+    return out
+
+
 class BinnedResponse(Surrogate):
     kind = "binned_response"
 
@@ -33,16 +84,30 @@ class BinnedResponse(Surrogate):
         self.den_counts = None if den_counts is None else np.asarray(den_counts, float).reshape(n)
         self.num_counts = None if num_counts is None else np.asarray(num_counts, float).reshape(n)
         self.bkg_per_pot = None if bkg_per_pot is None else np.asarray(bkg_per_pot, float).reshape(n)
+        self.feedin_counts = None                 # selected signal whose true cell is outside the grid, per reco cell
+        self.bkg_by_category_counts = None        # {category: counts per reco cell} of the non-signal selected events
 
     # ---- the surrogate -------------------------------------------------------------------
     def fold(self, true_cells: np.ndarray) -> np.ndarray:
         true_cells = np.asarray(true_cells, float).reshape(self.binning.n_cells)
         return self.P @ (self.eff * true_cells)
 
+    def fold_eff_only(self, true_cells: np.ndarray) -> np.ndarray:
+        """Efficiency only, no migration: what weighting truth events by eff(true cell) gives."""
+        true_cells = np.asarray(true_cells, float).reshape(self.binning.n_cells)
+        return self.eff * true_cells
+
     def background(self, pot_data: float) -> np.ndarray:
         if self.bkg_per_pot is None:
             return np.zeros(self.binning.n_cells)
         return self.bkg_per_pot * pot_data
+
+    def background_by_category(self, pot_data: float) -> dict | None:
+        """{category: counts at pot_data} of the non-signal part of the background (feed-in excluded)."""
+        if not self.bkg_by_category_counts or not self.meta.get("pot_mc"):
+            return None
+        s = pot_data / float(self.meta["pot_mc"])
+        return {c: np.asarray(v, float) * s for c, v in self.bkg_by_category_counts.items()}
 
     def fold_variance(self, true_cells: np.ndarray) -> np.ndarray:
         """Approximate MC-stat variance: binomial on eff (per true cell) + multinomial on P
@@ -100,38 +165,37 @@ class BinnedResponse(Surrogate):
               a phase-space-restricted response cannot produce). Stored per POT.
 
         With these definitions folding the training MC's own truth reproduces its
-        reco-selected in-grid count exactly (closure by construction).
+        reco-selected in-grid count exactly (closure by construction). `fit` is
+        `from_counts(count_pairs(...))`; the counts are additive over chunks of one MC.
         """
-        n = binning.n_cells
-        den, _, _ = binning.histogram(x_true_den, y_true_den, w_den)
-        gt = binning.digitize(x_true_num, y_true_num)
-        gr = binning.digitize(x_reco_num, y_reco_num)
-        w = np.ones(len(gt)) if w_num is None else np.asarray(w_num, float)
-        in_true = gt >= 0
-        num = np.bincount(gt[in_true], weights=w[in_true], minlength=n)
+        counts = count_pairs(binning, x_true_den=x_true_den, y_true_den=y_true_den, w_den=w_den,
+                             x_true_num=x_true_num, y_true_num=y_true_num, x_reco_num=x_reco_num, y_reco_num=y_reco_num,
+                             w_num=w_num, x_reco_bkg=x_reco_bkg, y_reco_bkg=y_reco_bkg, w_bkg=w_bkg)
+        return cls.from_counts(binning, counts, pot_mc=pot_mc, meta=meta)
+
+    @classmethod
+    def from_counts(cls, binning: Binning, counts: dict, pot_mc: float | None = None, meta: dict | None = None) -> "BinnedResponse":
+        """Build from summed `count_pairs` dictionaries (see `add_counts`)."""
+        den, num, M = counts["den"], counts["num"], counts["M"]
         with np.errstate(invalid="ignore", divide="ignore"):
             eff = np.where(den > 0, num / den, 0.0)
         eff = np.clip(eff, 0.0, 1.0)
-        both = in_true & (gr >= 0)
-        M = np.zeros((n, n))
-        np.add.at(M, (gr[both], gt[both]), w[both])
         P = np.zeros_like(M)
         P[:, num > 0] = M[:, num > 0] / num[num > 0]
-        # feed-in: numerator events whose TRUE cell is outside the grid but reco inside
-        feed = (~in_true) & (gr >= 0)
-        bkg_counts = np.bincount(gr[feed], weights=w[feed], minlength=n)
-        n_feed_true_out = float(w[feed].sum())
-        if x_reco_bkg is not None:
-            b, _, _ = binning.histogram(x_reco_bkg, y_reco_bkg, w_bkg)
-            bkg_counts = bkg_counts + b
+        bkg_counts = counts["feedin"] + counts["bkg_explicit"]
         bkg = bkg_counts / pot_mc if pot_mc else None
         m = dict(meta or {})
         m.update({"n_den": float(den.sum()), "n_num": float(num.sum()), "n_migration": float(M.sum()),
-                  "n_num_reco_out_of_grid": float(w[in_true & (gr < 0)].sum()),
-                  "n_feedin_true_out_of_grid": n_feed_true_out,
+                  "n_num_reco_out_of_grid": float(counts["n_num_reco_out"]),
+                  "n_feedin_true_out_of_grid": float(counts["feedin"].sum()),
                   "n_bkg_total_in_reco_grid": float(bkg_counts.sum()), "pot_mc": pot_mc,
                   "response_convention": "P[reco, true] = M/num (column sums <= 1); bkg = non-signal + out-of-phase-space signal, per POT"})
-        return cls(binning, eff, P, migration_counts=M, den_counts=den, num_counts=num, bkg_per_pot=bkg, meta=m)
+        if counts.get("bkg_by_category"):
+            m["bkg_category_names"] = list(counts["bkg_by_category"])
+        obj = cls(binning, eff, P, migration_counts=M, den_counts=den, num_counts=num, bkg_per_pot=bkg, meta=m)
+        obj.feedin_counts = np.asarray(counts["feedin"], float)
+        obj.bkg_by_category_counts = {c: np.asarray(v, float) for c, v in counts["bkg_by_category"].items()} if counts.get("bkg_by_category") else None
+        return obj
 
     @classmethod
     def from_run_artifacts(cls, binning: Binning, migration_npy: str | Path, efficiency_npy: str | Path,
@@ -169,14 +233,22 @@ class BinnedResponse(Surrogate):
     # ---- persistence ---------------------------------------------------------------------
     def _arrays(self) -> dict:
         d = {"eff": self.eff, "P": self.P}
-        for k in ("migration_counts", "den_counts", "num_counts", "bkg_per_pot"):
+        for k in ("migration_counts", "den_counts", "num_counts", "bkg_per_pot", "feedin_counts"):
             v = getattr(self, k)
             if v is not None:
                 d[k] = v
+        if self.bkg_by_category_counts:
+            names = self.meta.get("bkg_category_names") or list(self.bkg_by_category_counts)
+            d["bkg_by_category"] = np.stack([self.bkg_by_category_counts[c] for c in names])
         return d
 
     @classmethod
     def _from_arrays(cls, binning, arrays, meta):
-        return cls(binning, arrays["eff"], arrays["P"], migration_counts=arrays.get("migration_counts"),
-                   den_counts=arrays.get("den_counts"), num_counts=arrays.get("num_counts"),
-                   bkg_per_pot=arrays.get("bkg_per_pot"), meta=meta)
+        obj = cls(binning, arrays["eff"], arrays["P"], migration_counts=arrays.get("migration_counts"),
+                  den_counts=arrays.get("den_counts"), num_counts=arrays.get("num_counts"),
+                  bkg_per_pot=arrays.get("bkg_per_pot"), meta=meta)
+        if "feedin_counts" in arrays:
+            obj.feedin_counts = np.asarray(arrays["feedin_counts"], float)
+        if "bkg_by_category" in arrays and meta.get("bkg_category_names"):
+            obj.bkg_by_category_counts = {c: np.asarray(v, float) for c, v in zip(meta["bkg_category_names"], arrays["bkg_by_category"])}
+        return obj

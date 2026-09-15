@@ -1,0 +1,15 @@
+# Efficiency-map measurement for the 1mu1p channel (added 2026-09-15 for the GiBUU study): the selection
+# efficiency is learned on this grid by `ndp surrogate build` (BinnedResponse.eff = selected truth signal /
+# truth signal in the fiducial, per true cell) and exported by `ndp efficiency`. The cos(theta) edges are
+# 8 uniform bins from the signal edge to 1 (the user's choice, docs/decisions.md 2026-09-15); the momentum
+# edges are the paper's released grid. `Binning.digitize` is half-open, so cos(theta) == 1.0 exactly
+# (theta = 0) falls outside the grid — a set of measure zero. Angles are in the channel frame (beam).
+name: proton_costheta
+channel: minerva_me_ccqelike_1mu1p
+status: default
+author: ndp-platform (user choice of binning, 2026-09-15)
+description: >
+  Selection efficiency vs true cos(theta_p) of the leading proton (1D projection grid of proton_p_costheta).
+x: {observable: "cos(proton_theta)", reco: "cos(reco_proton_theta)", units: "", label: "cos theta_p", edges: [0.34202, 0.424268, 0.506515, 0.588763, 0.67101, 0.753258, 0.835505, 0.917753, 1.0]}
+notes:
+  - "cos(70 deg) = 0.342020; 8 uniform bins to 1.0 (half-open top edge)"

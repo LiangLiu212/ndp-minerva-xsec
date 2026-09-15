@@ -1,0 +1,17 @@
+# Efficiency-map measurement for the 1mu1p channel (added 2026-09-15 for the GiBUU study): the selection
+# efficiency is learned on this grid by `ndp surrogate build` (BinnedResponse.eff = selected truth signal /
+# truth signal in the fiducial, per true cell) and exported by `ndp efficiency`. The cos(theta) edges are
+# 8 uniform bins from the signal edge to 1 (the user's choice, docs/decisions.md 2026-09-15); the momentum
+# edges are the paper's released grid. `Binning.digitize` is half-open, so cos(theta) == 1.0 exactly
+# (theta = 0) falls outside the grid — a set of measure zero. Angles are in the channel frame (beam).
+name: muon_p_costheta
+channel: minerva_me_ccqelike_1mu1p
+status: default
+author: ndp-platform (user choice of binning, 2026-09-15)
+description: >
+  Selection efficiency map in true muon momentum x cos(theta_mu); also a 2D folded comparison grid.
+x: {observable: lep_p, reco: reco_p, units: GeV/c, label: "muon p", edges: [2.0, 3.0, 4.0, 5.0, 6.0, 7.5, 10.0, 14.0, 20.0]}
+y: {observable: "cos(lep_theta)", reco: "cos(reco_theta)", units: "", label: "cos theta_mu", edges: [0.956305, 0.961767, 0.967229, 0.97269, 0.978152, 0.983614, 0.989076, 0.994538, 1.0]}
+global_cell_formula: "ix*n_y + iy"
+notes:
+  - "cos(17 deg) = 0.956305; 8 uniform bins to 1.0 (half-open top edge)"
