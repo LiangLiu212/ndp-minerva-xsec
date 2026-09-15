@@ -1,0 +1,1470 @@
+{
+ "name": "gibuu_me_c12_scan_2026-09",
+ "kind": "gibuu",
+ "created": "2026-09-15T17:28:57+0000",
+ "model": "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/models/gibuu_2025_me_fhc_c12.yaml",
+ "model_name": "gibuu_2025_me_fhc_c12",
+ "stratum": "all",
+ "channel": "minerva_me_ccqelike_1mu1p",
+ "spec": {
+  "target_Z": 6,
+  "target_A": 12,
+  "process_ID": 2,
+  "flavor_ID": 2,
+  "include": {
+   "QE": true,
+   "DELTA": true,
+   "RES": true,
+   "1pi": true,
+   "DIS": true,
+   "2p2hQE": true,
+   "2pi": true
+  },
+  "num_ensembles": 1000,
+  "num_time_steps": 150,
+  "delta_T": 0.2,
+  "num_runs": 1,
+  "medium_switch": true,
+  "medium_switch_delta": true,
+  "medium_switch_coll": false,
+  "eqs_type": 5,
+  "delta_pot": 1,
+  "density_switch_static": 2,
+  "apply_cuts": 2,
+  "equal_weights_mode": 0,
+  "equal_weights_max": -1.0,
+  "flux_bin_width_gev": 0.5,
+  "flux_e_max_gev": 100.0,
+  "mode": "energy_scan",
+  "energy_e_min_gev": 2.0,
+  "energy_e_max_gev": 60.0,
+  "energy_step_gev": 0.5,
+  "total_ensembles": 85000,
+  "min_ensembles": 100,
+  "max_ensembles_per_job": 1500,
+  "n_jobs": 100,
+  "seed": 20260915,
+  "template": "resources/gibuu/minerva_me_numu_CC.job.tmpl"
+ },
+ "mode": "energy_scan",
+ "fingerprint": "1f8bcb950be1dcd0",
+ "cache_dir": "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/runs/_generator_cache/gibuu_1f8bcb950be1dcd0",
+ "card_template": "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/runs/_generator_cache/gibuu_1f8bcb950be1dcd0/card.job.tmpl",
+ "flux_file": "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/runs/_generator_cache/gibuu_1f8bcb950be1dcd0/flux_gibuu.dat",
+ "energies_file": "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/runs/_generator_cache/gibuu_1f8bcb950be1dcd0/energies.txt",
+ "n_jobs": 156,
+ "seed_base": 20260915,
+ "expected_events_per_job": 12000,
+ "pnfs_out": "/pnfs/dune/scratch/users/liangliu/ndp-gibuu/gibuu_me_c12_scan_2026-09",
+ "jobs": [],
+ "processes": {
+  "0000": {
+   "seed": 20260915,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 0,
+   "energy_gev": 2.25,
+   "n_ensembles": 880,
+   "flux_fraction": 0.02721468475658419
+  },
+  "0001": {
+   "seed": 20260916,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 1,
+   "energy_gev": 2.75,
+   "n_ensembles": 926,
+   "flux_fraction": 0.04684756584197926
+  },
+  "0002": {
+   "seed": 20260917,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 1,
+   "energy_gev": 2.75,
+   "n_ensembles": 926,
+   "flux_fraction": 0.04684756584197926
+  },
+  "0003": {
+   "seed": 20260918,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 2,
+   "energy_gev": 3.25,
+   "n_ensembles": 1419,
+   "flux_fraction": 0.06078212290502793
+  },
+  "0004": {
+   "seed": 20260919,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 2,
+   "energy_gev": 3.25,
+   "n_ensembles": 1419,
+   "flux_fraction": 0.06078212290502793
+  },
+  "0005": {
+   "seed": 20260920,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 3,
+   "energy_gev": 3.75,
+   "n_ensembles": 1225,
+   "flux_fraction": 0.06820430965682361
+  },
+  "0006": {
+   "seed": 20260921,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 3,
+   "energy_gev": 3.75,
+   "n_ensembles": 1225,
+   "flux_fraction": 0.06820430965682361
+  },
+  "0007": {
+   "seed": 20260922,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 3,
+   "energy_gev": 3.75,
+   "n_ensembles": 1225,
+   "flux_fraction": 0.06820430965682361
+  },
+  "0008": {
+   "seed": 20260923,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 4,
+   "energy_gev": 4.25,
+   "n_ensembles": 1144,
+   "flux_fraction": 0.07495610534716678
+  },
+  "0009": {
+   "seed": 20260924,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 4,
+   "energy_gev": 4.25,
+   "n_ensembles": 1144,
+   "flux_fraction": 0.07495610534716678
+  },
+  "0010": {
+   "seed": 20260925,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 4,
+   "energy_gev": 4.25,
+   "n_ensembles": 1144,
+   "flux_fraction": 0.07495610534716678
+  },
+  "0011": {
+   "seed": 20260926,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 4,
+   "energy_gev": 4.25,
+   "n_ensembles": 1144,
+   "flux_fraction": 0.07495610534716678
+  },
+  "0012": {
+   "seed": 20260927,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 5,
+   "energy_gev": 4.75,
+   "n_ensembles": 1454,
+   "flux_fraction": 0.08523543495610533
+  },
+  "0013": {
+   "seed": 20260928,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 5,
+   "energy_gev": 4.75,
+   "n_ensembles": 1454,
+   "flux_fraction": 0.08523543495610533
+  },
+  "0014": {
+   "seed": 20260929,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 5,
+   "energy_gev": 4.75,
+   "n_ensembles": 1454,
+   "flux_fraction": 0.08523543495610533
+  },
+  "0015": {
+   "seed": 20260930,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 5,
+   "energy_gev": 4.75,
+   "n_ensembles": 1454,
+   "flux_fraction": 0.08523543495610533
+  },
+  "0016": {
+   "seed": 20260931,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 6,
+   "energy_gev": 5.25,
+   "n_ensembles": 1421,
+   "flux_fraction": 0.09415802075019951
+  },
+  "0017": {
+   "seed": 20260932,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 6,
+   "energy_gev": 5.25,
+   "n_ensembles": 1421,
+   "flux_fraction": 0.09415802075019951
+  },
+  "0018": {
+   "seed": 20260933,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 6,
+   "energy_gev": 5.25,
+   "n_ensembles": 1421,
+   "flux_fraction": 0.09415802075019951
+  },
+  "0019": {
+   "seed": 20260934,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 6,
+   "energy_gev": 5.25,
+   "n_ensembles": 1421,
+   "flux_fraction": 0.09415802075019951
+  },
+  "0020": {
+   "seed": 20260935,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 6,
+   "energy_gev": 5.25,
+   "n_ensembles": 1421,
+   "flux_fraction": 0.09415802075019951
+  },
+  "0021": {
+   "seed": 20260936,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 7,
+   "energy_gev": 5.75,
+   "n_ensembles": 1361,
+   "flux_fraction": 0.09883479648842776
+  },
+  "0022": {
+   "seed": 20260937,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 7,
+   "energy_gev": 5.75,
+   "n_ensembles": 1361,
+   "flux_fraction": 0.09883479648842776
+  },
+  "0023": {
+   "seed": 20260938,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 7,
+   "energy_gev": 5.75,
+   "n_ensembles": 1361,
+   "flux_fraction": 0.09883479648842776
+  },
+  "0024": {
+   "seed": 20260939,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 7,
+   "energy_gev": 5.75,
+   "n_ensembles": 1361,
+   "flux_fraction": 0.09883479648842776
+  },
+  "0025": {
+   "seed": 20260940,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 7,
+   "energy_gev": 5.75,
+   "n_ensembles": 1361,
+   "flux_fraction": 0.09883479648842776
+  },
+  "0026": {
+   "seed": 20260941,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 7,
+   "energy_gev": 5.75,
+   "n_ensembles": 1361,
+   "flux_fraction": 0.09883479648842776
+  },
+  "0027": {
+   "seed": 20260942,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 8,
+   "energy_gev": 6.25,
+   "n_ensembles": 1426,
+   "flux_fraction": 0.09525937749401436
+  },
+  "0028": {
+   "seed": 20260943,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 8,
+   "energy_gev": 6.25,
+   "n_ensembles": 1426,
+   "flux_fraction": 0.09525937749401436
+  },
+  "0029": {
+   "seed": 20260944,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 8,
+   "energy_gev": 6.25,
+   "n_ensembles": 1426,
+   "flux_fraction": 0.09525937749401436
+  },
+  "0030": {
+   "seed": 20260945,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 8,
+   "energy_gev": 6.25,
+   "n_ensembles": 1426,
+   "flux_fraction": 0.09525937749401436
+  },
+  "0031": {
+   "seed": 20260946,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 8,
+   "energy_gev": 6.25,
+   "n_ensembles": 1426,
+   "flux_fraction": 0.09525937749401436
+  },
+  "0032": {
+   "seed": 20260947,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 8,
+   "energy_gev": 6.25,
+   "n_ensembles": 1426,
+   "flux_fraction": 0.09525937749401436
+  },
+  "0033": {
+   "seed": 20260948,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 9,
+   "energy_gev": 6.75,
+   "n_ensembles": 1350,
+   "flux_fraction": 0.08352753391859535
+  },
+  "0034": {
+   "seed": 20260949,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 9,
+   "energy_gev": 6.75,
+   "n_ensembles": 1350,
+   "flux_fraction": 0.08352753391859535
+  },
+  "0035": {
+   "seed": 20260950,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 9,
+   "energy_gev": 6.75,
+   "n_ensembles": 1350,
+   "flux_fraction": 0.08352753391859535
+  },
+  "0036": {
+   "seed": 20260951,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 9,
+   "energy_gev": 6.75,
+   "n_ensembles": 1350,
+   "flux_fraction": 0.08352753391859535
+  },
+  "0037": {
+   "seed": 20260952,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 9,
+   "energy_gev": 6.75,
+   "n_ensembles": 1350,
+   "flux_fraction": 0.08352753391859535
+  },
+  "0038": {
+   "seed": 20260953,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 9,
+   "energy_gev": 6.75,
+   "n_ensembles": 1350,
+   "flux_fraction": 0.08352753391859535
+  },
+  "0039": {
+   "seed": 20260954,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 10,
+   "energy_gev": 7.25,
+   "n_ensembles": 1365,
+   "flux_fraction": 0.06553870710295291
+  },
+  "0040": {
+   "seed": 20260955,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 10,
+   "energy_gev": 7.25,
+   "n_ensembles": 1365,
+   "flux_fraction": 0.06553870710295291
+  },
+  "0041": {
+   "seed": 20260956,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 10,
+   "energy_gev": 7.25,
+   "n_ensembles": 1365,
+   "flux_fraction": 0.06553870710295291
+  },
+  "0042": {
+   "seed": 20260957,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 10,
+   "energy_gev": 7.25,
+   "n_ensembles": 1365,
+   "flux_fraction": 0.06553870710295291
+  },
+  "0043": {
+   "seed": 20260958,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 10,
+   "energy_gev": 7.25,
+   "n_ensembles": 1365,
+   "flux_fraction": 0.06553870710295291
+  },
+  "0044": {
+   "seed": 20260959,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 11,
+   "energy_gev": 7.75,
+   "n_ensembles": 1315,
+   "flux_fraction": 0.047246608140462894
+  },
+  "0045": {
+   "seed": 20260960,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 11,
+   "energy_gev": 7.75,
+   "n_ensembles": 1315,
+   "flux_fraction": 0.047246608140462894
+  },
+  "0046": {
+   "seed": 20260961,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 11,
+   "energy_gev": 7.75,
+   "n_ensembles": 1315,
+   "flux_fraction": 0.047246608140462894
+  },
+  "0047": {
+   "seed": 20260962,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 11,
+   "energy_gev": 7.75,
+   "n_ensembles": 1315,
+   "flux_fraction": 0.047246608140462894
+  },
+  "0048": {
+   "seed": 20260963,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 12,
+   "energy_gev": 8.25,
+   "n_ensembles": 1281,
+   "flux_fraction": 0.03241819632881085
+  },
+  "0049": {
+   "seed": 20260964,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 12,
+   "energy_gev": 8.25,
+   "n_ensembles": 1281,
+   "flux_fraction": 0.03241819632881085
+  },
+  "0050": {
+   "seed": 20260965,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 12,
+   "energy_gev": 8.25,
+   "n_ensembles": 1281,
+   "flux_fraction": 0.03241819632881085
+  },
+  "0051": {
+   "seed": 20260966,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 13,
+   "energy_gev": 8.75,
+   "n_ensembles": 1338,
+   "flux_fraction": 0.021292897047086992
+  },
+  "0052": {
+   "seed": 20260967,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 13,
+   "energy_gev": 8.75,
+   "n_ensembles": 1338,
+   "flux_fraction": 0.021292897047086992
+  },
+  "0053": {
+   "seed": 20260968,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 14,
+   "energy_gev": 9.25,
+   "n_ensembles": 921,
+   "flux_fraction": 0.013854748603351954
+  },
+  "0054": {
+   "seed": 20260969,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 14,
+   "energy_gev": 9.25,
+   "n_ensembles": 921,
+   "flux_fraction": 0.013854748603351954
+  },
+  "0055": {
+   "seed": 20260970,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 15,
+   "energy_gev": 9.75,
+   "n_ensembles": 1281,
+   "flux_fraction": 0.00914604948124501
+  },
+  "0056": {
+   "seed": 20260971,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 16,
+   "energy_gev": 10.25,
+   "n_ensembles": 940,
+   "flux_fraction": 0.006384676775738228
+  },
+  "0057": {
+   "seed": 20260972,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 17,
+   "energy_gev": 10.75,
+   "n_ensembles": 727,
+   "flux_fraction": 0.004708699122106942
+  },
+  "0058": {
+   "seed": 20260973,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 18,
+   "energy_gev": 11.25,
+   "n_ensembles": 580,
+   "flux_fraction": 0.003591380686352753
+  },
+  "0059": {
+   "seed": 20260974,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 19,
+   "energy_gev": 11.75,
+   "n_ensembles": 498,
+   "flux_fraction": 0.00295291300877893
+  },
+  "0060": {
+   "seed": 20260975,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 20,
+   "energy_gev": 12.25,
+   "n_ensembles": 449,
+   "flux_fraction": 0.002553870710295291
+  },
+  "0061": {
+   "seed": 20260976,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 21,
+   "energy_gev": 12.75,
+   "n_ensembles": 395,
+   "flux_fraction": 0.0021548284118116517
+  },
+  "0062": {
+   "seed": 20260977,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 22,
+   "energy_gev": 13.25,
+   "n_ensembles": 349,
+   "flux_fraction": 0.0018355945730247406
+  },
+  "0063": {
+   "seed": 20260978,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 23,
+   "energy_gev": 13.75,
+   "n_ensembles": 331,
+   "flux_fraction": 0.0016759776536312847
+  },
+  "0064": {
+   "seed": 20260979,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 24,
+   "energy_gev": 14.25,
+   "n_ensembles": 310,
+   "flux_fraction": 0.0015163607342378292
+  },
+  "0065": {
+   "seed": 20260980,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 25,
+   "energy_gev": 14.75,
+   "n_ensembles": 287,
+   "flux_fraction": 0.0013567438148443735
+  },
+  "0066": {
+   "seed": 20260981,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 26,
+   "energy_gev": 15.25,
+   "n_ensembles": 262,
+   "flux_fraction": 0.0011971268954509176
+  },
+  "0067": {
+   "seed": 20260982,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 27,
+   "energy_gev": 15.75,
+   "n_ensembles": 253,
+   "flux_fraction": 0.0011173184357541898
+  },
+  "0068": {
+   "seed": 20260983,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 28,
+   "energy_gev": 16.25,
+   "n_ensembles": 242,
+   "flux_fraction": 0.0010375099760574621
+  },
+  "0069": {
+   "seed": 20260984,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 29,
+   "energy_gev": 16.75,
+   "n_ensembles": 230,
+   "flux_fraction": 0.000957701516360734
+  },
+  "0070": {
+   "seed": 20260985,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 30,
+   "energy_gev": 17.25,
+   "n_ensembles": 218,
+   "flux_fraction": 0.0008778930566640063
+  },
+  "0071": {
+   "seed": 20260986,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 31,
+   "energy_gev": 17.75,
+   "n_ensembles": 203,
+   "flux_fraction": 0.0007980845969672785
+  },
+  "0072": {
+   "seed": 20260987,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 32,
+   "energy_gev": 18.25,
+   "n_ensembles": 209,
+   "flux_fraction": 0.0007980845969672785
+  },
+  "0073": {
+   "seed": 20260988,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 33,
+   "energy_gev": 18.75,
+   "n_ensembles": 193,
+   "flux_fraction": 0.0007182761372705506
+  },
+  "0074": {
+   "seed": 20260989,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 34,
+   "energy_gev": 19.25,
+   "n_ensembles": 177,
+   "flux_fraction": 0.0006384676775738228
+  },
+  "0075": {
+   "seed": 20260990,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 35,
+   "energy_gev": 19.75,
+   "n_ensembles": 181,
+   "flux_fraction": 0.0006384676775738228
+  },
+  "0076": {
+   "seed": 20260991,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 36,
+   "energy_gev": 20.25,
+   "n_ensembles": 163,
+   "flux_fraction": 0.0005586592178770949
+  },
+  "0077": {
+   "seed": 20260992,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 37,
+   "energy_gev": 20.75,
+   "n_ensembles": 167,
+   "flux_fraction": 0.0005586592178770949
+  },
+  "0078": {
+   "seed": 20260993,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 38,
+   "energy_gev": 21.25,
+   "n_ensembles": 171,
+   "flux_fraction": 0.0005586592178770949
+  },
+  "0079": {
+   "seed": 20260994,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 39,
+   "energy_gev": 21.75,
+   "n_ensembles": 175,
+   "flux_fraction": 0.0005586592178770949
+  },
+  "0080": {
+   "seed": 20260995,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 40,
+   "energy_gev": 22.25,
+   "n_ensembles": 153,
+   "flux_fraction": 0.000478850758180367
+  },
+  "0081": {
+   "seed": 20260996,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 41,
+   "energy_gev": 22.75,
+   "n_ensembles": 156,
+   "flux_fraction": 0.000478850758180367
+  },
+  "0082": {
+   "seed": 20260997,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 42,
+   "energy_gev": 23.25,
+   "n_ensembles": 133,
+   "flux_fraction": 0.00039904229848363923
+  },
+  "0083": {
+   "seed": 20260998,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 43,
+   "energy_gev": 23.75,
+   "n_ensembles": 136,
+   "flux_fraction": 0.00039904229848363923
+  },
+  "0084": {
+   "seed": 20260999,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 44,
+   "energy_gev": 24.25,
+   "n_ensembles": 111,
+   "flux_fraction": 0.0003192338387869114
+  },
+  "0085": {
+   "seed": 20261000,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 45,
+   "energy_gev": 24.75,
+   "n_ensembles": 113,
+   "flux_fraction": 0.0003192338387869114
+  },
+  "0086": {
+   "seed": 20261001,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 46,
+   "energy_gev": 25.25,
+   "n_ensembles": 116,
+   "flux_fraction": 0.0003192338387869114
+  },
+  "0087": {
+   "seed": 20261002,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 47,
+   "energy_gev": 25.75,
+   "n_ensembles": 118,
+   "flux_fraction": 0.0003192338387869114
+  },
+  "0088": {
+   "seed": 20261003,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 48,
+   "energy_gev": 26.25,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0002394253790901835
+  },
+  "0089": {
+   "seed": 20261004,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 49,
+   "energy_gev": 26.75,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0002394253790901835
+  },
+  "0090": {
+   "seed": 20261005,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 50,
+   "energy_gev": 27.25,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0002394253790901835
+  },
+  "0091": {
+   "seed": 20261006,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 51,
+   "energy_gev": 27.75,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0002394253790901835
+  },
+  "0092": {
+   "seed": 20261007,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 52,
+   "energy_gev": 28.25,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0002394253790901835
+  },
+  "0093": {
+   "seed": 20261008,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 53,
+   "energy_gev": 28.75,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0002394253790901835
+  },
+  "0094": {
+   "seed": 20261009,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 54,
+   "energy_gev": 29.25,
+   "n_ensembles": 101,
+   "flux_fraction": 0.0002394253790901835
+  },
+  "0095": {
+   "seed": 20261010,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 55,
+   "energy_gev": 29.75,
+   "n_ensembles": 102,
+   "flux_fraction": 0.0002394253790901835
+  },
+  "0096": {
+   "seed": 20261011,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 56,
+   "energy_gev": 30.25,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0001596169193934557
+  },
+  "0097": {
+   "seed": 20261012,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 57,
+   "energy_gev": 30.75,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0001596169193934557
+  },
+  "0098": {
+   "seed": 20261013,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 58,
+   "energy_gev": 31.25,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0001596169193934557
+  },
+  "0099": {
+   "seed": 20261014,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 59,
+   "energy_gev": 31.75,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0001596169193934557
+  },
+  "0100": {
+   "seed": 20261015,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 60,
+   "energy_gev": 32.25,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0001596169193934557
+  },
+  "0101": {
+   "seed": 20261016,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 61,
+   "energy_gev": 32.75,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0001596169193934557
+  },
+  "0102": {
+   "seed": 20261017,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 62,
+   "energy_gev": 33.25,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0001596169193934557
+  },
+  "0103": {
+   "seed": 20261018,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 63,
+   "energy_gev": 33.75,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0001596169193934557
+  },
+  "0104": {
+   "seed": 20261019,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 64,
+   "energy_gev": 34.25,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0001596169193934557
+  },
+  "0105": {
+   "seed": 20261020,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 65,
+   "energy_gev": 34.75,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0001596169193934557
+  },
+  "0106": {
+   "seed": 20261021,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 66,
+   "energy_gev": 35.25,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0107": {
+   "seed": 20261022,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 67,
+   "energy_gev": 35.75,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0108": {
+   "seed": 20261023,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 68,
+   "energy_gev": 36.25,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0109": {
+   "seed": 20261024,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 69,
+   "energy_gev": 36.75,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0110": {
+   "seed": 20261025,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 70,
+   "energy_gev": 37.25,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0111": {
+   "seed": 20261026,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 71,
+   "energy_gev": 37.75,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0112": {
+   "seed": 20261027,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 72,
+   "energy_gev": 38.25,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0113": {
+   "seed": 20261028,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 73,
+   "energy_gev": 38.75,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0114": {
+   "seed": 20261029,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 74,
+   "energy_gev": 39.25,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0115": {
+   "seed": 20261030,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 75,
+   "energy_gev": 39.75,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0116": {
+   "seed": 20261031,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 76,
+   "energy_gev": 40.25,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0117": {
+   "seed": 20261032,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 77,
+   "energy_gev": 40.75,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0118": {
+   "seed": 20261033,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 78,
+   "energy_gev": 41.25,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0119": {
+   "seed": 20261034,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 79,
+   "energy_gev": 41.75,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0120": {
+   "seed": 20261035,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 80,
+   "energy_gev": 42.25,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0121": {
+   "seed": 20261036,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 81,
+   "energy_gev": 42.75,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0122": {
+   "seed": 20261037,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 82,
+   "energy_gev": 43.25,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0123": {
+   "seed": 20261038,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 83,
+   "energy_gev": 43.75,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0124": {
+   "seed": 20261039,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 84,
+   "energy_gev": 44.25,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0125": {
+   "seed": 20261040,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 85,
+   "energy_gev": 44.75,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0126": {
+   "seed": 20261041,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 86,
+   "energy_gev": 45.25,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0127": {
+   "seed": 20261042,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 87,
+   "energy_gev": 45.75,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0128": {
+   "seed": 20261043,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 88,
+   "energy_gev": 46.25,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0129": {
+   "seed": 20261044,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 89,
+   "energy_gev": 46.75,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0130": {
+   "seed": 20261045,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 90,
+   "energy_gev": 47.25,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0131": {
+   "seed": 20261046,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 91,
+   "energy_gev": 47.75,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0132": {
+   "seed": 20261047,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 92,
+   "energy_gev": 48.25,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0133": {
+   "seed": 20261048,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 93,
+   "energy_gev": 48.75,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0134": {
+   "seed": 20261049,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 94,
+   "energy_gev": 49.25,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0135": {
+   "seed": 20261050,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 95,
+   "energy_gev": 49.75,
+   "n_ensembles": 100,
+   "flux_fraction": 7.980845969672785e-05
+  },
+  "0136": {
+   "seed": 20261051,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 96,
+   "energy_gev": 50.25,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0
+  },
+  "0137": {
+   "seed": 20261052,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 97,
+   "energy_gev": 50.75,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0
+  },
+  "0138": {
+   "seed": 20261053,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 98,
+   "energy_gev": 51.25,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0
+  },
+  "0139": {
+   "seed": 20261054,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 99,
+   "energy_gev": 51.75,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0
+  },
+  "0140": {
+   "seed": 20261055,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 100,
+   "energy_gev": 52.25,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0
+  },
+  "0141": {
+   "seed": 20261056,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 101,
+   "energy_gev": 52.75,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0
+  },
+  "0142": {
+   "seed": 20261057,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 102,
+   "energy_gev": 53.25,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0
+  },
+  "0143": {
+   "seed": 20261058,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 103,
+   "energy_gev": 53.75,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0
+  },
+  "0144": {
+   "seed": 20261059,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 104,
+   "energy_gev": 54.25,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0
+  },
+  "0145": {
+   "seed": 20261060,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 105,
+   "energy_gev": 54.75,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0
+  },
+  "0146": {
+   "seed": 20261061,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 106,
+   "energy_gev": 55.25,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0
+  },
+  "0147": {
+   "seed": 20261062,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 107,
+   "energy_gev": 55.75,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0
+  },
+  "0148": {
+   "seed": 20261063,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 108,
+   "energy_gev": 56.25,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0
+  },
+  "0149": {
+   "seed": 20261064,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 109,
+   "energy_gev": 56.75,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0
+  },
+  "0150": {
+   "seed": 20261065,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 110,
+   "energy_gev": 57.25,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0
+  },
+  "0151": {
+   "seed": 20261066,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 111,
+   "energy_gev": 57.75,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0
+  },
+  "0152": {
+   "seed": 20261067,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 112,
+   "energy_gev": 58.25,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0
+  },
+  "0153": {
+   "seed": 20261068,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 113,
+   "energy_gev": 58.75,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0
+  },
+  "0154": {
+   "seed": 20261069,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 114,
+   "energy_gev": 59.25,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0
+  },
+  "0155": {
+   "seed": 20261070,
+   "status": "planned",
+   "attempts": 0,
+   "energy_k": 115,
+   "energy_gev": 59.75,
+   "n_ensembles": 100,
+   "flux_fraction": 0.0
+  }
+ },
+ "gibuu_paths": {
+  "gibuu_x": "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/external/gibuu/release2025/objects/GiBUU.x",
+  "path_to_input": "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/external/gibuu/buuinput2025"
+ }
+}

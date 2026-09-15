@@ -65,6 +65,11 @@ python -m ndp selection --channel minerva_me_ccqelike_1mu1p        # reco select
 python -m ndp data cache --channel minerva_me_ccqelike_1mu1p --url root://... --kind mc --out DIR   # one streamed file, grid-style outputs
 python -m ndp grid plan <campaign> --channel <c> --beams FHC   # worklists; then grid/README.md: publish, submit, status, resubmit, harvest
 python -m ndp data merge --beam FHC --playlist 1A               # per-file products -> playlist products (+ pot_1A.json)
+python -m ndp surrogate build --channel minerva_me_ccqelike_1mu1p --measurement all --kind binned   # every grid's binned response in one pass over the playlists
+python -m ndp efficiency run --channel minerva_me_ccqelike_1mu1p    # efficiency maps + background by category + factorised-ansatz closure -> runs/<date>_efficiency_<channel>/
+python -m ndp efficiency apply --channel <c> --run runs/<eff run> --sample truth.npz --out weights.npz   # weight any truth sample with the maps
+python -m ndp run models/gibuu_2025_me_fhc_c12.yaml --channel minerva_me_ccqelike_1mu1p --measurement all --modes folded --efficiency-run runs/<eff run>   # data vs model signal + MC background on every grid
+python -m ndp gibuu smoke models/gibuu_2025_me_fhc_c12.yaml --channel minerva_me_ccqelike_1mu1p --ensembles 100   # one local GiBUU job; campaigns: grid/README.md (ndp gibuu plan/submit-cmd/status/harvest/merge)
 python tests/run_tests.py                    # or, inside pixi: pixi run test
 pixi run build-genie && pixi run snapshot-genie-env   # (re)build the in-repo GENIE
 ```
