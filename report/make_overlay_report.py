@@ -46,6 +46,14 @@ def sci(x: float, digits: int = 4) -> str:
     return f"{m} × 10{str(int(e)).translate(sup)}"
 
 
+def rel_to_root(p: Path) -> str:
+    """Repo-relative when the path is inside the repo, absolute otherwise (scratch runs)."""
+    try:
+        return str(p.relative_to(ROOT))
+    except ValueError:
+        return str(p)
+
+
 def copy_fig(src: Path, dst: Path) -> str | None:
     if not src.exists():
         return None
@@ -92,6 +100,7 @@ def main() -> int:
     a = ap.parse_args()
     E, O = Path(a.efficiency).resolve(), Path(a.overlay).resolve()
     out = Path(a.out).resolve(); figs = out.parent / "figs"; rel = figs.name; tag = a.tag
+    figs.mkdir(parents=True, exist_ok=True)
     es = json.loads((E / "summary.json").read_text()); clo = json.loads((E / "ansatz_closure.json").read_text()) if (E / "ansatz_closure.json").exists() else None
     sc = json.loads((O / "scorecard.json").read_text()); om = json.loads((O / "manifest.json").read_text())
     ts = json.loads((O / "truth_summary.json").read_text())
@@ -101,7 +110,7 @@ def main() -> int:
     pot_data = first["pot_data"]; exp = first["expected"]
 
     L = [f"# GiBUU 1μ1p signal on the MINERvA ME FHC selection: efficiency, background and data overlay", "",
-         f"**Status:** rendered from `{E.relative_to(ROOT)}` (efficiency maps, background, ansatz closure) and `{O.relative_to(ROOT)}` "
+         f"**Status:** rendered from `{rel_to_root(E)}` (efficiency maps, background, ansatz closure) and `{rel_to_root(O)}` "
          f"(data vs GiBUU signal + MC background on {len(grids)} grids), manifest git `{(om.get('platform_git') or {}).get('sha', '')[:7]}`. "
          "Numbers are quoted from those directories; this file was rendered by `report/make_overlay_report.py`.", "",
          "**Model:** " + model.get("description", "").strip(), "", "---", "",
@@ -120,13 +129,16 @@ def main() -> int:
     if run_json and run_json.get("energy_points"):
         pts = run_json["energy_points"]
         f = sigma_of_energy_figure(run_json, figs / f"{tag}_sigma_of_energy.png", ROOT, _splines_path())
+        miss = run_json.get("energy_points_missing") or []
         L += ["## 1b. The GiBUU sample", "",
-              f"{len(pts)} energy points {pts[0]['energy']:.2f}–{pts[-1]['energy']:.2f} GeV covering "
-              f"{run_json['flux_fraction_covered']:.4f} of the 0–100 GeV flux, {sum(q['n_jobs'] for q in pts)} grid jobs, "
-              f"{run_json['n_generated']:,} events; flux-averaged σ$_{{CC}}$ = {run_json['sigma_flux_avg_per_nucleon_cm2']:.4e} cm²/nucleon "
-              f"(over the covered flux). Missing points: {run_json.get('energy_points_missing') or 'none'}.".replace(",", " "), ""]
+              f"{len(pts)} energy points from {pts[0]['energy']:.2f} to {pts[-1]['energy']:.2f} GeV covering "
+              f"{run_json['flux_fraction_covered']:.4f} of the 0 to 100 GeV flux, {sum(q['n_jobs'] for q in pts)} grid jobs, "
+              f"{n(run_json['n_generated'])} events. Flux-averaged σ$_{{CC}}$ over the covered flux: "
+              f"{run_json['sigma_flux_avg_per_nucleon_cm2']:.4e} cm²/nucleon."
+              + ("" if not miss else f" **{len(miss)} planned points have no job**, so the predicted rate is biased low by their share of the flux."), ""]
         if f:
-            L += [f"![sigma of energy]({rel}/{f})", "*σ$_{CC}$(E) of every point against the GENIE spline, with each point's flux weight and event count.*", ""]
+            L += [f"![sigma of energy]({rel}/{Path(f).name})",
+                  "*σ$_{CC}$(E) of every point against the GENIE spline, with each point's flux weight and event count.*", ""]
 
     # efficiency maps
     L += ["## 2. Selection efficiency (official MC)", "",
