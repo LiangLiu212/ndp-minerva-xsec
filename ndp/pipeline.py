@@ -83,6 +83,12 @@ def run_model(model: str | Path | ModelSpec, channel_name: str, *, measurement: 
     if pred.truth is not None and pred.truth.meta.get("has_geometry") is False and channel.phase_space.get("vertex"):
         warnings.append("model sample has no detector geometry: the fiducial-vertex phase-space cut was not applied "
                         "(the sample is taken as generated on the fiducial target; normalisation uses n_nucleons)")
+    if pred.truth is not None and pred.truth.meta.get("energy_points_missing"):
+        cov = pred.truth.meta.get("flux_fraction_covered")
+        miss = pred.truth.meta["energy_points_missing"]
+        warnings.append(f"model sample is an incomplete energy scan: {len(miss)} of {len(miss) + len(pred.truth.meta.get('energy_points', []))} points "
+                        f"have no job, so it carries only {cov:.4f} of the flux and the predicted rate is biased LOW by the missing points "
+                        f"(missing k: {miss[:12]}{'...' if len(miss) > 12 else ''})")
 
     ctx_out = {"platform_version": __version__, "model": spec.to_dict(),
                "channel": {"name": channel.name, "description": channel.description},
@@ -216,6 +222,12 @@ def run_model_multi(model: str | Path | ModelSpec, channel_name: str, *, measure
     if pred.truth.meta.get("has_geometry") is False and channel.phase_space.get("vertex"):
         warnings.append("model sample has no detector geometry: the fiducial-vertex phase-space cut was not applied "
                         "(the sample is taken as generated on the fiducial target; normalisation uses n_nucleons)")
+    if pred.truth is not None and pred.truth.meta.get("energy_points_missing"):
+        cov = pred.truth.meta.get("flux_fraction_covered")
+        miss = pred.truth.meta["energy_points_missing"]
+        warnings.append(f"model sample is an incomplete energy scan: {len(miss)} of {len(miss) + len(pred.truth.meta.get('energy_points', []))} points "
+                        f"have no job, so it carries only {cov:.4f} of the flux and the predicted rate is biased LOW by the missing points "
+                        f"(missing k: {miss[:12]}{'...' if len(miss) > 12 else ''})")
     maps = None
     if efficiency_run:
         from .efficiency import EfficiencyMaps
