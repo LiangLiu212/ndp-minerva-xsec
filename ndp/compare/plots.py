@@ -143,7 +143,9 @@ def overlay_figure(res_full: dict, out: Path, title: str, res_eff: dict | None =
     if res_ansatz is not None:
         _step(ax, edges, np.asarray(res_ansatz["projections"]["x"]["pred"]), color="#54278f", lw=1.4, ls=":", label=f"{model_label} × ε_μ ε_p/⟨ε⟩ (maps) + bkg")
     ax.errorbar(centres, d, xerr=widths / 2, yerr=np.sqrt(d), fmt="o", ms=4, color=DATA_COLOR, capsize=2, label=f"data ({res_full['n_data_selected']} selected)", zorder=5)
-    ax.set_ylabel("selected events / bin"); ax.legend(fontsize=7, ncol=2)
+    ax.set_ylabel("selected events / bin")
+    ax.set_ylim(0, 1.45 * max(float(np.max(full)), float(np.max(d)) if len(d) else 0.0))   # headroom for the legend
+    ax.legend(fontsize=7, ncol=2, loc="upper right")
     var = np.asarray(res_full.get("var_mc_cells", np.zeros_like(full)))
     with np.errstate(invalid="ignore", divide="ignore"):
         ratio = np.where(full > 0, d / full, np.nan); rerr = np.where(full > 0, np.sqrt(d) / full, np.nan)
