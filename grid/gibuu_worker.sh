@@ -8,7 +8,7 @@
 #               __FLUX_FILE__, __SEED__ left by ndp.theory.gibuu.write_card; everything else filled)
 #   -S <int>    base seed; this process runs with seed = S + PROCESS (a 32-bit Fortran integer)
 #   -F <file>   flux file name in $PAYLOAD/cards (default flux_gibuu.dat)
-#   -M scan     energy-scan campaign: line PROCESS of $PAYLOAD/cards/energies.txt (`k energy flux_fraction n_ensembles seed`)
+#   -M scan     energy-scan campaign: line PROCESS of $PAYLOAD/cards/energies.txt (`j k energy flux_fraction n_ensembles seed`)
 #               fills __ENU__, __NUM_ENSEMBLES__ and __SEED__ (the seed of that energy point, +1000 x attempt for reruns)
 #   -P <list>   comma list of 4-digit process ids to rerun: this process handles the PROCESS-th entry of the list
 #
@@ -64,9 +64,9 @@ ldd "${GIBUU_X}" | grep -i "not found" && { echo "missing shared libraries" >&2;
 # ── The card for this process (run in $PWD: GiBUU writes everything to the cwd) ────────────────
 WORK="${PWD}/gibuu"; mkdir -p "${WORK}"; cd "${WORK}"
 if [ "${MODE}" = "scan" ]; then
-  LINE=$(grep -v '^#' "${PAYLOAD}/cards/energies.txt" | awk -v k="${LOGICAL}" '$1 == k {print; exit}')
-  [ -n "${LINE}" ] || { echo "no energy point ${LOGICAL} in energies.txt" >&2; exit 2; }
-  read -r ENERGY_K ENERGY FLUX_FRACTION N_ENS SEED0 <<< "${LINE}"
+  LINE=$(grep -v '^#' "${PAYLOAD}/cards/energies.txt" | awk -v j="${LOGICAL}" '$1 == j {print; exit}')
+  [ -n "${LINE}" ] || { echo "no energy job ${LOGICAL} in energies.txt" >&2; exit 2; }
+  read -r JOB_J ENERGY_K ENERGY FLUX_FRACTION N_ENS SEED0 <<< "${LINE}"
   # SEED = SEED_BASE + k (line 42): the first attempt reproduces the seed column of energies.txt; reruns pass a SEED_BASE offset by 1000 x attempt
   echo "energy point ${ENERGY_K}: E = ${ENERGY} GeV, flux fraction ${FLUX_FRACTION}, ${N_ENS} ensembles, seed ${SEED}"
   sed -e "s|__PATH_TO_INPUT__|${PAYLOAD}/buuinput|" -e "s|__FLUX_FILE__|${PAYLOAD}/cards/${FLUX}|" -e "s|__SEED__|${SEED}|" \

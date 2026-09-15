@@ -56,10 +56,10 @@ def plan(name: str, model_path: str, channel_name: str, cfg, *, stratum: str | N
     user = getpass.getuser()
     base = pnfs_base or f"/pnfs/dune/scratch/users/{user}/ndp-gibuu"
     scan = g.mode == "energy_scan"
-    n_jobs = len(prep["energy_points"]) if scan else g.n_jobs
+    n_jobs = len(prep["energy_jobs"]) if scan else g.n_jobs
     procs = {f"{k:04d}": {"seed": g.seed + k, "status": "planned", "attempts": 0, **({"energy_k": q["k"], "energy_gev": q["energy"],
              "n_ensembles": q["n_ensembles"], "flux_fraction": q["flux_fraction"]} if scan else {})}
-             for k, q in enumerate(prep["energy_points"] if scan else [None] * g.n_jobs)}
+             for k, q in enumerate(prep["energy_jobs"] if scan else [None] * g.n_jobs)}
     c = {"name": name, "kind": "gibuu", "created": timestamp(), "model": str(Path(model_path).resolve()), "model_name": spec_m.name,
          "stratum": stratum, "channel": ch.name, "spec": g.to_dict(), "mode": g.mode, "fingerprint": prep["fingerprint"], "cache_dir": str(prep["dir"]),
          "card_template": str(tmpl), "flux_file": prep["flux_file"], "energies_file": prep.get("energies_file"), "n_jobs": n_jobs, "seed_base": g.seed,
@@ -68,8 +68,8 @@ def plan(name: str, model_path: str, channel_name: str, cfg, *, stratum: str | N
     save_campaign(c)
     if scan:
         tot = sum(q["n_ensembles"] for q in prep["energy_points"])
-        log(f"campaign {name} (stratum {stratum}, energy_scan): {n_jobs} energy points {prep['energy_points'][0]['energy']:.2f}-{prep['energy_points'][-1]['energy']:.2f} GeV, "
-            f"{tot} ensembles in total ({min(q['n_ensembles'] for q in prep['energy_points'])}-{max(q['n_ensembles'] for q in prep['energy_points'])} per point), "
+        log(f"campaign {name} (stratum {stratum}, energy_scan): {len(prep['energy_points'])} energy points {prep['energy_points'][0]['energy']:.2f}-{prep['energy_points'][-1]['energy']:.2f} GeV "
+            f"in {n_jobs} jobs, {tot} ensembles in total ({min(q['n_ensembles'] for q in prep['energy_jobs'])}-{max(q['n_ensembles'] for q in prep['energy_jobs'])} per job), "
             f"flux covered {prep['flux_fraction_covered']:.4f}, fingerprint {prep['fingerprint']}")
     else:
         log(f"campaign {name} (stratum {stratum}): {g.n_jobs} jobs x {g.num_ensembles} ensembles x {g.num_runs} run(s) "

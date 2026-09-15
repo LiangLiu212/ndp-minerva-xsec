@@ -86,6 +86,10 @@ def test_energy_allocation_covers_the_flux_and_respects_the_minimum():
     spec = GibuuSpec(mode="energy_scan", total_ensembles=50000, energy_e_min_gev=2.0, energy_e_max_gev=60.0, energy_step_gev=0.5)
     pts = energy_allocation(spec, fl)
     assert len(pts) == 116 and all(q["n_ensembles"] >= 100 for q in pts)
+    from ndp.theory.gibuu import energy_jobs
+    jobs = energy_jobs(pts, 5)
+    assert len(jobs) == sum(q["n_jobs"] for q in pts) and all(j["n_ensembles"] <= spec.max_ensembles_per_job for j in jobs)
+    assert [j["j"] for j in jobs] == list(range(len(jobs))) and jobs[0]["seed"] == 5
     frac = np.array([q["flux_fraction"] for q in pts])
     assert 0.8 < frac.sum() < 1.0                       # 2-60 GeV holds most of the 0-100 GeV flux
     assert abs(frac.sum() - fluxmod.integrated_flux(fl["edges"], fl["density_cm2_pot_gev"], 2.0, 60.0) / fluxmod.integrated_flux(fl["edges"], fl["density_cm2_pot_gev"], 0.0, 100.0)) < 1e-9

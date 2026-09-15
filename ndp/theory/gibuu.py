@@ -64,8 +64,9 @@ class GibuuSpec:
     energy_e_min_gev: float = 2.0            # energy_scan grid: bin centres e_min + step/2, ..., < e_max
     energy_e_max_gev: float = 60.0
     energy_step_gev: float = 0.5
-    total_ensembles: int = 500000            # energy_scan: ensembles summed over the grid, allocated ~ flux x E (at least min_ensembles each)
+    total_ensembles: int = 85000             # energy_scan: ensembles summed over the grid, allocated ~ flux x E (at least min_ensembles each)
     min_ensembles: int = 100
+    max_ensembles_per_job: int = 1500        # energy_scan: a point with more ensembles is split over several jobs (merged as n_jobs_k)
     n_jobs: int = 100
     seed: int = 20260915                     # base seed; job k uses seed + k (GiBUU `Seed` is a Fortran integer)
     template: str = DEFAULT_TEMPLATE
@@ -94,8 +95,9 @@ class GibuuSpec:
                   equal_weights_max=float(card.get("equal_weights_max", -1.0)), flux_bin_width_gev=float(fl.get("bin_width_gev", 0.5)),
                   flux_e_max_gev=float(fl.get("e_max_gev", 100.0)), mode=str(p.get("mode", "flux_mc")),
                   energy_e_min_gev=float((p.get("energy_grid") or {}).get("e_min_gev", 2.0)), energy_e_max_gev=float((p.get("energy_grid") or {}).get("e_max_gev", 60.0)),
-                  energy_step_gev=float((p.get("energy_grid") or {}).get("step_gev", 0.5)), total_ensembles=int(p.get("total_ensembles", 500000)),
-                  min_ensembles=int(p.get("min_ensembles", 100)), n_jobs=int(p.get("n_jobs", 100)),
+                  energy_step_gev=float((p.get("energy_grid") or {}).get("step_gev", 0.5)), total_ensembles=int(p.get("total_ensembles", 85000)),
+                  min_ensembles=int(p.get("min_ensembles", 100)), max_ensembles_per_job=int(p.get("max_ensembles_per_job", 1500)),
+                  n_jobs=int(p.get("n_jobs", 100)),
                   seed=int(p.get("seed", 20260915)), template=str(p.get("template", DEFAULT_TEMPLATE)))
         if not (-2 ** 31 < kw["seed"] + kw["n_jobs"] < 2 ** 31):
             raise ValueError("GiBUU seeds must fit a 32-bit Fortran integer")
@@ -244,7 +246,23 @@ def energy_allocation(spec: GibuuSpec, fl: dict) -> list[dict]:
     p = frac * E
     p = p / p.sum()
     n = np.maximum(np.round(p * spec.total_ensembles).astype(int), spec.min_ensembles)
-    return [{"k": int(k), "energy": float(E[k]), "flux_fraction": float(frac[k]), "n_ensembles": int(n[k])} for k in range(len(E))]
+    out = []
+    for k in range(len(E)):
+        n_jobs = int(np.ceil(n[k] / spec.max_ensembles_per_job))
+        per = int(np.ceil(n[k] / n_jobs))
+        out.append({"k": int(k), "energy": float(E[k]), "flux_fraction": float(frac[k]), "n_ensembles": int(per * n_jobs),
+                    "n_jobs": n_jobs, "ensembles_per_job": per})
+    return out
+
+
+def energy_jobs(points: list[dict], seed: int) -> list[dict]:
+    """One grid job per (point, split): {j, k, energy, flux_fraction, n_ensembles, seed}; seed = base + j."""
+    jobs = []
+    for q in points:
+        for _ in range(q["n_jobs"]):
+            j = len(jobs)
+            jobs.append({"j": j, "k": q["k"], "energy": q["energy"], "flux_fraction": q["flux_fraction"], "n_ensembles": q["ensembles_per_job"], "seed": seed + j})
+    return jobs
 
 
 def prepare(spec: GibuuSpec, channel, cfg) -> dict:
@@ -265,10 +283,11 @@ def prepare(spec: GibuuSpec, channel, cfg) -> dict:
             "gibuu_version": GIBUU_VERSION, "prepared": timestamp()}
     if spec.mode == "energy_scan":
         pts = energy_allocation(spec, fl)
-        (out / "energies.txt").write_text("# k energy_gev flux_fraction n_ensembles seed\n" +
-                                          "".join(f"{q['k']} {q['energy']:.4f} {q['flux_fraction']:.6e} {q['n_ensembles']} {spec.seed + q['k']}\n" for q in pts))
-        info.update({"energy_points": pts, "n_energy_points": len(pts), "flux_fraction_covered": float(sum(q["flux_fraction"] for q in pts)),
-                     "energies_file": str(out / "energies.txt")})
+        jobs = energy_jobs(pts, spec.seed)
+        (out / "energies.txt").write_text("# j k energy_gev flux_fraction n_ensembles seed   (one line per grid job; j = process number)\n" +
+                                          "".join(f"{q['j']} {q['k']} {q['energy']:.4f} {q['flux_fraction']:.6e} {q['n_ensembles']} {q['seed']}\n" for q in jobs))
+        info.update({"energy_points": pts, "energy_jobs": jobs, "n_energy_points": len(pts), "n_energy_jobs": len(jobs),
+                     "flux_fraction_covered": float(sum(q["flux_fraction"] for q in pts)), "energies_file": str(out / "energies.txt")})
     dump_json(info, out / "gibuu_prepare.json")
     return {"dir": out, **info}
 
@@ -289,8 +308,8 @@ def run_local(spec: GibuuSpec, channel, cfg, *, num_ensembles: int | None = None
     if spec.mode == "energy_scan":
         pts = prep["energy_points"]
         k = energy_point if energy_point is not None else int(np.argmin([abs(q["energy"] - prep["flux_mean_energy_gev"]) for q in pts]))
-        point = pts[k]; energy = point["energy"]
-        num_ensembles = num_ensembles or point["n_ensembles"]
+        point = {kk: v for kk, v in pts[k].items() if kk in ("k", "energy", "flux_fraction", "n_ensembles")}; energy = point["energy"]
+        num_ensembles = num_ensembles or pts[k]["ensembles_per_job"]
         seed = spec.seed + k if seed is None else seed
     card = write_card(spec, flux_file=prep["flux_file"], path_to_input=str(paths["path_to_input"]),
                       seed=spec.seed if seed is None else seed, out=job / "job.card", repo_root=cfg.repo_root, num_ensembles=num_ensembles, energy=energy)
@@ -385,7 +404,8 @@ def merge_energy_scan(job_dirs: list, spec: GibuuSpec, channel, cfg, out_dir: st
             t.columns["weight"] = t["weight"] * (q["flux_fraction"] / len(jobs))
             t.columns["gibuu_energy_k"] = np.full(t.n, q["k"], dtype=np.int64)
             tables.append(t); sig.append(info["sum_weights_1e-38cm2"])
-        points.append({**q, "n_jobs": len(jobs), "sigma_cc_1e-38cm2": float(np.mean(sig)), "n_events": int(sum(tb.n for tb in tables[-len(jobs):]))})
+        points.append({**{kk: v for kk, v in q.items() if kk in ("k", "energy", "flux_fraction", "n_ensembles")}, "n_jobs_planned": q["n_jobs"],
+                       "n_jobs": len(jobs), "sigma_cc_1e-38cm2": float(np.mean(sig)), "n_events": int(sum(tb.n for tb in tables[-len(jobs):]))})
         log(f"E = {q['energy']:.2f} GeV: {len(jobs)} job(s), {points[-1]['n_events']} events, sigma_CC {points[-1]['sigma_cc_1e-38cm2']:.4f}e-38, flux fraction {q['flux_fraction']:.4e}")
     if not tables:
         raise ValueError("no energy_scan jobs to merge")

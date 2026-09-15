@@ -11,8 +11,9 @@
 name: gibuu_2025_me_fhc_c12
 kind: gibuu
 description: >
-  GiBUU 2025 numu CC on 12C, NuMI ME FHC flux (channel flux table rebinned to 0.5 GeV), in-medium
-  resonance widths on, 2p2h and two-pion background on; 100 grid jobs x 1000 ensembles.
+  GiBUU 2025 numu CC on 12C under the NuMI ME FHC flux, generated as fixed-energy integratedSigma runs on a
+  flux-weighted 0.5 GeV energy grid (2-60 GeV, 116 points, 156 grid jobs, ~1.07M events with near-uniform
+  weights); in-medium resonance widths on, 2p2h and two-pion background on.
 author: ndp-platform (defaults from GiBUU's 005_Neutrino_MINERvA_ME-nu.job; analyst to ratify)
 target: {Z: 6, A: 12}
 process_ID: 2            # CC
@@ -30,10 +31,19 @@ card:
   delta_pot: 1           # 2/3 of the nucleon potential
   density_switch_static: 2
   apply_cuts: 2          # only unbound particles are written to FinalEvents.dat
-flux: {source: channel, bin_width_gev: 0.5, e_max_gev: 100.0}   # resources/flux/arXiv2110.13372_supplemental.txt Table I, rebinned
-n_jobs: 100              # grid processes; job k runs with seed + k
-seed: 20260915
+flux: {source: channel, bin_width_gev: 0.5, e_max_gev: 100.0}   # resources/flux/arXiv2110.13372_supplemental.txt Table I (the flux-averaged MC mode's file; unused in energy_scan)
+# Generation mode (docs/decisions.md 2026-09-15, gibuu skill Part 2.4/2.4b): the flux-averaged MC mode (nuXsectionMode 16)
+# gives QE events whose weights are unusable (tails beyond any rejection ceiling); the fixed-energy integratedSigma mode
+# (nuXsectionMode 0) draws the kinematics by rejection inside GiBUU and its weights are uniform to ~35 %. So: one job per
+# point of a flux-weighted energy grid, merged with weight = perweight x (flux fraction of the point's bin) / n_jobs.
+mode: energy_scan
+energy_grid: {e_min_gev: 2.0, e_max_gev: 60.0, step_gev: 0.5}   # 116 bin centres; no 1mu1p signal below 2 GeV (p_mu > 2 GeV/c); the > 60 GeV tail is dropped
+total_ensembles: 85000   # ~ 1.02M test nucleons = events (mode 0 makes one event per nucleon), allocated ~ flux x E; ~6 % are 1mu1p signal
+min_ensembles: 100       # GiBUU refuses fewer
+max_ensembles_per_job: 1500   # 18k nucleons per job: ~0.7-1.1 s each measured on the EAF node -> 3.5-5.5 h per job
+seed: 20260915           # job j runs with seed + j
 notes:
   - "status default: card physics = GiBUU's own MINERvA-ME card; ratify before quoting the sample"
-  - "status default: 0.5 GeV flux rebinning (the table has 0.1 GeV bins through the peak) and 0-100 GeV range (= phi_per_pot_cm2's range)"
-  - "status default: statistics 100 x 1000 ensembles (~1.2M CC events, ~5.5 % 1mu1p signal)"
+  - "status default: the 0.5 GeV energy discretisation of the flux (the muon spectrum inside a point is continuous) and the 2-60 GeV range"
+  - "status default: statistics 85 000 ensembles (~1.07M events over 156 jobs, ~60k 1mu1p signal events)"
+  - "measured 2026-09-15: sigma_CC(6 GeV) = 4.18e-38 cm^2/nucleon (QE 0.376, GENIE G18_02a 4.66 / 0.43); two seeds agree on sigma_QE to 1 %"
