@@ -316,7 +316,11 @@ def _cmd_gibuu(a):
     if a.gcmd == "harvest":
         print(json.dumps(gc.harvest(a.name, workers=a.workers), indent=2)); return 0
     if a.gcmd == "merge":
-        t = gc.merge(a.name, a.channel, cfg); print(json.dumps(t.meta.get("sigma_per_job_1e-38cm2"), indent=2)); return 0
+        t = gc.merge(a.name, a.channel, cfg)
+        print(json.dumps({"n_events": int(t.n), "sigma_flux_avg_per_nucleon_cm2": t.meta.get("sigma_flux_avg_per_nucleon_cm2"),
+                          "flux_fraction_covered": t.meta.get("flux_fraction_covered"), "energy_points_missing": t.meta.get("energy_points_missing"),
+                          "sigma_per_job_1e-38cm2": t.meta.get("sigma_per_job_1e-38cm2")}, indent=2))
+        return 0
     return 2
 
 
