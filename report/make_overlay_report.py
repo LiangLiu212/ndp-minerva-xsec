@@ -16,6 +16,18 @@ import shutil
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def _splines_path() -> str | None:
+    """The GENIE spline XML from the site config, for the sigma(E) cross-check (optional)."""
+    try:
+        import yaml
+        p = str(yaml.safe_load((ROOT / "ndp.yaml").read_text()).get("genie_splines") or "")
+        return p if p and Path(p).exists() else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
 GRID_ORDER = ["muon_p", "muon_theta", "muon_pt", "proton_p", "proton_theta", "proton_pt", "dpt", "dpt_fine", "dptx", "dpty",
               "alpha", "phi", "pl", "pn", "muon_costheta", "proton_costheta", "muon_p_costheta", "proton_p_costheta"]
 LABELS = {"muon_p": "muon p", "muon_theta": "muon θ", "muon_pt": "muon p_T", "proton_p": "leading proton p", "proton_theta": "leading proton θ",
@@ -40,6 +52,37 @@ def copy_fig(src: Path, dst: Path) -> str | None:
     dst.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(src, dst)
     return dst.name
+
+
+def sigma_of_energy_figure(run_json: dict, out: Path, cfg_repo_root: Path, splines: str | None) -> Path | None:
+    """The generated sample's own sigma_CC(E) per energy point, against the GENIE spline on the same target."""
+    pts = run_json.get("energy_points")
+    if not pts:
+        return None
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import numpy as np
+    E = np.array([q["energy"] for q in pts]); sig = np.array([q["sigma_cc_1e-38cm2"] for q in pts])
+    nev = np.array([q["n_events"] for q in pts]); frac = np.array([q["flux_fraction"] for q in pts])
+    fig, (ax, axf) = plt.subplots(2, 1, figsize=(7.5, 7), gridspec_kw={"height_ratios": [3, 1]}, sharex=True)
+    ax.plot(E, sig, "o", ms=4, color="#08519c", label="GiBUU σ$_{CC}$/nucleon (per energy point)")
+    if splines:
+        try:
+            from ndp.theory import splines as spl
+            s = spl.total_xsec_splines(splines, 14, [1000060120], proc_contains="Weak[CC]", cache_dir=str(cfg_repo_root / "runs/_generator_cache/spline_cache"))
+            Eg, sg = spl.per_nucleon_total(s, {1000060120: 1.0})
+            m = (Eg >= E.min() * 0.8) & (Eg <= E.max() * 1.2)
+            ax.plot(Eg[m], sg[m] / 1e-38, "-", lw=1.4, color="#a63603", label="GENIE G18_02a spline (¹²C, per nucleon)")
+        except Exception:  # noqa: BLE001
+            pass
+    ax.set_ylabel("σ$_{CC}$ per nucleon [10⁻³⁸ cm²]"); ax.legend(fontsize=8); ax.grid(alpha=0.3)
+    ax.set_title("GiBUU energy scan: cross section per point and the flux weight", fontsize=10)
+    axf.bar(E, frac, width=np.diff(E).min() * 0.9, color="#9e9e9e", label="flux fraction of the point")
+    axf2 = axf.twinx(); axf2.plot(E, nev, ".", ms=4, color="#2ca25f"); axf2.set_ylabel("events", color="#2ca25f", fontsize=8)
+    axf.set_xlabel("E$_ν$ [GeV]"); axf.set_ylabel("flux fraction", fontsize=8); axf.set_yscale("log")
+    fig.tight_layout(); fig.savefig(out, dpi=120); plt.close(fig)
+    return out
 
 
 def main() -> int:
@@ -68,6 +111,22 @@ def main() -> int:
          f"| GiBUU sample | {meta.get('generator', 'GiBUU')}, {n(meta.get('n_generated', ts['summary'].get('n_events', 0)))} events from {meta.get('n_jobs_merged', '?')} job(s), fingerprint `{meta.get('fingerprint', '')}` |",
          f"| GiBUU σ_CC (flux-averaged, per nucleon) | {meta.get('sigma_flux_avg_per_nucleon_cm2', float('nan')):.4e} cm² |",
          f"| normalisation | {exp['how']} |", ""]
+
+    # the generated sample itself
+    run_json = None
+    src = meta.get("source")
+    if src and (Path(src) / "gibuu_run.json").exists():
+        run_json = json.loads((Path(src) / "gibuu_run.json").read_text())
+    if run_json and run_json.get("energy_points"):
+        pts = run_json["energy_points"]
+        f = sigma_of_energy_figure(run_json, figs / f"{tag}_sigma_of_energy.png", ROOT, _splines_path())
+        L += ["## 1b. The GiBUU sample", "",
+              f"{len(pts)} energy points {pts[0]['energy']:.2f}–{pts[-1]['energy']:.2f} GeV covering "
+              f"{run_json['flux_fraction_covered']:.4f} of the 0–100 GeV flux, {sum(q['n_jobs'] for q in pts)} grid jobs, "
+              f"{run_json['n_generated']:,} events; flux-averaged σ$_{{CC}}$ = {run_json['sigma_flux_avg_per_nucleon_cm2']:.4e} cm²/nucleon "
+              f"(over the covered flux). Missing points: {run_json.get('energy_points_missing') or 'none'}.".replace(",", " "), ""]
+        if f:
+            L += [f"![sigma of energy]({rel}/{f})", "*σ$_{CC}$(E) of every point against the GENIE spline, with each point's flux weight and event count.*", ""]
 
     # efficiency maps
     L += ["## 2. Selection efficiency (official MC)", "",
