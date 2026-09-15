@@ -286,9 +286,10 @@ harvested and merged into playlist products. The same selection on these product
 
 The selection composition is unchanged (signal 48.4 %: QE 21.7, 2p2h 12.1, RES 12.5, DIS 2.2;
 background: single π± 23.9 %, single π⁰ 11.8 %, multi-π 6.5 %, no-pion 9.3 %). With 470 times
-the statistics the data deficit against the unweighted central-value MC is a flat 15 % across
-δp_T, δα_T and the muon and proton kinematics, i.e. a normalisation effect rather than a shape
-effect at this level; the MINERvA tune and flux weights are not applied to this MC.
+the statistics the data deficit against the unweighted central-value MC is flat in δp_T (0.73–0.87)
+and δα_T (0.75–0.86) but rises with the muon angle (0.44 in the first degree to 0.91 at 15–17°)
+and momentum (0.75 to 1.06), the signature of the missing low-Q² and 2p2h tune weights; the
+MINERvA tune and flux weights are not applied to this MC (see `report/TKI_analysis_playlist1A.md`).
 
 ![playlist 1A muon and proton kinematics](figs/pl1A_data_vs_mc_muon_proton_2x2.png)
 *Figure 10 — Playlist 1A: muon momentum and angle, leading-proton momentum and angle.*
