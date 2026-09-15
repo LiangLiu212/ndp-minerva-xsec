@@ -308,13 +308,17 @@ def _write_report(run_dir: Path, ch, meas: dict, tables: dict, bkgs: dict, summa
               "ε of a true bin is the fraction of that bin's fiducial signal events the selection keeps, so a prediction in that bin is "
               "(truth events in the bin) × ε. They are exact for their own binning, unlike the factorised map product below.", ""]
         for n in one_d:
-            t = tables[n]
+            t = tables[n]; b = bkgs[n]
+            nb = len(t["x"]["edges"]) - 1
             lab = f"{t['x']['label']} [{t['x']['units']}]" if t["x"]["units"] else t["x"]["label"]
-            L += [f"**{n}** — ε vs true {lab}", "",
+            bk = [np.asarray(b["total_at_data_pot"])[i][0] for i in range(nb)]
+            bke = [np.asarray(b["mc_stat_err_at_data_pot"])[i][0] for i in range(nb)]
+            L += [f"**{n}** — ε per true bin of {lab}, and the selected background in the same bin of the *reconstructed* variable", "",
                   "| bin | " + " | ".join(f"[{lo:.4g}, {hi:.4g})" for lo, hi in zip(t["x"]["edges"][:-1], t["x"]["edges"][1:])) + " |",
-                  "|---|" + "---|" * (len(t["x"]["edges"]) - 1),
-                  "| ε ± δ | " + " | ".join(f"{t['eff'][i][0]:.3f} ± {t['err'][i][0]:.3f}" for i in range(len(t["x"]["edges"]) - 1)) + " |",
-                  "| signal in bin | " + " | ".join(f"{int(t['den'][i][0])}" for i in range(len(t["x"]["edges"]) - 1)) + " |", ""]
+                  "|---|" + "---|" * nb,
+                  "| ε ± δ (true bin) | " + " | ".join(f"{t['eff'][i][0]:.3f} ± {t['err'][i][0]:.3f}" for i in range(nb)) + " |",
+                  "| fiducial signal in the true bin | " + " | ".join(f"{int(t['den'][i][0])}" for i in range(nb)) + " |",
+                  "| background at data POT (reco bin) | " + " | ".join(f"{bk[i]:.0f} ± {bke[i]:.0f}" for i in range(nb)) + " |", ""]
     if summary.get("ansatz"):
         a = summary["ansatz"]
         L += ["", "## Factorised ansatz w = ε_μ(p_μ, cos θ_μ) · ε_p(p_p, cos θ_p) / ⟨ε⟩ — closure on the MC", "",
