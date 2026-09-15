@@ -105,15 +105,21 @@ number. The folded comparison has ~35 % statistical error per cell at this expos
 - **Multi-grid folded run**: `ndp run <model> --measurement all --modes folded [--efficiency-run]`
   = full fold / efficiency-only / ansatz predictions on every grid with the background stacked by
   category (`plots.overlay_figure`); `report/make_overlay_report.py` renders the overlay report.
-- **GiBUU**: `kind: gibuu` model specs (strata with their own channel sets and equal-weights
-  ceilings), card template from GiBUU's MINERvA-ME card, channel flux rebinned for `nuExp = 99`,
-  local smoke runs, grid worker/payload/campaign commands (`ndp gibuu ...`), skill parts 2–3.
-  Blocker under study: the flux-averaged MC mode's event weights are unusable for QE
-  (`docs/open_questions.md` 2026-09-15); the fixed-energy `integratedSigma` mode on a
-  flux-weighted energy grid is being tested as the unit-weight route.
+- **GiBUU**: `kind: gibuu` model specs (strata; `mode: energy_scan`), card template from GiBUU's
+  MINERvA-ME card, channel flux rebinned for `nuExp = 99` or discretised on a flux-weighted energy
+  grid, local smoke runs, grid worker/payload/campaign commands (`ndp gibuu ...`), skill parts 2–3.
+  The flux-averaged MC mode's weights are unusable for QE, so a sample is generated as fixed-energy
+  `integratedSigma` jobs on a 0.5 GeV grid (2–60 GeV) merged by flux fraction; weights are then
+  uniform to ~35 %. Campaign `gibuu_me_c12_scan_2026-09` (156 jobs, ~1.07M events) submitted
+  2026-09-15 with payload `ndp-gibuu-v1`.
 
 ## Next
 
+0. **Finish the GiBUU overlay**: harvest and merge `gibuu_me_c12_scan_2026-09`, then
+   `ndp run models/gibuu_2025_me_fhc_c12.yaml --channel minerva_me_ccqelike_1mu1p --measurement all
+   --modes folded --efficiency-run runs/2026-09-15_efficiency_minerva_me_ccqelike_1mu1p` and
+   `report/make_overlay_report.py`. Then judge the GiBUU/GENIE/data comparison with the caveats of
+   the unweighted CV background.
 1. **Ratify the defaults** in `docs/open_questions.md` (beam frame, Φ for POT-normalised MC,
    feed-in treatment, n_nucleons, target mix). Each is a one-line change in the channel YAML.
 2. **Statistics.** Stream/download the full Playlist 1A (253 data + 41 MC files, ~36× the data,
