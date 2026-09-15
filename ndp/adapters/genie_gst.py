@@ -43,6 +43,8 @@ def read_gst(path: str | Path, entry_stop: int | None = None, with_fs: bool = Tr
     m = {"source": f"{path}:gst", "generator": "GENIE", "units": "GeV, GeV^2, mm",
          "n_generated": int(tree.num_entries), "norm": Normalization(kind="shape").to_dict(),
          "has_geometry": has_geom,
+         # gevgen fires the neutrino along +z: with no geometry the sample is already in the beam frame
+         "frame": "detector" if has_geom else "beam",
          "geometry_note": "point target: vertex phase-space cuts are not applied" if not has_geom else "vertices from a geometry run"}
     if meta:
         m.update(meta)

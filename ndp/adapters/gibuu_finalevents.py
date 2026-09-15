@@ -123,7 +123,7 @@ def read_finalevents(path: str | Path, *, target_Z: int, target_A: int, n_runs: 
     cols["weight"] = cols["weight"] / nr
     cols.update({"fs_offsets": np.array(offsets, dtype=np.int64), "fs_pdg": np.array(fs_pdg, dtype=np.int64),
                  "fs_E": np.array(fs_E), "fs_px": np.array(fs_px), "fs_py": np.array(fs_py), "fs_pz": np.array(fs_pz)})
-    meta = {"source": str(path), "generator": "GiBUU", "units": "GeV", "has_geometry": False, "n_runs": nr,
+    meta = {"source": str(path), "generator": "GiBUU", "units": "GeV", "has_geometry": False, "frame": "beam", "n_runs": nr,
             "n_events_without_lepton_row": n_no_lepton,
             "norm": Normalization(kind="xsec_per_nucleon", xsec_per_unit_weight=1e-38,
                                   notes="perweight in 1e-38 cm^2/nucleon summing to sigma_tot per run; weights divided by n_runs").to_dict()}

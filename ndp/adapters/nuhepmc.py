@@ -117,6 +117,6 @@ def read_nuhepmc(path: str | Path, entry_stop: int | None = None) -> TruthTable:
         norm = Normalization(kind="xsec_per_nucleon", xsec_per_unit_weight=per_nucleon / float(cols["weight"].sum()),
                              notes=f"{'G.C.4 flux-averaged total' if xs_total else 'last-event GenCrossSection'} {xs_val:g} {unit} {scale} -> cm^2/nucleon")
     meta = {"source": str(path), "generator": run_attrs.get("NuHepMC.Generator", "NuHepMC generator"), "units": "GeV",
-            "has_geometry": False, "n_generated": n_read, "process_names": proc_names, "norm": norm.to_dict(),
+            "has_geometry": False, "frame": "beam", "n_generated": n_read, "process_names": proc_names, "norm": norm.to_dict(),
             "run_attributes": {k: v for k, v in run_attrs.items() if not k.startswith("NuHepMC.ProcessInfo")}}
     return TruthTable(cols, meta)

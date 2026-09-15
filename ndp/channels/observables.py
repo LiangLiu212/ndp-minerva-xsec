@@ -46,14 +46,47 @@ def eval_expr(expr: str, ns: dict, n: int) -> np.ndarray:
     return np.broadcast_to(np.asarray(v, float), (n,)).copy()
 
 
+FRAMES = ("detector", "beam")
+
+
+def native_frame(t: TruthTable) -> str:
+    """The frame a table's momenta are stored in.
+
+    `meta["frame"]` when the producer recorded it (the MINERvA adapter writes "detector"); otherwise a
+    generator sample without detector geometry fires its neutrino along +z, which *is* the beam axis,
+    so it is "beam"; anything else (toy tables, legacy caches) is taken as "detector", the historical
+    behaviour. Before 2026-09-15 every table was rotated as if it were detector-frame, which tilted
+    generator samples by the 3.4 degree NuMI angle in beam-frame channels (docs/decisions.md).
+    """
+    m = getattr(t, "meta", None) or {}
+    f = m.get("frame")
+    if f in FRAMES:
+        return f
+    if m.get("generator") and not m.get("has_geometry", False):
+        return "beam"
+    return "detector"
+
+
+def frame_rotation_angle(native: str, requested: str) -> float:
+    """Rotation about x (radians) that takes `native`-frame momenta into the `requested` frame."""
+    for f in (native, requested):
+        if f not in FRAMES:
+            raise ValueError(f"unknown frame {f!r} (known: {FRAMES})")
+    if native == requested:
+        return 0.0
+    return NUMI_BEAM_ANGLE_RAD if (native, requested) == ("detector", "beam") else -NUMI_BEAM_ANGLE_RAD
+
+
+def rotate_about_x(px, py, pz, angle: float):
+    if angle == 0.0:
+        return px, py, pz
+    c, s = np.cos(angle), np.sin(angle)
+    return px, py * c - pz * s, py * s + pz * c
+
+
 def _lep_p3(t: TruthTable, frame: str = "detector"):
     px, py, pz = t["lep_px"], t["lep_py"], t["lep_pz"]
-    if frame == "beam":
-        a = NUMI_BEAM_ANGLE_RAD
-        py, pz = py * np.cos(a) - pz * np.sin(a), py * np.sin(a) + pz * np.cos(a)
-    elif frame != "detector":
-        raise ValueError(f"unknown frame {frame!r}")
-    return px, py, pz
+    return rotate_about_x(px, py, pz, frame_rotation_angle(native_frame(t), frame))
 
 
 def lep_p(t: TruthTable, frame: str = "detector", **_) -> np.ndarray:

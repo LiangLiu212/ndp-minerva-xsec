@@ -55,7 +55,7 @@ def read_nuwro(path: str | Path, entry_stop: int | None = None, event1_so: str |
                  "fs_E": np.asarray(fs["E"]), "fs_px": np.asarray(fs["px"]), "fs_py": np.asarray(fs["py"]), "fs_pz": np.asarray(fs["pz"])})
     n = len(cols["E_nu"])
     sigma = float(np.mean(xsecs)) if xsecs else None
-    meta = {"source": str(path), "generator": "NuWro", "units": "GeV", "has_geometry": False, "n_generated": n,
+    meta = {"source": str(path), "generator": "NuWro", "units": "GeV", "has_geometry": False, "frame": "beam", "n_generated": n,
             "sigma_tot_cm2_per_nucleon": sigma,
             "norm": Normalization(kind="xsec_per_nucleon", xsec_per_unit_weight=sigma / n,
                                   notes="NuWro event.weight = sigma_tot [cm^2], assumed per nucleon (see open questions)").to_dict() if sigma else Normalization().to_dict()}

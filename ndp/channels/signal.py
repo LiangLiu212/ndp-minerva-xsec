@@ -51,21 +51,17 @@ from __future__ import annotations
 import numpy as np
 
 from ..events import TruthTable, M_P
-from .observables import NUMI_BEAM_ANGLE_RAD, lep_p, lep_theta
+from .observables import NUMI_BEAM_ANGLE_RAD, frame_rotation_angle, lep_p, lep_theta, native_frame, rotate_about_x
 
 NUCLEUS_MIN = 1_000_000_000
 PSEUDO_MIN = 2_000_000_000
 
 
 # ---- kinematics helpers ---------------------------------------------------------------------
-def rotate_to_frame(px, py, pz, frame: str):
-    """Detector-frame momentum components -> the requested frame (same convention as the lepton)."""
-    if frame == "beam":
-        a = NUMI_BEAM_ANGLE_RAD
-        py, pz = py * np.cos(a) - pz * np.sin(a), py * np.sin(a) + pz * np.cos(a)
-    elif frame != "detector":
-        raise ValueError(f"unknown frame {frame!r}")
-    return px, py, pz
+def rotate_to_frame(px, py, pz, frame: str, native: str = "detector"):
+    """Momentum components stored in the `native` frame -> the requested frame (same convention as
+    the lepton: rotation about x by NUMI_BEAM_ANGLE_RAD for detector -> beam, the inverse back)."""
+    return rotate_about_x(px, py, pz, frame_rotation_angle(native, frame))
 
 
 def _theta(px, py, pz):
@@ -163,7 +159,7 @@ def leading_proton(t: TruthTable, frame: str = "detector", window: dict | None =
         return {"index": np.where(n_in > 0, 0, -1).astype(np.int64), "n_in_window": n_in, "p": t["lp_p"], "theta": t["lp_theta"],
                 "pT": t["lp_pT"], "px": t["lp_px"], "py": t["lp_py"], "pz": t["lp_pz"], "E": t["lp_E"]}
     w = window or {}
-    px, py, pz = rotate_to_frame(t["fs_px"], t["fs_py"], t["fs_pz"], frame)
+    px, py, pz = rotate_to_frame(t["fs_px"], t["fs_py"], t["fs_pz"], frame, native_frame(t))
     theta, p = _theta(px, py, pz)
     ok = t["fs_pdg"] == 2212
     if "theta_max_deg" in w:

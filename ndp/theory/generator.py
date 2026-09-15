@@ -154,7 +154,7 @@ def generate(spec: GenieSpec, flux_edges: np.ndarray, flux_density: np.ndarray, 
     sigma_avg = splmod.flux_averaged_per_nucleon(E, sig_nuc, flux_edges, flux_density, spec.e_min, spec.e_max)
     n_gen = t.n
     t.meta.update({
-        "generator": f"GENIE {spec.tune} ({spec.generator_list})", "genie_spec": spec.to_dict(),
+        "generator": f"GENIE {spec.tune} ({spec.generator_list})", "genie_spec": spec.to_dict(), "frame": "beam",
         "genie_env_json": env_json, "splines": splines, "flux_source": flux_source,
         "sigma_flux_avg_per_nucleon_cm2": sigma_avg, "n_generated": n_gen,
         "n_splines_used": {str(k): v["n_splines"] for k, v in spl.items()}, "spline_tune": spl_tune,
