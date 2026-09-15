@@ -35,6 +35,7 @@ DEFAULT_TEMPLATE = "resources/gibuu/minerva_me_numu_CC.job.tmpl"
 XSEC_FILE = "neutrino_absorption_cross_section_ALL.dat"
 FLUX_CHECK_FILE = "neutrino_initialized_energyFlux.dat"
 GIBUU_VERSION = "GiBUU Release 2025 patch 5"
+CACHE_ROOT_OVERRIDE: Path | None = None      # tests point the sample cache away from runs/_generator_cache
 
 
 @dataclass
@@ -272,7 +273,7 @@ def prepare(spec: GibuuSpec, channel, cfg) -> dict:
     flux_source = str(channel.normalization["flux_table"])
     tsha = template_sha(spec, cfg.repo_root)
     fp = spec.fingerprint(flux_source, tsha)
-    out = cfg.runs / "_generator_cache" / f"gibuu_{fp}"
+    out = (CACHE_ROOT_OVERRIDE or (cfg.runs / "_generator_cache")) / f"gibuu_{fp}"
     out.mkdir(parents=True, exist_ok=True)
     centres, values = fluxmod.rebin_uniform(fl["edges"], fl["density_cm2_pot_gev"], spec.flux_bin_width_gev, spec.flux_e_max_gev)
     flux_file = fluxmod.write_gibuu_flux(out / "flux_gibuu.dat", centres, values,

@@ -121,6 +121,12 @@ allocated ∝ f_k × E_k so the merged weights stay as uniform as the allocation
 the < 2 GeV flux (no signal there: p_μ > 2 GeV/c) and the > 60 GeV tail. Discretising E_ν in 0.5 GeV
 steps is a modelling choice (status default) — the muon spectrum inside each point is continuous.
 
+End-to-end check (2026-09-15): one point at 5.75 GeV with 100 ensembles, all channels → 1 200 events
+(one per test nucleon), σ_CC = 4.00 × 10⁻³⁸ cm²/nucleon, merged weights with n_eff/n = 0.96, 88 of
+1 200 events 1μ1p signal; 1 328 s with two other GiBUU processes sharing the core (≈ 0.7–1.1 s per
+nucleon). The campaign `grid/campaigns/gibuu_me_c12_scan_2026-09` (models/gibuu_2025_me_fhc_c12.yaml,
+fingerprint 1f8bcb950be1dcd0): 116 points, 156 jobs, 88 840 ensembles, at most 1 454 per job.
+
 ## 2.5 Grid campaigns
 
 `grid/README.md` ("GiBUU generation campaigns"): `ndp gibuu plan` writes the card template with the

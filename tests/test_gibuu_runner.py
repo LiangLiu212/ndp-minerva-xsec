@@ -12,6 +12,9 @@ from _helpers import site
 
 ROOT = Path(__file__).resolve().parents[1]
 
+import ndp.theory.gibuu as gibuu_mod
+gibuu_mod.CACHE_ROOT_OVERRIDE = Path(tempfile.mkdtemp())      # keep the tests' sample caches out of runs/_generator_cache
+
 FINALEVENTS_HEADER = "# 1:Run 2:Event 3:ID 4:Charge 5:perweight 6:position(1) 7:position(2) 8:position(3) 9:momentum(0) 10:momentum(1) 11:momentum(2) 12:momentum(3) 13:history 14:production_ID 15:enu\n"
 
 
