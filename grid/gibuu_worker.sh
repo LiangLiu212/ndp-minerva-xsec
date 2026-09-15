@@ -8,28 +8,40 @@
 #               __FLUX_FILE__, __SEED__ left by ndp.theory.gibuu.write_card; everything else filled)
 #   -S <int>    base seed; this process runs with seed = S + PROCESS (a 32-bit Fortran integer)
 #   -F <file>   flux file name in $PAYLOAD/cards (default flux_gibuu.dat)
+#   -M scan     energy-scan campaign: line PROCESS of $PAYLOAD/cards/energies.txt (`k energy flux_fraction n_ensembles seed`)
+#               fills __ENU__, __NUM_ENSEMBLES__ and __SEED__ (the seed of that energy point, +1000 x attempt for reruns)
+#   -P <list>   comma list of 4-digit process ids to rerun: this process handles the PROCESS-th entry of the list
 #
 # The payload holds GiBUU.x, the shared libraries it needs (lib/), the buuinput tables and the card.
 set -e
 date; hostname; uname -r
 
-PAYLOAD_OVERRIDE=""; PNFS_OUTPUT_DIR=""; CARD=""; SEED_BASE=""; FLUX="flux_gibuu.dat"
-while getopts "R:O:C:S:F:" opt; do
+PAYLOAD_OVERRIDE=""; PNFS_OUTPUT_DIR=""; CARD=""; SEED_BASE=""; FLUX="flux_gibuu.dat"; MODE="mc"; PLIST=""
+while getopts "R:O:C:S:F:M:P:" opt; do
   case $opt in
     R) PAYLOAD_OVERRIDE=$OPTARG ;;
     O) PNFS_OUTPUT_DIR=$OPTARG ;;
     C) CARD=$OPTARG ;;
     S) SEED_BASE=$OPTARG ;;
     F) FLUX=$OPTARG ;;
+    M) MODE=$OPTARG ;;
+    P) PLIST=$OPTARG ;;
     *) echo "bad flag: $opt" >&2; exit 2 ;;
   esac
 done
 for v in PNFS_OUTPUT_DIR CARD SEED_BASE; do
   if [ -z "${!v}" ]; then echo "missing required flag for $v" >&2; exit 2; fi
 done
-PROCESS_STR=$(printf "%04d" "${PROCESS:-0}")
-SEED=$(( SEED_BASE + ${PROCESS:-0} ))
-echo "CLUSTER=${CLUSTER} PROCESS=${PROCESS} SEED=${SEED} CARD=${CARD}"
+# which logical process this is: PROCESS, or the PROCESS-th entry of a rerun list
+LOGICAL=${PROCESS:-0}
+if [ -n "${PLIST}" ]; then
+  IFS=',' read -r -a PL <<< "${PLIST}"
+  LOGICAL=$((10#${PL[${PROCESS:-0}]}))
+fi
+PROCESS_STR=$(printf "%04d" "${LOGICAL}")
+SEED=$(( SEED_BASE + LOGICAL ))
+ENERGY_K=""; ENERGY=""; FLUX_FRACTION=""; N_ENS=""
+echo "CLUSTER=${CLUSTER} PROCESS=${PROCESS} LOGICAL=${LOGICAL} SEED=${SEED} CARD=${CARD} MODE=${MODE}"
 
 # ── ifdh (data transfer) — the standard FIFE pattern ──────────────────────────
 source /cvmfs/larsoft.opensciencegrid.org/setup-env.sh
@@ -51,8 +63,18 @@ ldd "${GIBUU_X}" | grep -i "not found" && { echo "missing shared libraries" >&2;
 
 # ── The card for this process (run in $PWD: GiBUU writes everything to the cwd) ────────────────
 WORK="${PWD}/gibuu"; mkdir -p "${WORK}"; cd "${WORK}"
-sed -e "s|__PATH_TO_INPUT__|${PAYLOAD}/buuinput|" -e "s|__FLUX_FILE__|${PAYLOAD}/cards/${FLUX}|" -e "s|__SEED__|${SEED}|" \
-    "${PAYLOAD}/cards/${CARD}.job.tmpl" > job.card
+if [ "${MODE}" = "scan" ]; then
+  LINE=$(grep -v '^#' "${PAYLOAD}/cards/energies.txt" | awk -v k="${LOGICAL}" '$1 == k {print; exit}')
+  [ -n "${LINE}" ] || { echo "no energy point ${LOGICAL} in energies.txt" >&2; exit 2; }
+  read -r ENERGY_K ENERGY FLUX_FRACTION N_ENS SEED0 <<< "${LINE}"
+  # SEED = SEED_BASE + k (line 42): the first attempt reproduces the seed column of energies.txt; reruns pass a SEED_BASE offset by 1000 x attempt
+  echo "energy point ${ENERGY_K}: E = ${ENERGY} GeV, flux fraction ${FLUX_FRACTION}, ${N_ENS} ensembles, seed ${SEED}"
+  sed -e "s|__PATH_TO_INPUT__|${PAYLOAD}/buuinput|" -e "s|__FLUX_FILE__|${PAYLOAD}/cards/${FLUX}|" -e "s|__SEED__|${SEED}|" \
+      -e "s|__ENU__|${ENERGY}|" -e "s|__NUM_ENSEMBLES__|${N_ENS}|" "${PAYLOAD}/cards/${CARD}.job.tmpl" > job.card
+else
+  sed -e "s|__PATH_TO_INPUT__|${PAYLOAD}/buuinput|" -e "s|__FLUX_FILE__|${PAYLOAD}/cards/${FLUX}|" -e "s|__SEED__|${SEED}|" \
+      "${PAYLOAD}/cards/${CARD}.job.tmpl" > job.card
+fi
 if grep -q "__[A-Z_]*__" job.card; then echo "unfilled placeholder in job.card" >&2; grep "__[A-Z_]*__" job.card; exit 2; fi
 T0=$(date +%s)
 set +e
@@ -79,8 +101,9 @@ cp job.card "${OUT}/job.card"; gzip -c gibuu.log > "${OUT}/gibuu.log.gz"
 CARD_SHA=$(sha256sum job.card | cut -c1-64)
 XSEC=$(awk '!/^#/ && NF>1 {v=$2} END {print v}' neutrino_absorption_cross_section_ALL.dat 2>/dev/null || echo null)
 cat > "${OUT}/manifest_${PROCESS_STR}.json" <<EOF
-{"process": "${PROCESS:-0}", "cluster": "${CLUSTER:-}", "seed": ${SEED}, "card": "${CARD}", "card_sha256": "${CARD_SHA}",
+{"process": "${LOGICAL}", "condor_process": "${PROCESS:-0}", "cluster": "${CLUSTER:-}", "seed": ${SEED}, "card": "${CARD}", "card_sha256": "${CARD_SHA}",
  "payload": "${PAYLOAD}", "status": "${STATUS}", "returncode": ${RC}, "wall_s": ${WALL}, "n_rows": ${N_ROWS}, "n_events": ${N_EVENTS},
+ "mode": "${MODE}", "energy_k": ${ENERGY_K:-null}, "energy_gev": ${ENERGY:-null}, "flux_fraction": ${FLUX_FRACTION:-null}, "num_ensembles": ${N_ENS:-null},
  "xsec_file_1e-38cm2": ${XSEC:-null}, "host": "$(hostname)", "finished": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"}
 EOF
 ls -alh "${OUT}"

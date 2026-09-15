@@ -60,6 +60,12 @@ class GibuuSpec:
     equal_weights_max: float = -1.0          # mode 2 ceiling (per-nucleon sigma units, 1e-38 cm^2): GiBUU aborts if an event exceeds it
     flux_bin_width_gev: float = 0.5
     flux_e_max_gev: float = 100.0
+    mode: str = "flux_mc"                    # "flux_mc": nuXsectionMode 16 (weighted events); "energy_scan": nuXsectionMode 0 per energy of a flux-weighted grid
+    energy_e_min_gev: float = 2.0            # energy_scan grid: bin centres e_min + step/2, ..., < e_max
+    energy_e_max_gev: float = 60.0
+    energy_step_gev: float = 0.5
+    total_ensembles: int = 500000            # energy_scan: ensembles summed over the grid, allocated ~ flux x E (at least min_ensembles each)
+    min_ensembles: int = 100
     n_jobs: int = 100
     seed: int = 20260915                     # base seed; job k uses seed + k (GiBUU `Seed` is a Fortran integer)
     template: str = DEFAULT_TEMPLATE
@@ -86,13 +92,23 @@ class GibuuSpec:
                   delta_pot=int(card.get("delta_pot", 1)), density_switch_static=int(card.get("density_switch_static", 2)),
                   apply_cuts=int(card.get("apply_cuts", 2)), equal_weights_mode=int(card.get("equal_weights_mode", 0)),
                   equal_weights_max=float(card.get("equal_weights_max", -1.0)), flux_bin_width_gev=float(fl.get("bin_width_gev", 0.5)),
-                  flux_e_max_gev=float(fl.get("e_max_gev", 100.0)), n_jobs=int(p.get("n_jobs", 100)),
+                  flux_e_max_gev=float(fl.get("e_max_gev", 100.0)), mode=str(p.get("mode", "flux_mc")),
+                  energy_e_min_gev=float((p.get("energy_grid") or {}).get("e_min_gev", 2.0)), energy_e_max_gev=float((p.get("energy_grid") or {}).get("e_max_gev", 60.0)),
+                  energy_step_gev=float((p.get("energy_grid") or {}).get("step_gev", 0.5)), total_ensembles=int(p.get("total_ensembles", 500000)),
+                  min_ensembles=int(p.get("min_ensembles", 100)), n_jobs=int(p.get("n_jobs", 100)),
                   seed=int(p.get("seed", 20260915)), template=str(p.get("template", DEFAULT_TEMPLATE)))
         if not (-2 ** 31 < kw["seed"] + kw["n_jobs"] < 2 ** 31):
             raise ValueError("GiBUU seeds must fit a 32-bit Fortran integer")
         if kw["equal_weights_mode"] == 2 and kw["equal_weights_max"] <= 0:
             raise ValueError("equal_weights_mode 2 needs a positive equal_weights_max (from a mode-1 pilot run)")
+        if kw["mode"] not in ("flux_mc", "energy_scan"):
+            raise ValueError(f"unknown GiBUU mode {kw['mode']!r} (flux_mc | energy_scan)")
         return GibuuSpec(**kw)
+
+    def energy_centres(self) -> np.ndarray:
+        """Bin centres of the energy_scan grid."""
+        n = int(round((self.energy_e_max_gev - self.energy_e_min_gev) / self.energy_step_gev))
+        return self.energy_e_min_gev + self.energy_step_gev * (np.arange(n) + 0.5)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -161,9 +177,14 @@ def _fb(b: bool) -> str:
     return "T" if b else "F"
 
 
-def substitutions(spec: GibuuSpec, *, flux_file: str, path_to_input: str, seed: int, num_ensembles: int | None = None) -> dict:
+def substitutions(spec: GibuuSpec, *, flux_file: str, path_to_input: str, seed: int, num_ensembles: int | None = None,
+                  energy: float | str | None = None) -> dict:
     inc = spec.include
+    scan = spec.mode == "energy_scan"
+    enu = energy if energy is not None else (1.0 if not scan else "__ENU__")
     return {"__PROCESS_ID__": str(spec.process_ID), "__FLAVOR_ID__": str(spec.flavor_ID), "__FLUX_FILE__": str(flux_file),
+            "__NU_XSECTION_MODE__": "0" if scan else "16", "__NU_EXP__": "0" if scan else "99",
+            "__ENU__": enu if isinstance(enu, str) else repr(float(enu)), "__DELTA_ENU__": "0.0",
             "__INCLUDE_QE__": _fb(inc["QE"]), "__INCLUDE_DELTA__": _fb(inc["DELTA"]), "__INCLUDE_RES__": _fb(inc["RES"]),
             "__INCLUDE_1PI__": _fb(inc["1pi"]), "__INCLUDE_DIS__": _fb(inc["DIS"]), "__INCLUDE_2P2HQE__": _fb(inc["2p2hQE"]),
             "__INCLUDE_2PI__": _fb(inc["2pi"]), "__TARGET_Z__": str(spec.target_Z), "__TARGET_A__": str(spec.target_A),
@@ -179,13 +200,15 @@ def substitutions(spec: GibuuSpec, *, flux_file: str, path_to_input: str, seed: 
 
 
 def write_card(spec: GibuuSpec, *, flux_file: str, path_to_input: str, seed: int, out: str | Path,
-               repo_root: str | Path | None = None, num_ensembles: int | None = None) -> Path:
+               repo_root: str | Path | None = None, num_ensembles: int | None = None, energy: float | None = None) -> Path:
     """Fill the template with the spec; refuses to leave a placeholder behind."""
     tmpl = Path(spec.template)
     if not tmpl.is_absolute():
         tmpl = Path(repo_root or Path(__file__).resolve().parents[2]) / tmpl
     text = tmpl.read_text()
-    for k, v in substitutions(spec, flux_file=flux_file, path_to_input=path_to_input, seed=seed, num_ensembles=num_ensembles).items():
+    if spec.mode == "energy_scan" and energy is None:
+        raise ValueError("energy_scan cards need the energy of the point")
+    for k, v in substitutions(spec, flux_file=flux_file, path_to_input=path_to_input, seed=seed, num_ensembles=num_ensembles, energy=energy).items():
         text = text.replace(k, v)
     left = sorted(set(w for w in text.split() if w.startswith("__") and w.endswith("__")))
     if left:
@@ -208,8 +231,25 @@ def gibuu_paths(repo_root: Path) -> dict:
     return {"gibuu_x": gx, "path_to_input": inp.resolve() if inp.exists() else inp}
 
 
+def energy_allocation(spec: GibuuSpec, fl: dict) -> list[dict]:
+    """energy_scan points: {k, energy, flux_fraction, n_ensembles}. flux_fraction = the flux integral of the point's
+    bin over the FULL flux integral (0-100 GeV), so events of a point weighted by perweight x flux_fraction sum to that
+    bin's share of the flux-averaged cross section. Ensembles are allocated ~ flux_fraction x E (sigma_CC roughly linear
+    in E above 2 GeV) so that the merged event weights are as uniform as the allocation allows; every point gets at
+    least min_ensembles (GiBUU refuses fewer than 100)."""
+    E = spec.energy_centres()
+    half = spec.energy_step_gev / 2
+    phi_tot = fluxmod.integrated_flux(fl["edges"], fl["density_cm2_pot_gev"], 0.0, 100.0)
+    frac = np.array([fluxmod.integrated_flux(fl["edges"], fl["density_cm2_pot_gev"], e - half, e + half) / phi_tot for e in E])
+    p = frac * E
+    p = p / p.sum()
+    n = np.maximum(np.round(p * spec.total_ensembles).astype(int), spec.min_ensembles)
+    return [{"k": int(k), "energy": float(E[k]), "flux_fraction": float(frac[k]), "n_ensembles": int(n[k])} for k in range(len(E))]
+
+
 def prepare(spec: GibuuSpec, channel, cfg) -> dict:
-    """The cache directory for this spec + channel flux: writes the GiBUU flux file and records the fingerprint."""
+    """The cache directory for this spec + channel flux: writes the GiBUU flux file (and, for energy_scan, the
+    energy table) and records the fingerprint."""
     fl = fluxmod.load_channel_flux(channel, cfg.repo_root)
     flux_source = str(channel.normalization["flux_table"])
     tsha = template_sha(spec, cfg.repo_root)
@@ -223,13 +263,20 @@ def prepare(spec: GibuuSpec, channel, cfg) -> dict:
             "flux_file": str(flux_file), "flux_file_sha256": sha256_file(flux_file),
             "phi_0_100_cm2_per_pot": fl["phi_0_100_cm2_per_pot"], "flux_mean_energy_gev": float(np.sum(centres * values) / np.sum(values)),
             "gibuu_version": GIBUU_VERSION, "prepared": timestamp()}
+    if spec.mode == "energy_scan":
+        pts = energy_allocation(spec, fl)
+        (out / "energies.txt").write_text("# k energy_gev flux_fraction n_ensembles seed\n" +
+                                          "".join(f"{q['k']} {q['energy']:.4f} {q['flux_fraction']:.6e} {q['n_ensembles']} {spec.seed + q['k']}\n" for q in pts))
+        info.update({"energy_points": pts, "n_energy_points": len(pts), "flux_fraction_covered": float(sum(q["flux_fraction"] for q in pts)),
+                     "energies_file": str(out / "energies.txt")})
     dump_json(info, out / "gibuu_prepare.json")
     return {"dir": out, **info}
 
 
 def run_local(spec: GibuuSpec, channel, cfg, *, num_ensembles: int | None = None, seed: int | None = None,
-              job_name: str = "local", timeout: int = 24 * 3600) -> Path:
-    """Run GiBUU.x here (one job) in <cache>/jobs/<job_name>/; returns the job directory."""
+              job_name: str = "local", timeout: int = 24 * 3600, energy_point: int | None = None) -> Path:
+    """Run GiBUU.x here (one job) in <cache>/jobs/<job_name>/; returns the job directory. For energy_scan specs
+    `energy_point` is the index k of the energy table (default: the point nearest the flux mean)."""
     prep = prepare(spec, channel, cfg)
     paths = gibuu_paths(cfg.repo_root)
     if not paths["gibuu_x"].exists():
@@ -238,8 +285,15 @@ def run_local(spec: GibuuSpec, channel, cfg, *, num_ensembles: int | None = None
     if job.exists():
         shutil.rmtree(job)
     job.mkdir(parents=True)
+    energy = None; point = None
+    if spec.mode == "energy_scan":
+        pts = prep["energy_points"]
+        k = energy_point if energy_point is not None else int(np.argmin([abs(q["energy"] - prep["flux_mean_energy_gev"]) for q in pts]))
+        point = pts[k]; energy = point["energy"]
+        num_ensembles = num_ensembles or point["n_ensembles"]
+        seed = spec.seed + k if seed is None else seed
     card = write_card(spec, flux_file=prep["flux_file"], path_to_input=str(paths["path_to_input"]),
-                      seed=spec.seed if seed is None else seed, out=job / "job.card", repo_root=cfg.repo_root, num_ensembles=num_ensembles)
+                      seed=spec.seed if seed is None else seed, out=job / "job.card", repo_root=cfg.repo_root, num_ensembles=num_ensembles, energy=energy)
     t0 = time.time()
     with open(card) as fi, open(job / "gibuu.log", "w") as fo:
         rc = subprocess.run([str(paths["gibuu_x"])], stdin=fi, stdout=fo, stderr=subprocess.STDOUT, cwd=str(job), timeout=timeout).returncode
@@ -248,6 +302,7 @@ def run_local(spec: GibuuSpec, channel, cfg, *, num_ensembles: int | None = None
     n_rows = sum(1 for ln in open(fe) if not ln.startswith("#")) if fe.exists() else 0
     dump_json({"job": job_name, "returncode": rc, "wall_s": round(wall, 1), "seed": spec.seed if seed is None else seed,
                "num_ensembles": int(num_ensembles or spec.num_ensembles), "n_finalevents_rows": n_rows, "card_sha256": sha256_file(card),
+               "mode": spec.mode, "energy_point": point,
                "gibuu_x": str(paths["gibuu_x"]), "path_to_input": str(paths["path_to_input"]), "status": "ok" if rc == 0 and n_rows else "failed"},
               job / "manifest_job.json")
     if rc != 0 or not n_rows:
@@ -290,10 +345,79 @@ def read_job(job_dir: str | Path, spec: GibuuSpec, rel_tol: float = 1e-3) -> tup
     return t, info
 
 
-def merge_jobs(job_dirs: list, spec: GibuuSpec, channel, cfg, out_dir: str | Path | None = None, log=print) -> TruthTable:
-    """K jobs -> one table whose weights sum to the mean cross section per nucleon (1e-38 cm^2 per unit weight)."""
+def _job_energy_point(job_dir: Path) -> dict | None:
+    for name in ("manifest_job.json",) + tuple(p.name for p in job_dir.glob("manifest_*.json")):
+        q = job_dir / name
+        if q.exists():
+            m = json.loads(q.read_text())
+            if m.get("energy_point"):
+                return m["energy_point"]
+            if m.get("energy_k") is not None:
+                return {"k": int(m["energy_k"]), "energy": float(m["energy_gev"]), "flux_fraction": float(m["flux_fraction"]),
+                        "n_ensembles": int(m.get("num_ensembles", 0))}
+    return None
+
+
+def merge_energy_scan(job_dirs: list, spec: GibuuSpec, channel, cfg, out_dir: str | Path | None = None, log=print) -> TruthTable:
+    """energy_scan jobs (one fixed energy each, unit-like weights) -> one flux-averaged table.
+
+    An event of energy point k gets weight perweight x flux_fraction_k / n_jobs_k, so the merged weights sum to
+    sum_k f_k sigma_CC(E_k) = the flux-averaged cross section per nucleon over the covered energy range
+    (1e-38 cm^2 per unit weight); the per-point cross sections are kept in the meta as sigma_CC(E).
+    """
     prep = prepare(spec, channel, cfg)
     out_dir = Path(out_dir) if out_dir else prep["dir"]
+    out_dir.mkdir(parents=True, exist_ok=True)
+    by_k: dict[int, list] = {}
+    for jd in sorted(Path(j) for j in job_dirs):
+        pt = _job_energy_point(jd)
+        if pt is None:
+            raise ValueError(f"{jd}: no energy point in its manifest (not an energy_scan job?)")
+        by_k.setdefault(int(pt["k"]), []).append((jd, pt))
+    tables, points, missing = [], [], []
+    for q in prep["energy_points"]:
+        jobs = by_k.get(q["k"], [])
+        if not jobs:
+            missing.append(q["k"]); continue
+        sig = []
+        for jd, pt in jobs:
+            t, info = read_job(jd, spec)
+            t.columns["weight"] = t["weight"] * (q["flux_fraction"] / len(jobs))
+            t.columns["gibuu_energy_k"] = np.full(t.n, q["k"], dtype=np.int64)
+            tables.append(t); sig.append(info["sum_weights_1e-38cm2"])
+        points.append({**q, "n_jobs": len(jobs), "sigma_cc_1e-38cm2": float(np.mean(sig)), "n_events": int(sum(tb.n for tb in tables[-len(jobs):]))})
+        log(f"E = {q['energy']:.2f} GeV: {len(jobs)} job(s), {points[-1]['n_events']} events, sigma_CC {points[-1]['sigma_cc_1e-38cm2']:.4f}e-38, flux fraction {q['flux_fraction']:.4e}")
+    if not tables:
+        raise ValueError("no energy_scan jobs to merge")
+    merged = TruthTable.concatenate(tables) if len(tables) > 1 else tables[0]
+    sigma_avg = float(merged["weight"].sum()) * 1e-38
+    covered = float(sum(q["flux_fraction"] for q in points))
+    merged.meta.update({
+        "generator": GIBUU_VERSION, "gibuu_spec": spec.to_dict(), "frame": "beam", "has_geometry": False,
+        "flux_source": prep["flux_source"], "template_sha256": prep["template_sha256"], "fingerprint": prep["fingerprint"],
+        "mode": "energy_scan", "energy_points": points, "energy_points_missing": missing, "flux_fraction_covered": covered,
+        "n_jobs_merged": int(sum(q["n_jobs"] for q in points)), "sigma_flux_avg_per_nucleon_cm2": sigma_avg,
+        "n_generated": int(merged.n), "source": str(out_dir),
+        "norm": Normalization(kind="xsec_per_nucleon", xsec_per_unit_weight=1e-38,
+                              notes=f"energy_scan: perweight x flux_fraction / n_jobs per energy point; weights sum to the flux-averaged sigma_CC over "
+                                    f"{covered:.4f} of the 0-100 GeV flux ({len(points)} points)").to_dict(),
+    })
+    merged.save(out_dir / "truth.npz")
+    dump_json({"fingerprint": prep["fingerprint"], "spec": spec.to_dict(), "flux_source": prep["flux_source"], "mode": "energy_scan",
+               "energy_points": points, "energy_points_missing": missing, "flux_fraction_covered": covered, "n_generated": int(merged.n),
+               "sigma_flux_avg_per_nucleon_cm2": sigma_avg, "merged": timestamp(), "gibuu_version": GIBUU_VERSION}, out_dir / "gibuu_run.json")
+    log(f"merged {len(points)} energy points ({sum(q['n_jobs'] for q in points)} jobs, {len(missing)} missing): {merged.n} events, "
+        f"sigma_CC = {sigma_avg:.4e} cm^2/nucleon over {covered:.4f} of the flux -> {out_dir / 'truth.npz'}")
+    return merged
+
+
+def merge_jobs(job_dirs: list, spec: GibuuSpec, channel, cfg, out_dir: str | Path | None = None, log=print) -> TruthTable:
+    """K jobs -> one table whose weights sum to the mean cross section per nucleon (1e-38 cm^2 per unit weight)."""
+    if spec.mode == "energy_scan":
+        return merge_energy_scan(job_dirs, spec, channel, cfg, out_dir=out_dir, log=log)
+    prep = prepare(spec, channel, cfg)
+    out_dir = Path(out_dir) if out_dir else prep["dir"]
+    out_dir.mkdir(parents=True, exist_ok=True)
     tables, infos = [], []
     for jd in sorted(Path(j) for j in job_dirs):
         t, info = read_job(jd, spec)

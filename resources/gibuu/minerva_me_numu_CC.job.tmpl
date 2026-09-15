@@ -8,8 +8,8 @@
 &neutrino_induced
       process_ID      = __PROCESS_ID__      ! 2:CC, 3:NC, -2:antiCC, -3:antiNC
       flavor_ID       = __FLAVOR_ID__       ! 1:electron, 2:muon, 3:tau
-      nuXsectionMode  = 16                  ! 16: EXP_dSigmaMC (flux-averaged)
-      nuExp           = 99                  ! own flux file (absolute path)
+      nuXsectionMode  = __NU_XSECTION_MODE__   ! 16: EXP_dSigmaMC (flux-averaged, weighted events); 0: integratedSigma at the fixed energy of &nl_integratedSigma
+      nuExp           = __NU_EXP__             ! 99: own flux file (mode 16); 0: no flux (mode 0)
       FileNameFlux    = '__FLUX_FILE__'
       includeQE       = __INCLUDE_QE__
       includeDELTA    = __INCLUDE_DELTA__
@@ -51,6 +51,10 @@
 /
 &nl_SigmaMC
       enu=1.0
+/
+&nl_integratedSigma
+      enu=__ENU__                 ! fixed neutrino energy [GeV] for nuXsectionMode 0 (ignored in mode 16)
+      delta_enu=__DELTA_ENU__
 /
 &width_Baryon
       mediumSwitch=__MEDIUM_SWITCH__

@@ -55,15 +55,25 @@ def plan(name: str, model_path: str, channel_name: str, cfg, *, stratum: str | N
     import getpass
     user = getpass.getuser()
     base = pnfs_base or f"/pnfs/dune/scratch/users/{user}/ndp-gibuu"
+    scan = g.mode == "energy_scan"
+    n_jobs = len(prep["energy_points"]) if scan else g.n_jobs
+    procs = {f"{k:04d}": {"seed": g.seed + k, "status": "planned", "attempts": 0, **({"energy_k": q["k"], "energy_gev": q["energy"],
+             "n_ensembles": q["n_ensembles"], "flux_fraction": q["flux_fraction"]} if scan else {})}
+             for k, q in enumerate(prep["energy_points"] if scan else [None] * g.n_jobs)}
     c = {"name": name, "kind": "gibuu", "created": timestamp(), "model": str(Path(model_path).resolve()), "model_name": spec_m.name,
-         "stratum": stratum, "channel": ch.name, "spec": g.to_dict(), "fingerprint": prep["fingerprint"], "cache_dir": str(prep["dir"]),
-         "card_template": str(tmpl), "flux_file": prep["flux_file"], "n_jobs": g.n_jobs, "seed_base": g.seed,
-         "expected_events_per_job": g.events_per_job(), "pnfs_out": f"{base}/{name}", "jobs": [],
-         "processes": {f"{k:04d}": {"seed": g.seed + k, "status": "planned", "attempts": 0} for k in range(g.n_jobs)},
+         "stratum": stratum, "channel": ch.name, "spec": g.to_dict(), "mode": g.mode, "fingerprint": prep["fingerprint"], "cache_dir": str(prep["dir"]),
+         "card_template": str(tmpl), "flux_file": prep["flux_file"], "energies_file": prep.get("energies_file"), "n_jobs": n_jobs, "seed_base": g.seed,
+         "expected_events_per_job": g.events_per_job(), "pnfs_out": f"{base}/{name}", "jobs": [], "processes": procs,
          "gibuu_paths": {k: str(v) for k, v in gibuu_paths(cfg.repo_root).items()}}
     save_campaign(c)
-    log(f"campaign {name} (stratum {stratum}): {g.n_jobs} jobs x {g.num_ensembles} ensembles x {g.num_runs} run(s) "
-        f"(~{g.events_per_job()} test nucleons each), equal-weights mode {g.equal_weights_mode} ceiling {g.equal_weights_max}, fingerprint {prep['fingerprint']}")
+    if scan:
+        tot = sum(q["n_ensembles"] for q in prep["energy_points"])
+        log(f"campaign {name} (stratum {stratum}, energy_scan): {n_jobs} energy points {prep['energy_points'][0]['energy']:.2f}-{prep['energy_points'][-1]['energy']:.2f} GeV, "
+            f"{tot} ensembles in total ({min(q['n_ensembles'] for q in prep['energy_points'])}-{max(q['n_ensembles'] for q in prep['energy_points'])} per point), "
+            f"flux covered {prep['flux_fraction_covered']:.4f}, fingerprint {prep['fingerprint']}")
+    else:
+        log(f"campaign {name} (stratum {stratum}): {g.n_jobs} jobs x {g.num_ensembles} ensembles x {g.num_runs} run(s) "
+            f"(~{g.events_per_job()} test nucleons each), equal-weights mode {g.equal_weights_mode} ceiling {g.equal_weights_max}, fingerprint {prep['fingerprint']}")
     log(f"card template {tmpl}; flux {prep['flux_file']}; outputs -> {c['pnfs_out']}")
     return c
 
@@ -75,8 +85,10 @@ def _card_template(g, cache_dir: Path, cfg) -> Path:
     if not tmpl.is_absolute():
         tmpl = cfg.repo_root / tmpl
     text = tmpl.read_text()
-    subs = substitutions(g, flux_file="__FLUX_FILE__", path_to_input="__PATH_TO_INPUT__", seed=0)
+    subs = substitutions(g, flux_file="__FLUX_FILE__", path_to_input="__PATH_TO_INPUT__", seed=0, energy="__ENU__" if g.mode == "energy_scan" else None)
     subs["__SEED__"] = "__SEED__"
+    if g.mode == "energy_scan":
+        subs["__NUM_ENSEMBLES__"] = "__NUM_ENSEMBLES__"   # the worker takes it from energies.txt
     for k, v in subs.items():
         text = text.replace(k, v)
     out = cache_dir / "card.job.tmpl"
@@ -92,9 +104,11 @@ def submit_cmd(name: str, tar_label: str, *, memory: str = "2500MB", disk: str =
     seed_base = c["seed_base"]
     if processes:   # resubmission: the k-th new process reruns processes[k] with a fresh seed
         seed_base = c["seed_base"] + 1000 * (1 + max(c["processes"][p]["attempts"] for p in processes))
+    mode_flag = " -M scan" if c.get("mode") == "energy_scan" else ""
+    plist = (" -P " + ",".join(processes)) if processes else ""
     return (f"python3 .claude/skills/jobsub-lite/scripts/jobsub.py submit --worker grid/gibuu_worker.sh -N {n_proc} --tar-label {tar_label} "
             f"--memory {memory} --disk {disk} --expected-lifetime {lifetime} --jobsub-arg=--onsite --pnfs-out {c['pnfs_out']} "
-            f"--runtype ndpgibuu --stem {stem or name} -- -R @TAR_DIR@ -O @PNFS_OUT@ -C card -S {seed_base}")
+            f"--runtype ndpgibuu --stem {stem or name} -- -R @TAR_DIR@ -O @PNFS_OUT@ -C card -S {seed_base}{mode_flag}{plist}")
 
 
 def record_submission(name: str, jobid: str, cluster: str | None, tar_label: str, processes: list | None = None) -> None:
@@ -132,7 +146,7 @@ def status(name: str, log=print) -> dict:
             local.unlink(missing_ok=True); continue
         p.update({"status": "done" if s.get("status") == "ok" and s.get("n_events", 0) > 0 else "failed",
                   "n_events": s.get("n_events"), "wall_s": s.get("wall_s"), "xsec": s.get("xsec_file_1e-38cm2"), "cluster": s.get("cluster"),
-                  "pnfs_dir": f"{c['pnfs_out']}/{k}"})
+                  "pnfs_dir": f"{c['pnfs_out']}/{k}", "energy_gev": s.get("energy_gev", p.get("energy_gev"))})
     save_campaign(c)
     counts = {}
     for p in c["processes"].values():
@@ -178,7 +192,7 @@ def merge(name: str, channel_name: str, cfg, log=print):
     from ..channels import load_channel
     from ..theory.gibuu import GibuuSpec, merge_jobs
     c = load(name)
-    g = GibuuSpec.from_params({"target": {"Z": c["spec"]["target_Z"], "A": c["spec"]["target_A"]}, **_spec_params(c["spec"])})
+    g = GibuuSpec(**c["spec"])
     root = Path(c["cache_dir"]) / "jobs"
     jobs = sorted(d for d in root.iterdir() if d.is_dir() and (d / "harvested.json").exists())
     if not jobs:

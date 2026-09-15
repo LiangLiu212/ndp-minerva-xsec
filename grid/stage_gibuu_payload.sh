@@ -21,6 +21,7 @@ rsync -a --delete "${INP}/" "${STAGE}/buuinput/"
 cp "${CACHE}/card.job.tmpl" "${STAGE}/cards/$(basename "$(dirname "${CACHE}/card.job.tmpl")")_card.job.tmpl" 2>/dev/null || true
 cp "${CACHE}/card.job.tmpl" "${STAGE}/cards/card.job.tmpl"
 cp "${CACHE}/flux_gibuu.dat" "${STAGE}/cards/flux_gibuu.dat"
+[ -f "${CACHE}/energies.txt" ] && cp "${CACHE}/energies.txt" "${STAGE}/cards/energies.txt"
 python3 - "${HERE}" "${STAGE}" "${CACHE}" <<'EOF'
 import hashlib, json, subprocess, sys, time
 here, stage, cache = sys.argv[1], sys.argv[2], sys.argv[3]

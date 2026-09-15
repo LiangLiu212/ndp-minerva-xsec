@@ -100,6 +100,27 @@ ensembles = 4 800 nucleons with nothing accepted: 12 s including the ~5 s start-
 for an accepted event's transport, so a low acceptance is cheap in CPU but expensive in ensembles
 (`numEnsembles × num_runs_SameEnergy` test nucleons per job).
 
+## 2.4b The way out: fixed-energy `integratedSigma` runs on a flux-weighted energy grid (`mode: energy_scan`)
+
+`nuXsectionMode = 0` (`integratedSigma`, `nuExp = 0`, energy from `&nl_integratedSigma enu`) integrates
+the cross section of every test nucleon over (cos θ, E') with Gauss quadrature and then draws the
+lepton kinematics by rejection against the maximum found on the integration grid
+(`neutrinoSigma.f90::Xsec_integratedSigma`): the event weight is the nucleon's total cross section, so
+**weights are nearly uniform** — measured on QE-only at 6 GeV: 2 264 events from 4 800 test nucleons,
+σ_QE = 0.372 × 10⁻³⁸ cm²/nucleon (GENIE G18_02a: 0.43), weight spread std/mean 0.35, max/mean 2.6,
+effective events 2 011 (89 %), 30 % of the QE events are 1μ1p signal. The price is speed: the
+per-nucleon integration makes QE-only 675 s per 4 800 nucleons (0.14 s each; the flux-averaged MC
+mode does 65 events/s).
+
+The platform's `mode: energy_scan` therefore runs one fixed-energy job per point of a grid (default
+0.5 GeV steps, 2–60 GeV, 116 points) and merges them with weight = perweight × f_k / n_jobs_k, where
+f_k is the point's bin share of the full 0–100 GeV flux integral (`energy_allocation`,
+`merge_energy_scan`): the merged weights sum to Σ_k f_k σ_CC(E_k), the flux-averaged cross section
+over the covered range, and the per-point σ_CC(E) comes for free (`gibuu_run.json`). Ensembles are
+allocated ∝ f_k × E_k so the merged weights stay as uniform as the allocation allows; the grid loses
+the < 2 GeV flux (no signal there: p_μ > 2 GeV/c) and the > 60 GeV tail. Discretising E_ν in 0.5 GeV
+steps is a modelling choice (status default) — the muon spectrum inside each point is continuous.
+
 ## 2.5 Grid campaigns
 
 `grid/README.md` ("GiBUU generation campaigns"): `ndp gibuu plan` writes the card template with the

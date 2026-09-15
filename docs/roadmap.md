@@ -91,6 +91,27 @@ number. The folded comparison has ~35 % statistical error per cell at this expos
   default thresholds, MC weights, surrogates per measurement, a `benchmark/papers/2503.15047.yaml`
   release manifest for the unfolded comparison, the archive storage policy.
 
+## Done (2026-09-15) — efficiency maps, background, GiBUU track
+
+- **Frame fix**: generator samples are beam-native and no longer rotated twice (`native_frame`);
+  MINERvA caches unchanged, certified counts identical (`tests/test_frame.py`).
+- **Chunked surrogate builder**: `ndp surrogate build --measurement all` learns every measurement's
+  binned response in one pass over the playlist products (18 grids, 597 s, 19 GB, 18/18 exact
+  closures; feed-in and background-by-category stored with the response).
+- **`ndp efficiency run`**: ε(p_μ, cos θ_μ) and ε(p_p, cos θ_p) maps + every grid's efficiency
+  (binomial errors), background by category at the data POT, and the closure of the factorised
+  ansatz ε_μ·ε_p/⟨ε⟩ on the MC (good on μ/p kinematics, 46–58 % off per bin on δp_T, δp_Ty, p_n,
+  δp_L). `ndp efficiency apply` weights any truth sample. Report `report/Efficiency_1mu1p_FHC.md`.
+- **Multi-grid folded run**: `ndp run <model> --measurement all --modes folded [--efficiency-run]`
+  = full fold / efficiency-only / ansatz predictions on every grid with the background stacked by
+  category (`plots.overlay_figure`); `report/make_overlay_report.py` renders the overlay report.
+- **GiBUU**: `kind: gibuu` model specs (strata with their own channel sets and equal-weights
+  ceilings), card template from GiBUU's MINERvA-ME card, channel flux rebinned for `nuExp = 99`,
+  local smoke runs, grid worker/payload/campaign commands (`ndp gibuu ...`), skill parts 2–3.
+  Blocker under study: the flux-averaged MC mode's event weights are unusable for QE
+  (`docs/open_questions.md` 2026-09-15); the fixed-energy `integratedSigma` mode on a
+  flux-weighted energy grid is being tested as the unit-weight route.
+
 ## Next
 
 1. **Ratify the defaults** in `docs/open_questions.md` (beam frame, Φ for POT-normalised MC,
