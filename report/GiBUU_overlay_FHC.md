@@ -1,6 +1,6 @@
 # GiBUU 1μ1p signal on the MINERvA ME FHC selection: efficiency, background and data overlay
 
-**Status:** rendered from `runs/2026-09-15_efficiency_minerva_me_ccqelike_1mu1p` (efficiency maps, background, ansatz closure) and `runs/2026-09-16_gibuu_2025_me_fhc_c12__minerva_me_ccqelike_1mu1p__all` (data vs GiBUU signal + MC background on 18 grids), manifest git `c4c8a74`. Numbers are quoted from those directories; this file was rendered by `report/make_overlay_report.py`.
+**Status:** rendered from `runs/2026-09-15_efficiency_minerva_me_ccqelike_1mu1p` (efficiency maps, background, ansatz closure) and `runs/2026-09-16_gibuu_2025_me_fhc_c12__minerva_me_ccqelike_1mu1p__all_3` (data vs GiBUU signal + MC background on 18 grids), manifest git `2b81262`. Numbers are quoted from those directories; this file was rendered by `report/make_overlay_report.py`.
 
 **Model:** GiBUU 2025 numu CC on 12C under the NuMI ME FHC flux, generated as fixed-energy integratedSigma runs on a flux-weighted 0.5 GeV energy grid (2-60 GeV, 116 points, 156 grid jobs, ~1.07M events with near-uniform weights); in-medium resonance widths on, 2p2h and two-pion background on.
 
@@ -12,13 +12,13 @@
 |---|---|
 | data | ME FHC playlists 1A–1P, 1.057 × 10²¹ POT_Used, 329 653 selected events |
 | official MC (efficiency and background) | 4.978 × 10²¹ POT, 2 734 225 truth signal events in the fiducial volume, 891 177 selected (⟨ε⟩ = 0.3259) |
-| GiBUU sample | GiBUU Release 2025 patch 5, 958 395 events from 148 job(s), fingerprint `1f8bcb950be1dcd0` |
-| GiBUU σ_CC (flux-averaged, per nucleon) | 3.8390e-38 cm² |
+| GiBUU sample | GiBUU Release 2025 patch 5, 979 395 events from 153 job(s), fingerprint `1f8bcb950be1dcd0` |
+| GiBUU σ_CC (flux-averaged, per nucleon) | 4.1245e-38 cm² |
 | normalisation | N_true = sigma_cell * N_nuc(3.23e+30) * Phi(6.32e-08) * POT(1.057e+21) |
 
 ## 1b. The GiBUU sample
 
-113 energy points from 3.25 to 59.75 GeV covering 0.8309 of the 0 to 100 GeV flux, 148 grid jobs, 958 395 events. Flux-averaged σ$_{CC}$ over the covered flux: 3.8390e-38 cm²/nucleon. **3 planned points have no job**, so the predicted rate is biased low by their share of the flux.
+115 energy points from 2.75 to 59.75 GeV covering 0.9460 of the 0 to 100 GeV flux, 153 grid jobs, 979 395 events. Flux-averaged σ$_{CC}$ over the covered flux: 4.1245e-38 cm²/nucleon. **1 planned points have no job**, so the predicted rate is biased low by their share of the flux.
 
 ![sigma of energy](figs/gibuu_sigma_of_energy.png)
 *σ$_{CC}$(E) of every point against the GENIE spline, with each point's flux weight and event count.*
@@ -139,24 +139,24 @@ Three predictions per grid: **full** = GiBUU truth cells × efficiency × migrat
 
 | grid | data | full | eff-only | ansatz | background | data/full | −2lnL/ndf (full) |
 |---|---|---|---|---|---|---|---|
-| muon p | 329653 | 363853 | 363853 | 367340 | 202110 | 0.906 | 5415.7/8 |
-| muon θ | 329653 | 363937 | 363937 | 367340 | 202110 | 0.906 | 5937.5/14 |
-| muon p_T | 329650 | 356292 | 356296 | 367335 | 202105 | 0.925 | 5142.6/10 |
-| leading proton p | 289289 | 319405 | 327278 | 335460 | 170230 | 0.906 | 3940.5/5 |
-| leading proton θ | 323116 | 357515 | 358394 | 363640 | 198410 | 0.904 | 10185.3/10 |
-| leading proton p_T | 329382 | 360438 | 360475 | 367155 | 201926 | 0.914 | 4133.7/7 |
-| δp_T | 329293 | 360321 | 360407 | 367057 | 201827 | 0.914 | 5602.2/6 |
-| δp_T (fine) | 329293 | 360657 | 360743 | 367057 | 201827 | 0.913 | 6132.1/9 |
-| δp_Tx | 329467 | 359601 | 359625 | 367212 | 201982 | 0.916 | 3639.7/8 |
-| δp_Ty | 329467 | 359344 | 359368 | 367212 | 201982 | 0.917 | 3561.4/11 |
-| δα_T | 329467 | 359065 | 359090 | 367212 | 201982 | 0.918 | 2600.0/5 |
-| φ_T | 329467 | 360385 | 360410 | 367212 | 201982 | 0.914 | 5028.7/6 |
-| δp_L | 329420 | 362856 | 362898 | 367177 | 201947 | 0.908 | 12237.7/7 |
-| p_n | 329467 | 362132 | 362157 | 367212 | 201982 | 0.910 | 10859.9/10 |
-| cos θ_μ | 329653 | 364181 | 364181 | 367340 | 202110 | 0.905 | 5565.5/8 |
-| cos θ_p | 323116 | 357284 | 358181 | 363640 | 198410 | 0.904 | 10328.3/8 |
-| muon p × cos θ_μ | 329653 | 363324 | 363324 | 367340 | 202110 | 0.907 | 8207.6/64 |
-| proton p × cos θ_p | 282881 | 317976 | 327220 | 331863 | 166633 | 0.890 | 12576.7/40 |
+| muon p | 329653 | 377228 | 377228 | 380660 | 202110 | 0.874 | 7676.8/8 |
+| muon θ | 329653 | 376281 | 376281 | 380660 | 202110 | 0.876 | 7362.9/14 |
+| muon p_T | 329650 | 373754 | 373759 | 380655 | 202105 | 0.882 | 8770.4/10 |
+| leading proton p | 289289 | 334950 | 343748 | 348781 | 170230 | 0.864 | 7240.4/5 |
+| leading proton θ | 323116 | 374157 | 375129 | 376960 | 198410 | 0.864 | 12692.1/10 |
+| leading proton p_T | 329382 | 377238 | 377278 | 380476 | 201926 | 0.873 | 7593.0/7 |
+| δp_T | 329293 | 377335 | 377429 | 380377 | 201827 | 0.873 | 8589.6/6 |
+| δp_T (fine) | 329293 | 377708 | 377801 | 380377 | 201827 | 0.872 | 9125.5/9 |
+| δp_Tx | 329467 | 376210 | 376237 | 380533 | 201982 | 0.876 | 6932.7/8 |
+| δp_Ty | 329467 | 376260 | 376287 | 380533 | 201982 | 0.876 | 6895.0/11 |
+| δα_T | 329467 | 375691 | 375718 | 380533 | 201982 | 0.877 | 6144.1/5 |
+| φ_T | 329467 | 376985 | 377012 | 380533 | 201982 | 0.874 | 8067.1/6 |
+| δp_L | 329420 | 379475 | 379521 | 380498 | 201947 | 0.868 | 14462.6/7 |
+| p_n | 329467 | 379275 | 379302 | 380532 | 201982 | 0.869 | 13069.6/10 |
+| cos θ_μ | 329653 | 376542 | 376542 | 380660 | 202110 | 0.875 | 7047.5/8 |
+| cos θ_p | 323116 | 373895 | 374886 | 376960 | 198410 | 0.864 | 12829.8/8 |
+| muon p × cos θ_μ | 329653 | 376299 | 376299 | 380660 | 202110 | 0.876 | 9875.0/64 |
+| proton p × cos θ_p | 282881 | 333725 | 344013 | 345184 | 166633 | 0.848 | 15331.9/40 |
 
 ![muon_p](figs/gibuu_overlay_muon_p.png)
 *Figure 1 — muon p.*

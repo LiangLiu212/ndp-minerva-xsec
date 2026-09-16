@@ -266,21 +266,33 @@
   },
   "0001": {
    "seed": 20261916,
-   "status": "submitted",
+   "status": "done",
    "attempts": 2,
    "energy_k": 1,
    "energy_gev": 2.75,
    "n_ensembles": 926,
-   "flux_fraction": 0.04684756584197926
+   "flux_fraction": 0.04684756584197926,
+   "n_events": 4200,
+   "wall_s": 12689,
+   "xsec": 2.1425,
+   "cluster": "29961361",
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-gibuu/gibuu_me_c12_scan_2026-09/0001",
+   "harvested": "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/runs/_generator_cache/gibuu_1f8bcb950be1dcd0/jobs/0001"
   },
   "0002": {
    "seed": 20261917,
-   "status": "submitted",
+   "status": "done",
    "attempts": 2,
    "energy_k": 1,
    "energy_gev": 2.75,
    "n_ensembles": 926,
-   "flux_fraction": 0.04684756584197926
+   "flux_fraction": 0.04684756584197926,
+   "n_events": 4200,
+   "wall_s": 17862,
+   "xsec": 2.1471,
+   "cluster": "29961361",
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-gibuu/gibuu_me_c12_scan_2026-09/0002",
+   "harvested": "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/runs/_generator_cache/gibuu_1f8bcb950be1dcd0/jobs/0002"
   },
   "0003": {
    "seed": 20261918,
@@ -308,30 +320,48 @@
   },
   "0005": {
    "seed": 20261920,
-   "status": "submitted",
+   "status": "done",
    "attempts": 2,
    "energy_k": 3,
    "energy_gev": 3.75,
    "n_ensembles": 1225,
-   "flux_fraction": 0.06820430965682361
+   "flux_fraction": 0.06820430965682361,
+   "n_events": 4200,
+   "wall_s": 13486,
+   "xsec": 2.7102,
+   "cluster": "29961361",
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-gibuu/gibuu_me_c12_scan_2026-09/0005",
+   "harvested": "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/runs/_generator_cache/gibuu_1f8bcb950be1dcd0/jobs/0005"
   },
   "0006": {
    "seed": 20261921,
-   "status": "submitted",
+   "status": "done",
    "attempts": 2,
    "energy_k": 3,
    "energy_gev": 3.75,
    "n_ensembles": 1225,
-   "flux_fraction": 0.06820430965682361
+   "flux_fraction": 0.06820430965682361,
+   "n_events": 4200,
+   "wall_s": 10173,
+   "xsec": 2.711,
+   "cluster": "29961361",
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-gibuu/gibuu_me_c12_scan_2026-09/0006",
+   "harvested": "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/runs/_generator_cache/gibuu_1f8bcb950be1dcd0/jobs/0006"
   },
   "0007": {
    "seed": 20261922,
-   "status": "submitted",
+   "status": "done",
    "attempts": 2,
    "energy_k": 3,
    "energy_gev": 3.75,
    "n_ensembles": 1225,
-   "flux_fraction": 0.06820430965682361
+   "flux_fraction": 0.06820430965682361,
+   "n_events": 4200,
+   "wall_s": 11913,
+   "xsec": 2.7165,
+   "cluster": "29961361",
+   "pnfs_dir": "/pnfs/dune/scratch/users/liangliu/ndp-gibuu/gibuu_me_c12_scan_2026-09/0007",
+   "harvested": "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/runs/_generator_cache/gibuu_1f8bcb950be1dcd0/jobs/0007"
   },
   "0008": {
    "seed": 20261923,
@@ -2553,9 +2583,9 @@
   "path_to_input": "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/external/gibuu/buuinput2025"
  },
  "merged": {
-  "n_jobs": 148,
-  "n_events": 958395,
-  "sigma_flux_avg_per_nucleon_cm2": 3.8389938608880663e-38,
-  "when": "2026-09-16T02:27:45+0000"
+  "n_jobs": 153,
+  "n_events": 979395,
+  "sigma_flux_avg_per_nucleon_cm2": 4.1244819165466973e-38,
+  "when": "2026-09-16T14:53:27+0000"
  }
 }
