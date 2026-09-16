@@ -47,5 +47,25 @@ export ACHILLES_VERSION="${ACHILLES_VERSION:-v0.3.1}"
 export ACHILLES="$NDP_EXTERNAL/achilles/install"
 export ACHILLES_SRC="$NDP_EXTERNAL/achilles/Achilles"
 
-export PATH="$GENIE/bin:$ROOTEGPythia6_ROOT/bin:$NUWRO/bin:$GIBUU/objects:$ACHILLES/bin:$PATH"
-export LD_LIBRARY_PATH="$GENIE/lib:$ROOTEGPythia6_ROOT/lib:$NUWRO/bin:$ACHILLES/lib:$ACHILLES/lib64:$CONDA_PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+# GENIE Reweight (in-place build beside the Generator; NUISANCE/nusystematics find it via GENIE_REWEIGHT)
+export GENIE_REWEIGHT_VERSION="${GENIE_REWEIGHT_VERSION:-R-1_04_02}"
+export GENIE_REWEIGHT="$NDP_EXTERNAL/genie/Reweight"
+# nusystematics (CMake install prefix; systematicstools + the standalone fhicl-cpp suite share it)
+export NUSYST_VERSION="${NUSYST_VERSION:-v02_00_07}"
+export NUSYST="$NDP_EXTERNAL/nusystematics/install"
+export NUSYST_SRC="$NDP_EXTERNAL/nusystematics/nusystematics"
+export nusystematics_ROOT="$NUSYST" systematicstools_ROOT="$NUSYST" fhicl_cpp_standalone_ROOT="$NUSYST"
+# fhicl lookups (DumpConfiguredTweaksNuSyst etc.) search FHICL_FILE_PATH: the working directory, the
+# installed systematicstools examples and the nusystematics source fcl/ (not installed by its CMake).
+export FHICL_FILE_PATH=".:$NUSYST/fcl/fcl:$NUSYST_SRC/fcl${FHICL_FILE_PATH:+:$FHICL_FILE_PATH}"
+# nusystematics' GENIE tools resolve their tune from GENIE_XSEC_TUNE (the FNAL genie_xsec UPS convention);
+# default to the platform's G18_02a tune (matches the CVMFS spline default above), override per sample.
+export GENIE_XSEC_TUNE="${GENIE_XSEC_TUNE:-G18_02a_00_000}"
+# NUISANCE (CMake install prefix; its apps find data/ and parameters/ through $NUISANCE)
+export NUISANCE="$NDP_EXTERNAL/nuisance/install"
+export NUISANCE_SRC="$NDP_EXTERNAL/nuisance/nuisance"
+
+export PATH="$GENIE/bin:$GENIE_REWEIGHT/bin:$ROOTEGPythia6_ROOT/bin:$NUWRO/bin:$GIBUU/objects:$ACHILLES/bin:$NUSYST/bin:$NUISANCE/bin:$PATH"
+# NUISANCE and ACHILLES each install a libnuhepmc_cpputils.so (different NuHepMC cpputils versions, same
+# soname): NUISANCE's must come first; ACHILLES keeps its own through the RPATH baked into its binaries.
+export LD_LIBRARY_PATH="$GENIE/lib:$GENIE_REWEIGHT/lib:$ROOTEGPythia6_ROOT/lib:$NUWRO/bin:$NUSYST/lib:$NUISANCE/lib:$ACHILLES/lib:$ACHILLES/lib64:$CONDA_PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"

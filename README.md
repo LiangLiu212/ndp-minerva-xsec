@@ -112,6 +112,32 @@ the in-repo build; `genie_splines` names the cross-section splines (the CVMFS `G
 by default when mounted). A custom tune directory goes in via a model's `gxmlpath`. Any other GENIE
 install works the same way: point `genie_env_json` at a snapshot of its environment.
 
+### NUISANCE and nusystematics
+
+[NUISANCE](https://github.com/NUISANCEMC/nuisance) compares generators with each other and with published
+cross-section data: it converts generator output into a common event format (`PrepareGENIE`,
+`PrepareNuWroEvents`, `PrepareGiBUU`), writes generator-agnostic flat trees (`nuisflat`) and runs
+data/MC comparisons and fits (`nuiscomp`, `nuismin`, `nuissyst`). [nusystematics](https://github.com/NuSystematics/nusystematics)
+implements cross-section systematics as "systematic providers" in the `systematicstools` framework
+(FHiCL-configured; the DUNE/SBN convention): its `GENIEReWeight` provider wraps GENIE Reweight, and further
+providers add 2p2h, RPA, FSI, E_miss and resonance-isolation dials. NUISANCE links nusystematics so those
+dials can be used in its fits. Both build against the in-repo GENIE, which needs GENIE Reweight first:
+
+```bash
+pixi run build-genie-reweight    # GENIE Reweight R-1_04_02 in external/genie/Reweight (in place, like the Generator)
+pixi run build-nusystematics     # nusystematics v02_00_07 + systematicstools + standalone fhicl-cpp -> external/nusystematics/install
+pixi run build-nuisance          # NUISANCE (main) with GENIE+Reweight, NuWro, nusystematics, NuHepMC, Prob3++ -> external/nuisance/install
+pixi run build-nuisance-stack    # the three in order
+pixi run test-nuisance           # PrepareGENIE / PrepareNuWroEvents -> nuisflat, and a nusystematics reweight dump
+```
+
+`activate.sh` exports `GENIE_REWEIGHT`, `NUSYST`, `NUISANCE` (plus `nusystematics_ROOT`, `FHICL_FILE_PATH`
+and `GENIE_XSEC_TUNE`, which nusystematics' GENIE tools read for the tune name). Notes: Boost, Eigen and
+TBB were added to `pixi.toml` for the fhicl-cpp suite; the nusystematics script pre-includes `<cassert>`
+because fhicl-cpp 4.18.01 does not compile under gcc 15 otherwise; NUISANCE's own NuHepMC cpputils must
+precede ACHILLES's older copy on `LD_LIBRARY_PATH` (same soname). NEUT is not built. NUISANCE reads GiBUU
+only in its RootTuple ROOT format, so the GiBUU under `external/gibuu` (no RootTuple) is not yet usable there.
+
 ## Writing a model
 
 ```yaml
