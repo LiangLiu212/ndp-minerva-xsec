@@ -1,0 +1,756 @@
+{
+  "kind": "binned_response",
+  "binning": {
+    "x_name": "proton_pT",
+    "y_name": "unit",
+    "x_edges": [
+      0.0,
+      0.15,
+      0.3,
+      0.45,
+      0.6,
+      0.75,
+      0.9,
+      1.1
+    ],
+    "y_edges": [
+      0.0,
+      1.0
+    ],
+    "formula": "ix*n_y + iy"
+  },
+  "meta": {
+    "channel": "minerva_me_ccqelike_1mu1p",
+    "measurement": "proton_pt",
+    "measurement_spec": {
+      "name": "proton_pt",
+      "channel": "minerva_me_ccqelike_1mu1p",
+      "description": "d sigma / dleading proton p_T of the CCQE-like 1mu1p sample on CH, arXiv:2503.15047 binning (7 bins).\n",
+      "author": "ndp-platform (grid = the paper's release; adopted for the 2503.15047 reproduction)",
+      "status": "user",
+      "release": null,
+      "is_1d": true,
+      "x": {
+        "observable": "proton_pT",
+        "reco": "reco_proton_pT",
+        "edges": [
+          0.0,
+          0.15,
+          0.3,
+          0.45,
+          0.6,
+          0.75,
+          0.9,
+          1.1
+        ],
+        "units": "GeV/c",
+        "log": false
+      },
+      "y": {
+        "observable": "unit",
+        "reco": "unit",
+        "edges": [
+          0.0,
+          1.0
+        ],
+        "units": "",
+        "log": false
+      },
+      "global_cell_formula": "ix*n_y + iy",
+      "surrogate": {},
+      "notes": [
+        "release file: papers/minerva/2503.15047/anc/absolute/proton/absolute_xsec_proton_pt_ch.txt (cm^2/unit/nucleon, total error), covariance alongside"
+      ],
+      "path": "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/measurements/minerva_me_ccqelike_1mu1p/proton_pt.yaml"
+    },
+    "built": "2026-09-15T16:44:45+0000",
+    "training_mc": [
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1A/reco_1A_data.npz",
+        "size_bytes": 566278792,
+        "mtime": 1789410375,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "d79a54ea77acc64ab9889c2bb961e3d9805981dff12a7bce09d10b6ee931dde1"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1A/pot_1A_data.json",
+        "size_bytes": 87843,
+        "mtime": 1789410375,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "693c61eb6128da87074ab381916e5ef83e80a188358ac821886cd70d240e906c"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1B/reco_1B_data.npz",
+        "size_bytes": 118674817,
+        "mtime": 1789410604,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "cbcf8370b7bf68fa8a3ebd9c4c37bb6226c3870218d049bfc927393e5191dde8"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1B/pot_1B_data.json",
+        "size_bytes": 16533,
+        "mtime": 1789410604,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "24ac1d8c0d6f6fb6973dba6210e5e731c0f78ef2e9a22de7970b969ed8f73bca"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1C/reco_1C_data.npz",
+        "size_bytes": 272773477,
+        "mtime": 1789410688,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "26728985d218341bed2c336865038a97722b9ed8b58fcd55cf709e492466956b"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1C/pot_1C_data.json",
+        "size_bytes": 35608,
+        "mtime": 1789410688,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "08a8d76afbf03599898452d23396d157770d569a3213c9738b2db41b21ff1297"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1D/reco_1D_data.npz",
+        "size_bytes": 912023705,
+        "mtime": 1789410879,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "017f9c3c34e6a36ad8b8138408edd8e6b9ecd7e8adc02cd38f0511a36abbe78c"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1D/pot_1D_data.json",
+        "size_bytes": 98926,
+        "mtime": 1789410879,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "ecd197b3f03815364f51874d824b43155d00646290b9a7be5f9cc5c71d9b4990"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1E/reco_1E_data.npz",
+        "size_bytes": 643095533,
+        "mtime": 1789411280,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "ecc19b67ad9960acbe67dc5ab6376cf63ce18bcc2ee98ab4b7c971021aa623f5"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1E/pot_1E_data.json",
+        "size_bytes": 76566,
+        "mtime": 1789411280,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "0d50db67c27964ea16a4ae37bd94bb972148b17c106bfb3e5435ed3d3d17ff21"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1F/reco_1F_data.npz",
+        "size_bytes": 1017108739,
+        "mtime": 1789411677,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "df8e78a21928755170bb577ce51194b9ce9a5c4737920550fd32e4ecfeb4cbdc"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1F/pot_1F_data.json",
+        "size_bytes": 90799,
+        "mtime": 1789411677,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "97d7e662c580aae5b0cf633be3bf05399c69e1c9027420dc177a06cd07d7f723"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1G/reco_1G_data.npz",
+        "size_bytes": 849760089,
+        "mtime": 1789412170,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "3fe9ed9317d5f9e62a50667c1f48ca612ba001cffa4156ebff12cf4d5971a4d7"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1G/pot_1G_data.json",
+        "size_bytes": 81364,
+        "mtime": 1789412170,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "39b64bde788401577c26b41114ca4df66a131c30f9f24843e48e460db13432b8"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1L/reco_1L_data.npz",
+        "size_bytes": 80215874,
+        "mtime": 1789412518,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "feca35564a08fea33e24f4fcdfd55c14193f6f2f182b21a072c408de703f04f3"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1L/pot_1L_data.json",
+        "size_bytes": 5391,
+        "mtime": 1789412518,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "026db05aff25f0467cb7310c528857be3f6149c826a0854357acadd6df8be7f2"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1M/reco_1M_data.npz",
+        "size_bytes": 946128485,
+        "mtime": 1789412635,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "289a878333e7c772fd73a1fd69da4e7b8f4d07d86aeb4110d09eeaeee9de5a6f"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1M/pot_1M_data.json",
+        "size_bytes": 70496,
+        "mtime": 1789412635,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "6fd9733c65afa89a231f8c7590fc3bd761f36ab5fb0d08b510924d18079a81a4"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/reco_1N_data.npz",
+        "size_bytes": 668288181,
+        "mtime": 1789413455,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "233d7bc24ac653c3a3729acf11fb18ece78ff04f5d0aed192aacb0e860c27933"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/pot_1N_data.json",
+        "size_bytes": 48279,
+        "mtime": 1789413455,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "4eeb349abb46e9a4767eb25daa26c88876be217a6e97b1dbb39cc6f144cd6257"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1O/reco_1O_data.npz",
+        "size_bytes": 180197269,
+        "mtime": 1789413172,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "5fb4a88eed4aceb43dac1ac92650e8d25533162aad8dad4ffae7be61bcf0d7b4"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1O/pot_1O_data.json",
+        "size_bytes": 9270,
+        "mtime": 1789413172,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "adf0695a3585c0d006a0f45884b0cd93384f86dcbc008b94579e24d54aade972"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1P/reco_1P_data.npz",
+        "size_bytes": 282739332,
+        "mtime": 1789413284,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "526cbd07fc28f2b4e38195a8ec9c2161f60de2721f192b64ae2e4a706bdb057e"
+      },
+      {
+        "role": "data_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1P/pot_1P_data.json",
+        "size_bytes": 14160,
+        "mtime": 1789413284,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "dd4d5df999b595169acea293e0ec536342e49371c726e76ef426bc140c3835e7"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1A/reco_1A_mc.npz",
+        "size_bytes": 1645289778,
+        "mtime": 1789410485,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "0cf8f907cf9a54f89d7afc1be435c6965a0a4dcab207e42c837a8df07fe0cbd7"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1A/pot_1A_mc.json",
+        "size_bytes": 14826,
+        "mtime": 1789410592,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "32700ba82ec09929a19b17d094418e9458654c24e671d5815c0f3b06f8003c2d"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1A/truth_1A_skim.npz",
+        "size_bytes": 573029330,
+        "mtime": 1789410528,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "9bf059b7231acf291c19ed9954d487992e432b75326e6c0a8eb0b5400b828b24"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1A/reco_1A_truthcols_skim.npz",
+        "size_bytes": 866183938,
+        "mtime": 1789410592,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "2fa453937fb4848f90c773a0829e943884ca69c4ecd3072fabf684dfddb65135"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1B/reco_1B_mc.npz",
+        "size_bytes": 443521248,
+        "mtime": 1789410633,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "cc5379715fb694928af55338b687ad1cc9697d19a725f667d8e4c790807bdc6e"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1B/pot_1B_mc.json",
+        "size_bytes": 4106,
+        "mtime": 1789410660,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "231680f02e219cdc784c3cca4b410c443d712ef5cf1739ef20ef1c36252f2898"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1B/truth_1B_skim.npz",
+        "size_bytes": 154136926,
+        "mtime": 1789410644,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "791410a35ff4b100e5e139569cd1fb2b71fa3d125a12201343e1e716fa385f30"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1B/reco_1B_truthcols_skim.npz",
+        "size_bytes": 233508651,
+        "mtime": 1789410660,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "bb6fd1acf548dd7ab95540802b66475384251919cd18881a00a010605713268e"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1C/reco_1C_mc.npz",
+        "size_bytes": 846744425,
+        "mtime": 1789410742,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "1d18acf891ee0380e1553d5ac39cdffa2a0bdff150e333b045bce174889c3c3c"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1C/pot_1C_mc.json",
+        "size_bytes": 7674,
+        "mtime": 1789410794,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "1bc19fe2176cbc6a0ce72bb2dc1c258ac7a978b09d706c3c7994852ab3b97f93"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1C/truth_1C_skim.npz",
+        "size_bytes": 293926013,
+        "mtime": 1789410762,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "692b157e3d2306ca28b0a4c0faaa51c720c6fa1636315708b395c70669da7af1"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1C/reco_1C_truthcols_skim.npz",
+        "size_bytes": 445836333,
+        "mtime": 1789410794,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "204a78308c54a2c235386bdaa44570984301231744ef501be423f27d7fe88682"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1D/reco_1D_mc.npz",
+        "size_bytes": 2457327694,
+        "mtime": 1789411040,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "95b747e4aa6b3cedd03dd85838af6f9c357af04453109d27e10121cb88bfbf93"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1D/pot_1D_mc.json",
+        "size_bytes": 21970,
+        "mtime": 1789411217,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "79ea859deeddc6616d9ff34178ef72a9b2288b3caf075f23d5143d5ebda0324d"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1D/truth_1D_skim.npz",
+        "size_bytes": 855124689,
+        "mtime": 1789411108,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "5786f6c5cf255105aacb36d3a869dd2d9426eac10006f7b5cd7a9ece021416a2"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1D/reco_1D_truthcols_skim.npz",
+        "size_bytes": 1293800197,
+        "mtime": 1789411217,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "6ae5ec785f754978298263dd163da72a777ac1ae7ad7f500c659819304ee85b3"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1E/reco_1E_mc.npz",
+        "size_bytes": 2054108727,
+        "mtime": 1789411424,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "c27045c41b1e80beabdbea3915de58640e3b86f7e027c9d818c9027d89b5df33"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1E/pot_1E_mc.json",
+        "size_bytes": 18415,
+        "mtime": 1789411574,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "6063f7d9b1d54a2b11579fd236fdfa1fcc15f3ca400fe44023557e02de644425"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1E/truth_1E_skim.npz",
+        "size_bytes": 715887405,
+        "mtime": 1789411482,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "a70fd13e9d8385a0eba5c376672671b4f5731d4677a60554e5b62560325d3f7c"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1E/reco_1E_truthcols_skim.npz",
+        "size_bytes": 1081603909,
+        "mtime": 1789411574,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "88e28521f52283d65868238f0af105d1caf4befd814af7d30fe1d607e3dedceb"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1F/reco_1F_mc.npz",
+        "size_bytes": 2787505133,
+        "mtime": 1789411882,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "3c6a04665dcbc5b921e7c29d868d7a7bc4cd5e72e8cc0604c1e6153ae6b8b65c"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1F/pot_1F_mc.json",
+        "size_bytes": 25568,
+        "mtime": 1789412089,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "f67b337b70fe020fdda7bda5a0f759b8ef19704fadae3a5107133d2904219f64"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1F/truth_1F_skim.npz",
+        "size_bytes": 995578804,
+        "mtime": 1789411969,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "06fe96064a998d8a45ead18342314b71831ae6850bb79d3b845c7550cf9d5656"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1F/reco_1F_truthcols_skim.npz",
+        "size_bytes": 1469797161,
+        "mtime": 1789412089,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "e9b216e5f4cb476c953025865545276d6c1a5a53b142659e946cbb02c0ea97f3"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1G/reco_1G_mc.npz",
+        "size_bytes": 2362930797,
+        "mtime": 1789412336,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "4aa0eb3b78bb1699546dd4813a8304766a85d0fe4b8e9cbb1065708ee9745b3b"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1G/pot_1G_mc.json",
+        "size_bytes": 21961,
+        "mtime": 1789412510,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "8ebe8372fc145ab76d2d30d5467411f849e74d0d3f51cc76aedb11b3b577b7cc"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1G/truth_1G_skim.npz",
+        "size_bytes": 838210133,
+        "mtime": 1789412406,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "866a12c97f85688a5ac28dac42b22a731f62d931d0b56a8cce8f7179e1157f36"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1G/reco_1G_truthcols_skim.npz",
+        "size_bytes": 1245375472,
+        "mtime": 1789412510,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "81b34e628a78634dc33f26ebccc8c4b46627ca332f65e0701b4bddf18783d327"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1L/reco_1L_mc.npz",
+        "size_bytes": 227505024,
+        "mtime": 1789412534,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "f226f82b79ee9f57cb2cebf109de1537425d5fb9ff2b2564569bf94917a38393"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1L/pot_1L_mc.json",
+        "size_bytes": 2308,
+        "mtime": 1789412551,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "5db1c0d048112b319c28fe35a10d89b8b81adb894d0228029cdfac951a22c69c"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1L/truth_1L_skim.npz",
+        "size_bytes": 81918172,
+        "mtime": 1789412541,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "3b0ef208e67e147396a6a0ab4f5461643a148ee44bfaea58758140660ad81f6b"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1L/reco_1L_truthcols_skim.npz",
+        "size_bytes": 120412187,
+        "mtime": 1789412551,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "a0bfed944f6d4ed3ed785fec260cfe4ac03b99448c48b44351450e1e70ef8c7c"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1M/reco_1M_mc.npz",
+        "size_bytes": 3513314290,
+        "mtime": 1789412889,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "ad41ce2999adc6ada98d458346154cbac9d6b8b85e2c9ff1d36ae14c29c3c797"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1M/pot_1M_mc.json",
+        "size_bytes": 35211,
+        "mtime": 1789413156,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "babee93e2e75422c69c761dcf262a02a14d381036519bb1836c025dcb87702cc"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1M/truth_1M_skim.npz",
+        "size_bytes": 1264591683,
+        "mtime": 1789413000,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "820a064ca1ef306299358f173b4b919dec17ade0a28e3ef0670c177f63c78073"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1M/reco_1M_truthcols_skim.npz",
+        "size_bytes": 1859146939,
+        "mtime": 1789413156,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "06194afb5a461fe874105e3f646236134243f6041076749e7291d573c47cb57c"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/reco_1N_mc.npz",
+        "size_bytes": 2006832928,
+        "mtime": 1789411799,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "24fd580653738945350808997a214aac90655531ea8edc1eb75ff7d7982ae6c6"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/pot_1N_mc.json",
+        "size_bytes": 11311,
+        "mtime": 1789411934,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "7273c09707d2dc33adcd306e610631988b28be392951a7d292b8094e078654f7"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/truth_1N_skim.npz",
+        "size_bytes": 729940396,
+        "mtime": 1789411852,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "6e712a6c69390841503f7c6e31730cee41dab7912035391e83a0172f119f4fdb"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/reco_1N_truthcols_skim.npz",
+        "size_bytes": 1063411999,
+        "mtime": 1789411934,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "3bf459b623c0c607422ac1d1dfdab899376eb727631231cdfd747fa1725a8a2c"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1O/reco_1O_mc.npz",
+        "size_bytes": 593287376,
+        "mtime": 1789413213,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "ef075d0d07b8908d04398a728969ff8ae84f9a587b229a0858cdea9f78ce2730"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1O/pot_1O_mc.json",
+        "size_bytes": 5886,
+        "mtime": 1789413260,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "938bfbce0a0a4bac2e51fac7c456a88547097b5601d9a7a0d53fca8cee40d4b4"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1O/truth_1O_skim.npz",
+        "size_bytes": 222882298,
+        "mtime": 1789413232,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "f65c714224b74b71591b2856423947ed90802d68cced7ad2e864f8b7c486aebb"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1O/reco_1O_truthcols_skim.npz",
+        "size_bytes": 315305790,
+        "mtime": 1789413260,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "36c5f6048c987137f1afd7c42e5404d56421868b134697178e45f7607d57122d"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1P/reco_1P_mc.npz",
+        "size_bytes": 782472854,
+        "mtime": 1789413339,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "4bd2c39a820cd63d50f581cb7159b7d2dcdcacae9e6b9c9439c268f6f02492fd"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1P/pot_1P_mc.json",
+        "size_bytes": 7678,
+        "mtime": 1789413399,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "7a84e662fba98f5cef49b08ff104c405a5db83c9cc9dd37b69a777dd4932d2da"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1P/truth_1P_skim.npz",
+        "size_bytes": 293230860,
+        "mtime": 1789413364,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "54ed9a86ad9379869fe05f7c78b7a21cfea1e76b7379ae5f9ea3770fd67e5a8c"
+      },
+      {
+        "role": "mc_product",
+        "path": "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1P/reco_1P_truthcols_skim.npz",
+        "size_bytes": 415789268,
+        "mtime": 1789413399,
+        "fingerprint": "sha256(head1MiB+tail1MiB)",
+        "sha256_partial": "df3882e2414a136660145edbdf0c1bf4ef8081be6edc87f2a328acea6dabdd59"
+      }
+    ],
+    "training_sources": [
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1A/reco_1A_mc.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1A/reco_1A_truthcols_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1A/truth_1A_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1B/reco_1B_mc.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1B/reco_1B_truthcols_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1B/truth_1B_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1C/reco_1C_mc.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1C/reco_1C_truthcols_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1C/truth_1C_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1D/reco_1D_mc.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1D/reco_1D_truthcols_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1D/truth_1D_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1E/reco_1E_mc.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1E/reco_1E_truthcols_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1E/truth_1E_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1F/reco_1F_mc.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1F/reco_1F_truthcols_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1F/truth_1F_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1G/reco_1G_mc.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1G/reco_1G_truthcols_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1G/truth_1G_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1L/reco_1L_mc.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1L/reco_1L_truthcols_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1L/truth_1L_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1M/reco_1M_mc.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1M/reco_1M_truthcols_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1M/truth_1M_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/reco_1N_mc.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/reco_1N_truthcols_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1N/truth_1N_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1O/reco_1O_mc.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1O/reco_1O_truthcols_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1O/truth_1O_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1P/reco_1P_mc.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1P/reco_1P_truthcols_skim.npz",
+      "/exp/dune/data/users/liangliu/minerva-open-data/products/FHC/1P/truth_1P_skim.npz"
+    ],
+    "training_chunks": [
+      "FHC/1A",
+      "FHC/1B",
+      "FHC/1C",
+      "FHC/1D",
+      "FHC/1E",
+      "FHC/1F",
+      "FHC/1G",
+      "FHC/1L",
+      "FHC/1M",
+      "FHC/1N",
+      "FHC/1O",
+      "FHC/1P"
+    ],
+    "pot_mc": 4.978438549144434e+21,
+    "generator": "MINERvA official MC (playlist products)",
+    "selection": "minerva_ccqelike_1mu1p_v0",
+    "phase_space": {
+      "frame": "beam",
+      "vertex": {
+        "z_min_mm": 5980.0,
+        "z_max_mm": 8422.0,
+        "apothem_mm": 850.0
+      },
+      "status": "open"
+    },
+    "signal": {
+      "type": "minerva_ccqelike_1mu1p",
+      "nu_pdg": [
+        14
+      ],
+      "current": "CC",
+      "lep_pdg": 13,
+      "muon": {
+        "theta_max_deg": 17.0,
+        "p_min_gev": 2.0,
+        "p_max_gev": 20.0
+      },
+      "proton": {
+        "theta_max_deg": 70.0,
+        "p_min_gev": 0.5,
+        "p_max_gev": 1.1,
+        "min_count": 1
+      },
+      "veto": {
+        "mesons": true,
+        "heavy_baryons": true,
+        "photon_E_max_gev": 0.01
+      },
+      "status": "decided",
+      "notes": "Angles for the muon and the protons are evaluated in phase_space.frame (the paper says \"with respect to the beam\"). Antinucleons are not \"heavier than the neutron\" and are not vetoed (same as MAT's IsQELike); neutrons, sub-threshold photons, nuclear remnants and GENIE bookkeeping particles are ignored. Protons outside the window do not veto the event.\n"
+    },
+    "training_counts": {
+      "n_den": 2734227,
+      "n_num": 891177,
+      "n_bkg": 951611,
+      "n_passed": 1842788
+    },
+    "built_by": "ndp.surrogate.chunked.build_surrogates_chunked",
+    "n_den": 2734227.0,
+    "n_num": 891177.0,
+    "n_migration": 890971.0,
+    "n_num_reco_out_of_grid": 206.0,
+    "n_feedin_true_out_of_grid": 0.0,
+    "n_bkg_total_in_reco_grid": 950743.0,
+    "response_convention": "P[reco, true] = M/num (column sums <= 1); bkg = non-signal + out-of-phase-space signal, per POT",
+    "bkg_category_names": [
+      "bkg 1 pi+-",
+      "bkg 1 pi0",
+      "bkg multi-pi",
+      "bkg other (no pion)"
+    ]
+  }
+}
