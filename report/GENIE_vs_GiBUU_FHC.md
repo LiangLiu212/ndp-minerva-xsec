@@ -1,8 +1,10 @@
-# GENIE and GiBUU side by side against the MINERvA 1μ1p data
+# GENIE and GiBUU side by side against the MINERvA muon + leading-proton data
 
-**What is plotted.** Every figure has two panels built identically: the same reconstructed data points, the same official-MC background stacked by category, and on top of it the 1μ1p signal predicted by one generator — the official GENIE MC scaled by POT on the left, GiBUU folded through the detector response learned from that same MC on the right. Only the signal block differs between the panels, so the comparison is visual and direct. Both panels share the vertical scale.
+**The sample.** This is not an exclusive one-muon-one-proton final state. The signal asks for a forward muon (2–20 GeV/c, θ < 17°) and **at least one** proton in 0.5–1.1 GeV/c below 70°, vetoing mesons, baryons heavier than the neutron and photons above 10 MeV; an event with a second proton in the window is kept. The muon and the **highest-momentum** proton define the transverse-imbalance variables, a choice the paper makes explicitly because it “is not changed based on the number of protons in the final state since secondary protons may not be reconstructed” (arXiv:2503.15047). So every signal block below is one muon plus the leading proton, and the `1mu1p` in the channel and run paths is only the identifier those manifests were created with, not a statement of proton multiplicity.
 
-**Sources.** GENIE: `2026-09-14_selection_minerva_me_ccqelike_1mu1p_FHC`. GiBUU: `2026-09-16_gibuu_2025_me_fhc_c12__minerva_me_ccqelike_1mu1p__all_3` (σ_CC = 4.1245e-38 cm²/nucleon  979,395 events, 0.946 of the flux). Rendered by `report/make_genie_gibuu_comparison.py`; the physics discussion is in `report/GiBUU_reco_comparison_FHC.md`.
+**What is plotted.** Every figure has two panels built identically: the same reconstructed data points, the same official-MC background stacked by category, and on top of it the signal predicted by one generator — the official GENIE MC scaled by POT on the left, GiBUU folded through the detector response learned from that same MC on the right. Only the signal block differs between the panels, so the comparison is visual and direct. Both panels share the vertical scale.
+
+**Sources.** GENIE: `2026-09-14_selection_minerva_me_ccqelike_1mu1p_FHC`. GiBUU: `2026-09-16_gibuu_2025_me_fhc_c12__minerva_me_ccqelike_1mu1p__all_3` (σ_CC = 4.1245e-38 cm²/nucleon, 979,395 events, 0.946 of the flux). Rendered by `report/make_genie_gibuu_comparison.py`; the physics discussion is in `report/GiBUU_reco_comparison_FHC.md`.
 
 ---
 
@@ -125,16 +127,14 @@ Averaged over the 14 released grids: data/GENIE = 0.841, data/GiBUU = 0.873. The
 
 | | GENIE | GiBUU |
 |---|---|---|
-| signal, averaged over the grids | 189 000 events | 175 000 events |
-| data / prediction | 0.842 | 0.873 |
-| quasi-elastic share of the signal | 46.7 % | 36.7 % |
+| signal, averaged over the grids | 188,496 events | 174,296 events |
+| data / prediction | 0.841 | 0.873 |
+| quasi-elastic | 46.7 % | 36.7 % |
 | resonance with the pion absorbed | 25.5 % | 31.2 % |
 | 2p2h | 21.0 % | 16.5 % |
 | deep inelastic | 6.9 % | 15.6 % |
 
-GiBUU builds a similar total out of a visibly different mixture, and that is what the ratio panels
-show. The clearest consequences: GiBUU describes δα_T better than GENIE (shape rms 0.022 against
-0.059) and is the milder of the two in the low-Q² region, while GENIE describes δp_T and p_n better
-(0.018 and 0.070 against 0.072 and 0.194). At p_n below 0.1 GeV/c the data stand 32 % above GiBUU and
-27 % below GENIE, a genuine reversal at the Fermi-motion peak.
+The GENIE column is the share of the **fiducial truth signal** in `2026-09-14_signal_minerva_me_ccqelike_1mu1p_FHC`; the GiBUU column is the share of the **signal cross section** in the cached sample behind `2026-09-16_gibuu_2025_me_fhc_c12__minerva_me_ccqelike_1mu1p__all_3`. GiBUU builds a similar total out of a visibly different mixture, and that is what the ratio panels show.
+
+The clearest consequences: GiBUU describes δα_T better than GENIE (shape rms 0.022 against 0.059) and is the milder of the two in the low-Q² region, while GENIE describes δp_T and p_n better (0.018 and 0.070 against 0.072 and 0.194). In the first p_n bin, below 0.1 GeV/c, the data stand 32 % above GiBUU and 27 % below GENIE, a genuine reversal at the Fermi-motion peak.
 
