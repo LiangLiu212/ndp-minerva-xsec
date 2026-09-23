@@ -1,0 +1,122 @@
+{
+ "muon_p": {
+  "diagonal_difference_pp": [
+   -48.0,
+   -41.4,
+   -36.0,
+   -30.8,
+   -23.0,
+   -11.8,
+   -9.1,
+   -17.3
+  ],
+  "max_abs_diagonal_difference_pp": 47.980000000000004,
+  "max_abs_offdiagonal_difference_pp": 22.96,
+  "mc_diagonal_percent": [
+   83.0,
+   75.7,
+   69.1,
+   62.6,
+   64.3,
+   63.2,
+   65.9,
+   72.9
+  ],
+  "x60_diagonal_percent": [
+   35.0,
+   34.3,
+   33.1,
+   31.8,
+   41.3,
+   51.4,
+   56.7,
+   55.7
+  ]
+ },
+ "muon_theta": {
+  "diagonal_difference_pp": [
+   -33.0,
+   -29.9,
+   -33.7,
+   -38.2,
+   -44.4,
+   -49.3,
+   -54.0,
+   -57.7,
+   -59.8,
+   -61.4,
+   -61.9,
+   -62.1,
+   -67.3,
+   -71.4
+  ],
+  "max_abs_diagonal_difference_pp": 71.42,
+  "max_abs_offdiagonal_difference_pp": 17.36,
+  "mc_diagonal_percent": [
+   73.5,
+   74.8,
+   75.6,
+   76.4,
+   77.4,
+   77.3,
+   76.6,
+   75.8,
+   74.7,
+   73.9,
+   72.4,
+   71.6,
+   84.2,
+   91.7
+  ],
+  "x60_diagonal_percent": [
+   40.5,
+   44.9,
+   41.8,
+   38.2,
+   33.0,
+   27.9,
+   22.7,
+   18.1,
+   14.8,
+   12.4,
+   10.5,
+   9.5,
+   16.9,
+   20.3
+  ]
+ },
+ "muon_costheta": {
+  "diagonal_difference_pp": [
+   -71.7,
+   -63.7,
+   -65.0,
+   -66.0,
+   -66.3,
+   -62.8,
+   -48.5,
+   -16.6
+  ],
+  "max_abs_diagonal_difference_pp": 71.69999999999999,
+  "max_abs_offdiagonal_difference_pp": 22.29,
+  "mc_diagonal_percent": [
+   78.5,
+   71.3,
+   75.1,
+   78.3,
+   82.0,
+   86.1,
+   90.6,
+   96.1
+  ],
+  "x60_diagonal_percent": [
+   6.8,
+   7.7,
+   10.2,
+   12.3,
+   15.7,
+   23.3,
+   42.1,
+   79.5
+  ]
+ }
+}

@@ -1,0 +1,121 @@
+pairs: 891040 from /exp/dune/data/users/liangliu/minerva-open-data/cache/vbll_pairs_minerva_me_ccqelike_1mu1p_beam.npz (frame beam)
+epoch   1 | train objective -4.1067 | val NLL 1.3164 * | 43 s
+epoch   2 | train objective -4.5532 | val NLL 1.2979 * | 43 s
+epoch   3 | train objective -4.6118 | val NLL 1.3019 | 44 s
+epoch   4 | train objective -4.6603 | val NLL 1.2726 * | 44 s
+epoch   5 | train objective -4.6827 | val NLL 1.2796 | 43 s
+epoch   6 | train objective -4.6938 | val NLL 1.2738 | 44 s
+epoch   7 | train objective -4.7117 | val NLL 1.2986 | 42 s
+epoch   8 | train objective -4.7172 | val NLL 1.2736 | 43 s
+epoch   9 | train objective -4.7204 | val NLL 1.3162 | 45 s
+epoch  10 | train objective -4.7353 | val NLL 1.2556 * | 44 s
+epoch  11 | train objective -4.7350 | val NLL 1.2556 | 46 s
+epoch  12 | train objective -4.7393 | val NLL 1.2705 | 43 s
+epoch  13 | train objective -4.7477 | val NLL 1.2382 * | 45 s
+epoch  14 | train objective -4.7541 | val NLL 1.2543 | 44 s
+epoch  15 | train objective -4.7545 | val NLL 1.2678 | 44 s
+epoch  16 | train objective -4.7605 | val NLL 1.2478 | 43 s
+epoch  17 | train objective -4.7578 | val NLL 1.3185 | 42 s
+epoch  18 | train objective -4.7661 | val NLL 1.2606 | 45 s
+epoch  19 | train objective -4.7636 | val NLL 1.2574 | 42 s
+epoch  20 | train objective -4.7658 | val NLL 1.2712 | 43 s
+epoch  21 | train objective -4.7735 | val NLL 1.2549 | 45 s
+epoch  22 | train objective -4.7761 | val NLL 1.2552 | 45 s
+epoch  23 | train objective -4.7767 | val NLL 1.2497 | 43 s
+early stopping at epoch 23 (best val NLL 1.2382)
+{
+ "saved": "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/surrogates/minerva_me_ccqelike_1mu1p/_vbll/fhc4_het",
+ "epochs_run": 23,
+ "best_val_nll": 1.2382066896679287,
+ "train_s": 1006.3,
+ "validation_metrics": {
+  "muon": {
+   "n": 178208,
+   "pull_mean_std": {
+    "E": [
+     -0.019791755825281143,
+     0.9672917723655701
+    ],
+    "px": [
+     -0.12569597363471985,
+     0.9724916815757751
+    ],
+    "py": [
+     0.02391967922449112,
+     0.9881618022918701
+    ],
+    "pz": [
+     -0.03271065279841423,
+     0.9668569564819336
+    ]
+   },
+   "sigma_cv": {
+    "E": 0.28879642486572266,
+    "px": 0.7136945724487305,
+    "py": 0.5407635569572449,
+    "pz": 0.28785789012908936
+   },
+   "coverage": {
+    "0.68": 0.868865314688454,
+    "0.90": 0.9528374147064105,
+    "0.95": 0.9672335136469743
+   },
+   "residual_robust_sigma_physical": {
+    "E": 400.06396484375,
+    "px": 43.05048751831055,
+    "py": 44.20142364501953,
+    "pz": 398.1824951171875
+   },
+   "predicted_sigma_median_physical": {
+    "E": 969.6790161132812,
+    "px": 71.55294036865234,
+    "py": 75.24000549316406,
+    "pz": 960.6016235351562
+   }
+  },
+  "proton": {
+   "n": 178208,
+   "pull_mean_std": {
+    "E": [
+     0.02039586380124092,
+     1.0075643062591553
+    ],
+    "px": [
+     0.008074214681982994,
+     1.0049200057983398
+    ],
+    "py": [
+     -0.010055307298898697,
+     1.012250304222107
+    ],
+    "pz": [
+     0.011308617889881134,
+     1.0223287343978882
+    ]
+   },
+   "sigma_cv": {
+    "E": 0.30522841215133667,
+    "px": 0.3778979182243347,
+    "py": 0.3580085039138794,
+    "pz": 0.24286691844463348
+   },
+   "coverage": {
+    "0.68": 0.8832978878613754,
+    "0.90": 0.9343632160172383,
+    "0.95": 0.9481154044711797
+   },
+   "residual_robust_sigma_physical": {
+    "E": 24.620716094970703,
+    "px": 47.7808837890625,
+    "py": 66.33500671386719,
+    "pz": 34.32870101928711
+   },
+   "predicted_sigma_median_physical": {
+    "E": 42.61201095581055,
+    "px": 121.18543243408203,
+    "py": 127.19068908691406,
+    "pz": 66.22088623046875
+   }
+  }
+ }
+}

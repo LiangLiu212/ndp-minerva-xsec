@@ -25,7 +25,12 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt                                     # noqa: E402
 
 mc = json.load(open(HERE / "muon_mc_migration.json"))["matrices"]
-nw = json.load(open(HERE / "muon_vbll_fhc6.json"))["gibuu"]["migration"]
+MODEL = sys.argv[1] if len(sys.argv) > 1 else "fhc6_het"
+TAG = MODEL.replace("_het", "")
+# the surrogate's GiBUU migration: muon_vbll_<tag>.json (platform-trained models, key gibuu/migration) or, for the ported
+# x60_het, the section-3 file muon_vbll_smeared.json (key migration)
+src = HERE / ("muon_vbll_smeared.json" if MODEL == "x60_het" else f"muon_vbll_{TAG}.json")
+j = json.load(open(src)); nw = j["migration"] if MODEL == "x60_het" else j["gibuu"]["migration"]
 labels = {"muon_p": "muon momentum [GeV/c]", "muon_theta": "muon angle to the beam [deg]", "muon_costheta": "muon cos(theta) to the beam"}
 out = {}
 
@@ -46,18 +51,18 @@ for name, xlabel in labels.items():
     small = len(e) > 10
     fig, axes = plt.subplots(1, 3, figsize=(18.5, 5.6))
     for ax, M, title, cmap, vmin, vmax, signed in ((axes[0], A, "official MC (selected signal, FHC 1A-1P)", "Blues", 0, 100, False),
-                                                   (axes[1], B, "VBLL fhc6_het (selected GiBUU signal)", "Blues", 0, 100, False),
-                                                   (axes[2], D, "fhc6_het minus MC [percentage points]", "RdBu_r", -30, 30, True)):
+                                                   (axes[1], B, f"VBLL {MODEL} (selected GiBUU signal)", "Blues", 0, 100, False),
+                                                   (axes[2], D, f"{MODEL} minus MC [percentage points]", "RdBu_r", -30, 30, True)):
         im = ax.pcolormesh(e, e, M, cmap=cmap, vmin=vmin, vmax=vmax, shading="flat")
         annotate(ax, e, M, small, signed)
         ax.set_xlabel(f"true {xlabel}"); ax.set_ylabel(f"reconstructed {xlabel}"); ax.set_title(title, fontsize=10)
         fig.colorbar(im, ax=ax, label="%" if not signed else "percentage points")
-    fig.suptitle(f"P(reco bin | true bin) on the {name} grid: official MC vs the platform-trained VBLL surrogate", fontsize=11)
-    fig.tight_layout(); fig.savefig(HERE / "figs" / f"{name}_migration_mc_vs_fhc6.png", dpi=150, bbox_inches="tight"); plt.close(fig)
+    fig.suptitle(f"P(reco bin | true bin) on the {name} grid: official MC vs VBLL {MODEL}", fontsize=11)
+    fig.tight_layout(); fig.savefig(HERE / "figs" / f"{name}_migration_mc_vs_{TAG}.png", dpi=150, bbox_inches="tight"); plt.close(fig)
     diag = np.diag(D); off = D - np.diag(diag)
     out[name] = {"diagonal_difference_pp": diag.round(1).tolist(), "max_abs_diagonal_difference_pp": float(np.abs(diag).max()),
                  "max_abs_offdiagonal_difference_pp": float(np.abs(off).max()),
-                 "mc_diagonal_percent": mc[name]["diagonal_percent"], "fhc6_diagonal_percent": nw[name]["diagonal_percent"]}
-    print(f"{name}: diagonal difference (fhc6 - MC, pp) {diag.round(1).tolist()}; max |off-diagonal difference| {np.abs(off).max():.1f} pp")
-json.dump(out, open(HERE / "migration_mc_vs_fhc6.json", "w"), indent=1)
-print("wrote figs/<grid>_migration_mc_vs_fhc6.png + migration_mc_vs_fhc6.json")
+                 "mc_diagonal_percent": mc[name]["diagonal_percent"], f"{TAG}_diagonal_percent": nw[name]["diagonal_percent"]}
+    print(f"{name}: diagonal difference ({TAG} - MC, pp) {diag.round(1).tolist()}; max |off-diagonal difference| {np.abs(off).max():.1f} pp")
+json.dump(out, open(HERE / f"migration_mc_vs_{TAG}.json", "w"), indent=1)
+print(f"wrote figs/<grid>_migration_mc_vs_{TAG}.png + migration_mc_vs_{TAG}.json")

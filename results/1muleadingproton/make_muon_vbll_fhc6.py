@@ -39,7 +39,9 @@ from ndp.surrogate.vbll_model import load_vbll_model                # noqa: E402
 from scripts import plot_style as ps                                # noqa: E402
 
 CHANNEL = "minerva_me_ccqelike_1mu1p"
-NEW, OLD = "fhc6_het", "x60_het"
+NEW = sys.argv[1] if len(sys.argv) > 1 else "fhc6_het"
+OLD = "x60_het"
+TAG = NEW.replace("_het", "")   # file-name tag: fhc6, fhc4, ...
 GRIDS = ("muon_p", "muon_theta", "muon_costheta")
 GIBUU = PLATFORM / "runs/_generator_cache/gibuu_1f8bcb950be1dcd0/truth.npz"
 K, SEED = 20, 0
@@ -47,7 +49,7 @@ T0 = time.time()
 
 
 def log(msg):
-    print(f"[fhc6 {time.time() - T0:7.1f}s] {msg}", flush=True)
+    print(f"[{TAG} {time.time() - T0:7.1f}s] {msg}", flush=True)
 
 
 cfg = load_site_config(); ch = load_channel(CHANNEL); figs = HERE / "figs"
@@ -67,7 +69,7 @@ ax.plot(hist["epoch"], hist["train_objective"], color=c_new, label="training obj
 ax.plot(hist["epoch"], hist["val_nll"], color=c_mc, label="validation predictive NLL")
 ax.set_xlabel("epoch"); ax.set_ylabel("loss (normalised units)"); ax.grid(alpha=0.3); ax.legend(fontsize=9)
 ax.set_title(f"{NEW}: training on {tr['n_train_pairs']} pairs, validation on {tr['n_val_pairs']}", fontsize=10)
-fig.tight_layout(); fig.savefig(figs / "fhc6_training_curves.png", dpi=150); plt.close(fig)
+fig.tight_layout(); fig.savefig(figs / f"{TAG}_training_curves.png", dpi=150); plt.close(fig)
 log(f"training: {tr['epochs_run']} epochs, best val NLL {tr['best_val_nll']:.4f}")
 
 # ---- 2. wrappers + closure on the official MC, three grids, both models ---------------------------------------------
@@ -97,12 +99,12 @@ fig, axes = plt.subplots(1, 3, figsize=(14, 4.2))
 for ax, m in zip(axes, ms):
     e = np.asarray(m.x.edges, float)
     ax.stairs(np.array(out["closure"][m.name][OLD]["ratio_per_bin"]), e, color=c_old, lw=1.6, baseline=None, label=f"{OLD} (ported, 4-vector in/out)")
-    ax.stairs(np.array(out["closure"][m.name][NEW]["ratio_per_bin"]), e, color=c_new, lw=1.8, baseline=None, label=f"{NEW} (platform-trained, 6 in / 6 out)")
+    ax.stairs(np.array(out["closure"][m.name][NEW]["ratio_per_bin"]), e, color=c_new, lw=1.8, baseline=None, label=f"{NEW} (platform-trained, {len(spec['inputs'])} in / {len(spec['outputs'])} out)")
     ax.axhspan(0.95, 1.05, color=ps.color_for("reference"), alpha=0.12, lw=0); ax.axhline(1, color=ps.color_for("reference"), ls="--", lw=0.8)
     ax.set_xlabel(f"true {m.x.label}"); ax.set_ylabel("VBLL fold / selected signal (official MC)"); ax.set_ylim(0.4, 1.8); ax.grid(alpha=0.3); ax.set_title(f"{m.name} grid", fontsize=10)
 axes[0].legend(fontsize=8)
 fig.suptitle("Closure on the official MC: the surrogate fold of the fiducial truth signal over the selected signal, per reco bin", fontsize=11)
-fig.tight_layout(); fig.savefig(figs / "fhc6_closure_three_grids.png", dpi=150, bbox_inches="tight"); plt.close(fig)
+fig.tight_layout(); fig.savefig(figs / f"{TAG}_closure_three_grids.png", dpi=150, bbox_inches="tight"); plt.close(fig)
 
 # ---- 3. GiBUU: three stages + migration with the new model -----------------------------------------------------------
 t = TruthTable.load(GIBUU); pot = total_pot(cfg, ch, "data")
@@ -141,9 +143,9 @@ for name, x_true, f_reco, edges, xlabel in specs:
     axr.stairs(ratio_old, edges, color=c_old, lw=1.3, ls="--", baseline=None, label=OLD); axr.stairs(ratio, edges, color=c_new, lw=1.6, baseline=None, label=NEW)
     axr.axhline(1.0, color=ps.color_for("reference"), ls="--", lw=0.8); axr.set_ylabel("smeared / unsmeared"); axr.set_ylim(0.0, max(2.0, float(np.nanmax(ratio_old)) * 1.1))
     axr.grid(alpha=0.3); axr.set_xlabel(xlabel); axr.legend(fontsize=8, loc="upper left")
-    fig.savefig(figs / f"{name}_vbll_fhc6_smeared.png", dpi=150, bbox_inches="tight"); plt.close(fig)
+    fig.savefig(figs / f"{name}_vbll_{TAG}_smeared.png", dpi=150, bbox_inches="tight"); plt.close(fig)
     c = 0.5 * (edges[:-1] + edges[1:]); cum = np.cumsum(h_s) / h_s.sum()
-    out["gibuu"]["variables"][name] = {"edges": edges.tolist(), "truth_signal": h_t.tolist(), "cuts_applied": h_c.tolist(), "fhc6_smeared_cuts_applied": h_s.tolist(),
+    out["gibuu"]["variables"][name] = {"edges": edges.tolist(), "truth_signal": h_t.tolist(), "cuts_applied": h_c.tolist(), f"{TAG}_smeared_cuts_applied": h_s.tolist(),
                                        "x60_smeared_cuts_applied": h_old.tolist(), "ratio_smeared_over_unsmeared": ratio.tolist(), "total_smeared": float(h_s.sum()),
                                        "median_smeared": float(c[np.searchsorted(cum, 0.5)]), "peak_bin_smeared": [float(edges[h_s.argmax()]), float(edges[h_s.argmax() + 1])],
                                        "ratio_range": [float(np.nanmin(ratio)), float(np.nanmax(ratio))]}
@@ -172,7 +174,7 @@ for name, x_true, f_reco, edges, xlabel in specs:
     a2.plot([edges[0], edges[-1]], [edges[0], edges[-1]], color=ps.color_for("reference"), lw=0.8, ls="--")
     a2.set_xlabel(f"true {xlabel}"); a2.set_ylabel(f"reconstructed ({NEW}) {xlabel}"); a2.set_title("same, fine bins", fontsize=10); fig.colorbar(im2, ax=a2, label="%")
     fig.suptitle(f"VBLL {NEW} migration of the selected GiBUU signal: {xlabel}", fontsize=11)
-    fig.tight_layout(); fig.savefig(figs / f"{name}_vbll_fhc6_migration.png", dpi=150, bbox_inches="tight"); plt.close(fig)
+    fig.tight_layout(); fig.savefig(figs / f"{name}_vbll_{TAG}_migration.png", dpi=150, bbox_inches="tight"); plt.close(fig)
     out["gibuu"]["migration"][name] = {"grid_edges": coarse.tolist(), "P_reco_given_true_percent_reco_by_true": (np.nan_to_num(Pc) * 100).round(2).tolist(),
                                        "diagonal_percent": (np.nan_to_num(diag) * 100).round(1).tolist(),
                                        "weighted_mean_diagonal_percent": float(100 * np.nansum(diag * Hc.sum(0)) / Hc.sum()),
@@ -191,6 +193,6 @@ for ax, (name, _, _, _, xlabel) in zip(axes, specs):
     ax.set_xlabel(f"true {xlabel}"); ax.set_ylabel("P(same bin) [%]"); ax.set_ylim(0, 100); ax.grid(alpha=0.3); ax.set_title(f"{name} grid", fontsize=10)
 axes[0].legend(fontsize=8)
 fig.suptitle("Probability of reconstructing in the true bin: official MC vs the two VBLL surrogates (selected 1mu1p signal, GiBUU for the surrogates)", fontsize=10)
-fig.tight_layout(); fig.savefig(figs / "migration_diagonal_mc_vs_vbll_fhc6.png", dpi=150, bbox_inches="tight"); plt.close(fig)
-json.dump(out, open(HERE / "muon_vbll_fhc6.json", "w"), indent=1)
-log("wrote muon_vbll_fhc6.json + figures")
+fig.tight_layout(); fig.savefig(figs / f"migration_diagonal_mc_vs_vbll_{TAG}.png", dpi=150, bbox_inches="tight"); plt.close(fig)
+json.dump(out, open(HERE / f"muon_vbll_{TAG}.json", "w"), indent=1)
+log(f"wrote muon_vbll_{TAG}.json + figures")
