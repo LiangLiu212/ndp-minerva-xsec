@@ -25,44 +25,126 @@ from pathlib import Path
 import numpy as np
 
 # --- MasterAnaDev tree: reco branches (data and MC) ---------------------------------------------
+# One row per reconstructed neutrino candidate. The 1mu1p selection (`minerva_ccqelike_1mu1p_v0`,
+# ndp/adapters/minerva_anatuple.py::ccqelike_1mu1p_cutflow) applies twelve cuts in the paper's order:
+#   ZRange, Apothem, HasMINOSMatch, NoDeadtime, IsNeutrino, MuonWindow, HasProtonCandidate,
+#   ProtonContained, ProtonScore, ProtonWindow, NoMichel, IsoBlobs.
+# Cut values below are the channel manifest's (channels/minerva_me_ccqelike_1mu1p.yaml); the ones the
+# paper does not print (muon/proton windows, score threshold) are platform defaults, not published numbers.
+# Units are the tuple's: MeV, mm, radians. Sentinel -9999 (or -1 for an end point) means "no candidate".
+
 #: used directly by the selection cuts
 RECO_SELECTION = (
-    "vtx",                                                  # [x, y, z] mm; fiducial z range + hexagon apothem
-    "muon_thetaX", "muon_thetaY",                           # beam-frame muon angles (rad)
+    # --- event location -------------------------------------------------------------------------
+    # Reconstructed interaction vertex [x, y, z, t] in mm.
+    #   ZRange:  5980 <= z <= 8422 mm keeps the vertex in the scintillator tracker, away from the
+    #            nuclear targets upstream and the calorimeters downstream.
+    #   Apothem: |x| < 850 mm and inside the hexagon of apothem 850 mm, i.e. away from the detector edge.
+    "vtx",
+    # --- muon identification --------------------------------------------------------------------
+    # Muon track angles projected on the xz / yz planes, relative to the NuMI BEAM axis (not the
+    # detector axis). Combined into the 3D angle theta = acos(1/sqrt(1 + tan^2 thetaX + tan^2 thetaY)).
+    #   MuonWindow: theta < 17 deg (muons at larger angles miss MINOS). Also the reco muon angle
+    #   observable and the frame reference for the reco TKI variables.
+    "muon_thetaX", "muon_thetaY",
+    # 1 when the muon track leaving MINERvA is matched to a track in the magnetised MINOS near detector;
+    # only matched tracks have a charge and a momentum measurement.
+    #   HasMINOSMatch: == 1. This is what defines "a muon" in the analysis.
     "isMinosMatchTrack",
-    "phys_n_dead_discr_pair_upstream_prim_track_proj",      # dead time
-    "MasterAnaDev_minos_trk_qp",                            # q/p in MINOS: < 0 selects mu-
-    "MasterAnaDev_leptonE",                                 # [px, py, pz, E] MeV, detector frame
-    "MasterAnaDev_proton_P_fromdEdx",                       # MeV/c, leading proton candidate
-    "MasterAnaDev_proton_theta",                            # beam-frame angle (rad)
+    # Number of dead discriminator pairs along the upstream projection of the muon track. Dead readout
+    # there could hide a muon entering from upstream (a rock muon faking a fiducial interaction).
+    #   NoDeadtime: <= 1.
+    "phys_n_dead_discr_pair_upstream_prim_track_proj",
+    # Charge over momentum of the MINOS track fit.
+    #   IsNeutrino: < 0 selects a negative track, i.e. mu- from nu_mu (rejects mu+ from anti-nu_mu).
+    "MasterAnaDev_minos_trk_qp",
+    # Muon 4-vector [px, py, pz, E] in MeV, DETECTOR frame (the platform rotates it about x by the beam
+    # angle before combining with the beam-frame angles above).
+    #   MuonWindow: 2 < |p| < 20 GeV/c (below 2 GeV/c the MINOS match is unreliable). Also the reco
+    #   muon momentum observable and the muon side of the reco TKI variables (dpT, dalphaT, dphiT, ...).
+    "MasterAnaDev_leptonE",
+    # --- proton identification ------------------------------------------------------------------
+    # Momentum (MeV/c) of the leading proton candidate from its range / dE/dx profile under the proton
+    # hypothesis; -9999 when the tool found no candidate.
+    #   HasProtonCandidate: > 0.   ProtonWindow: 0.4 < p < 1.3 GeV/c.
+    #   Also the reco proton momentum observable and the proton side of the reco TKI variables.
+    "MasterAnaDev_proton_P_fromdEdx",
+    # Angle (rad) of that candidate to the BEAM axis.
+    #   ProtonWindow: theta < 90 deg. Also the reco proton angle observable.
+    "MasterAnaDev_proton_theta",
+    # dE/dx particle-ID score of the candidate: a stopping proton shows a Bragg peak at its end, a pion
+    # does not; higher is more proton-like.
+    #   ProtonScore: > 0.35 (platform default; the paper prints no number).
     "MasterAnaDev_proton_score1",
+    # --- exclusivity vetoes ---------------------------------------------------------------------
+    # Number of Michel electrons (pi -> mu -> e decay chain of a stopped pion) near the vertex or a
+    # track end point; tags charged pions below tracking threshold.
+    #   NoMichel: == 0 (the truth signal has no mesons).
     "improved_nmichel",
+    # Number of isolated energy clusters away from the vertex and off every track; pi0 photons leave
+    # such clusters, but so can a neutron, hence one is tolerated.
+    #   IsoBlobs: <= 1.
     "n_nonvtx_iso_blobs",
 )
-#: cached for observables and diagnostics
+
+#: cached for observables and diagnostics (no cut is applied on these)
 RECO_EXTRA = (
+    # Proton candidate 4-vector components (MeV, DETECTOR frame like the muon), total and kinetic
+    # energy: the proton side of the reco TKI variables and the proton momentum/angle cross-checks.
     "MasterAnaDev_proton_Px_fromdEdx", "MasterAnaDev_proton_Py_fromdEdx", "MasterAnaDev_proton_Pz_fromdEdx",
     "MasterAnaDev_proton_E_fromdEdx", "MasterAnaDev_proton_T_fromdEdx",
+    # Alternative PID scores (second proton score, pion score): score-threshold studies only.
     "MasterAnaDev_proton_score2", "MasterAnaDev_pion_score1",
+    # Candidate track start / end z (mm) and pattern-recognition flag: containment and range cross-checks.
     "MasterAnaDev_proton_startPointZ", "MasterAnaDev_proton_endPointZ", "MasterAnaDev_proton_patternRec",
+    # Number of secondary proton candidates (the _sz of the sec_protons array): multi-proton diagnostics.
     "MasterAnaDev_sec_protons_P_fromdEdx_sz",
-    "proton_prong_PDG",                                     # MC: truth PDG of the candidate; data: -1
+    # MC only: truth PDG of the particle behind the proton candidate (data: -1). Purity by candidate type.
+    "proton_prong_PDG",
+    # Isolated-blob alternatives (all blobs, their summed energy), prong and hadron-track multiplicities:
+    # the n_nonvtx_iso_blobs vs _all open question and the selection diagnostics.
     "n_nonvtx_iso_blobs_all", "nonvtx_iso_blobs_energy", "n_prongs", "MasterAnaDev_hadron_number",
+    # MINOS-only muon momentum (MeV/c): cross-check of the leptonE momentum.
     "MasterAnaDev_minos_trk_p",
+    # Recoil (hadronic) energies, four estimators (MeV): calorimetric E_nu and the recoil-E studies.
     "MasterAnaDev_recoil_E", "MasterAnaDev_recoil_passivecorrected", "blob_recoil_E", "recoil_E_polylinecorrected",
+    # Total visible energy (MeV).
     "MasterAnaDev_visible_E",
+    # The analysis tool's own calorimetric E_nu (MeV), W (MeV), Bjorken x, inelasticity y: reco Q2 and E_nu.
     "MasterAnaDev_E", "MasterAnaDev_W", "MasterAnaDev_x", "MasterAnaDev_y",
 )
+
 #: fixed-size array branches of which one element is used: (branch, index)
+# MasterAnaDev_hadron_isExiting[0]: 1 if the slot-0 hadron track exits the detector. Slot 0 is the proton
+# candidate in ~93 % of events (exploration-repo audit).
+#   ProtonContained: == 0 (an exiting proton has no range-based momentum and no Bragg peak).
 RECO_ARRAY_ELEMENTS = (("MasterAnaDev_hadron_isExiting", 0),)
 
 # --- truth branches (MC only; present in both the MasterAnaDev and the Truth tree) ---------------
-TRUTH_SCALARS = ("mc_incoming", "mc_incomingE", "mc_current", "mc_intType", "mc_targetZ", "mc_targetA",
-                 "mc_Q2", "mc_w", "mc_primaryLepton")
-TRUTH_VECTORS = ("mc_primFSLepton", "mc_vtx")               # [px,py,pz,E] MeV and [x,y,z,t]
+# In MasterAnaDev they describe the true event behind each reco candidate (purity, migration, efficiency
+# numerator); in the Truth tree they describe every generated event (efficiency denominator, truth signal).
+TRUTH_SCALARS = (
+    "mc_incoming",      # neutrino PDG (14 = nu_mu); signal requires nu_mu
+    "mc_incomingE",     # true neutrino energy (MeV); flux-weighted E_nu distributions
+    "mc_current",       # 1 = charged current; signal requires CC
+    "mc_intType",       # MINERvA code: 1 QE, 2 RES, 3 DIS, 4 COH, 8 MEC (2p2h); background/signal by interaction type
+    "mc_targetZ", "mc_targetA",   # struck nucleus; signal counts CH (C and H) only
+    "mc_Q2", "mc_w",    # true Q2 (MeV^2) and W (MeV); model comparisons
+    "mc_primaryLepton", # primary lepton PDG (13 = mu-); signal requires exactly this muon
+)
+TRUTH_VECTORS = (
+    "mc_primFSLepton",  # true muon [px, py, pz, E] MeV, DETECTOR frame -> rotated to the beam frame for
+                        # the truth muon window (theta < 17 deg, 2 < p < 20 GeV/c) and the TKI variables
+    "mc_vtx",           # true vertex [x, y, z, t] mm; truth fiducial volume (same tracker box as reco)
+)
+# Jagged final-state particle lists, one entry per particle after FSI (MeV): the leading proton
+# (highest p with theta < 70 deg, 0.5 < p < 1.1 GeV/c), the meson / heavy-baryon / photon (> 10 MeV)
+# vetoes of the signal definition, and the truth proton side of the TKI variables.
 TRUTH_FS = ("mc_nFSPart", "mc_FSPartPDG", "mc_FSPartE", "mc_FSPartPx", "mc_FSPartPy", "mc_FSPartPz")
 
 # --- Meta tree ---------------------------------------------------------------------------------
+# One entry per input file: protons on target actually used (POT_Used, summed over files -> the data
+# exposure and the data/MC POT scale) and delivered (POT_Total); the entry totals cross-check the trees.
 META_BRANCHES = ("POT_Used", "POT_Total", "Total_Reco_Entries", "Total_Truth_Entries")
 
 _TAG = re.compile(r"_(data|mc)_AnaTuple_run0*(\d+)")
