@@ -150,3 +150,34 @@ def test_wrapper_persists_and_reloads_through_load_surrogate():
         assert np.allclose(w2.background(1.0), 0.0)
         assert np.allclose(w2.fold_eff_only(np.ones(m.binning.n_cells)), 0.5)
         assert abs(c1.sum() - 0.5 * t.n * w.last_fold_info["sample_pass_fraction"]) <= 0.5 * t.n * 0.5   # eff 0.5, windows
+
+
+def test_six_feature_model_smears_folds_and_builds_consistent_momenta():
+    """A model with inputs/outputs (E, px, py, pz, p, costheta): the 3-momentum built from its outputs has |p| = the
+    predicted p and pz/|p| = the predicted costheta, and the fold machinery runs on it."""
+    _need()
+    from ndp.surrogate.vbll_model import VBLLSpec, VBLLSurrogateModel, build_module, load_vbll_model, FEATURES, features_from_4vectors
+    from ndp.surrogate.vbll import VBLLEventSurrogate, truth_4vectors, output_momentum, reflect_costheta
+    norm6 = {p: {**NORM[p], "p": [5300.0 if p == "muon" else 800.0, 2700.0 if p == "muon" else 200.0], "costheta": [0.99, 0.01]} for p in NORM}
+    spec = VBLLSpec(head_type="het", d_embed=4, hidden=16, n_layers=2, n_train_per_particle=1000, frame="beam",
+                    inputs=FEATURES, outputs=FEATURES, normaliser={"input": norm6, "output": norm6})
+    torch.manual_seed(3); mod = build_module(spec)
+    with tempfile.TemporaryDirectory() as d:
+        VBLLSurrogateModel.save_dir(d, spec, mod.state_dict()); model = load_vbll_model(d)
+    assert model.spec.inputs == FEATURES and model.spec.outputs == FEATURES
+    ch = load_channel(CHANNEL); t = _toy_truth(600, seed=5)
+    mu4, _ = truth_4vectors(ch, t, np.ones(t.n, bool), "beam")
+    x = model.input_features(mu4)
+    assert x.shape == (t.n, 6) and np.allclose(x[:, 4], np.sqrt((mu4[:, 1:] ** 2).sum(1)), rtol=1e-5)
+    s = model.smear("muon", x, n_samples=3, seed=1)
+    assert s.shape == (3, t.n, 6)
+    v = output_momentum(s[0], FEATURES)
+    assert np.allclose(np.sqrt((v ** 2).sum(1)), np.clip(s[0][:, 4], 0, None), rtol=1e-5)
+    ok = np.sqrt((v ** 2).sum(1)) > 0
+    assert np.allclose(v[ok, 2] / np.sqrt((v[ok] ** 2).sum(1)), reflect_costheta(s[0][ok, 5]), atol=1e-5)
+    assert np.allclose(reflect_costheta(np.array([1.02, 0.5, -1.3, 1.0])), [0.98, 0.5, -0.7, 1.0])
+    m = load_measurement(ch, "muon_p")
+    b = BinnedResponse(m.binning, eff=np.ones(m.binning.n_cells), P=np.eye(m.binning.n_cells))
+    w = VBLLEventSurrogate(b, model, m, ch, n_samples=2, seed=1)
+    cells = w.fold_table(ch, t)
+    assert cells.shape == (m.binning.n_cells,) and cells.sum() <= t.n + 1e-9

@@ -21,16 +21,10 @@
     "formula": "ix*n_y + iy"
   },
   "meta": {
-    "model_dir": "surrogates/minerva_me_ccqelike_1mu1p/_vbll/x60_het",
+    "model_dir": "surrogates/minerva_me_ccqelike_1mu1p/_vbll/fhc6_het",
     "binned_dir": "surrogates/minerva_me_ccqelike_1mu1p/muon_p/binned_FHC_1A-1P",
     "model_provenance": {
-      "source": "VBLL_SurrogateModel (github.com/fnal-nd-aiml), branch sdey2_dev, checkpoint best_model_x60_het.pt",
-      "checkpoint": {
-        "path": "/exp/icarus/app/users/sdey2/FDPSurrogateModel/VBLL_SurrogateModel/output_data/checkpoints/best_model_x60_het.pt",
-        "sha256": "1bfae7dfe18a56de05521f8b2a65dbbbd0d5a926325c5570dd2eab6e04d5ce7f",
-        "size_bytes": 86194,
-        "mtime": "2026-09-09T03:47:58Z"
-      }
+      "source": "trained in ndp-platform (ndp/surrogate/vbll_train.py) on the channel's selected signal pairs"
     },
     "binned_training_counts": {
       "n_den": 2734227,
@@ -38,24 +32,24 @@
       "n_bkg": 951611,
       "n_passed": 1842788
     },
-    "built": "2026-09-23T16:47:55+0000",
+    "built": "2026-09-23T16:58:27+0000",
     "kind_note": "migration = VBLL event-level smearing; efficiency, background, MC-stat variance = the grid's binned response",
     "measurement": "muon_p",
     "channel": "minerva_me_ccqelike_1mu1p",
     "n_samples": 20,
     "seed": 0,
     "truncate_to_reco_windows": true,
-    "model_frame": "detector",
+    "model_frame": "beam",
     "model_head": "het",
     "model_units": "MeV",
     "closure": {
-      "n_pred": 891174.2581347275,
+      "n_pred": 891176.9999999574,
       "n_reco": 891177.0,
-      "ratio_pred_over_reco": 0.999996923321324,
-      "max_abs_dev": 24424.78416761104,
-      "max_rel_dev_cells_gt_50": 0.2975424916745994,
+      "ratio_pred_over_reco": 0.9999999999999521,
+      "max_abs_dev": 22307.975558825783,
+      "max_rel_dev_cells_gt_50": 0.27845957199328686,
       "compared_with": "selected signal in the true phase space with true cell inside the grid (migration column sums)",
-      "built": "2026-09-23T16:52:04+0000"
+      "built": "2026-09-23T17:03:32+0000"
     }
   }
 }

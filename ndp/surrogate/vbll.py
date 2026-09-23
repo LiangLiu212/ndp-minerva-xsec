@@ -41,6 +41,7 @@ from ..channels.signal import leading_proton
 from ..config import REPO_ROOT
 from ..events import TruthTable, M_MU, M_P
 from ..io import timestamp
+from .vbll_model import COMPONENTS
 
 GEV = 1e-3          # MeV -> GeV
 MEV = 1e3           # GeV -> MeV
@@ -66,20 +67,49 @@ def truth_4vectors(channel, t: TruthTable, mask: np.ndarray, frame: str) -> tupl
 
 
 # ---- model outputs -> synthetic reco columns ----------------------------------------------------------
-def synthetic_reco(mu_mev: np.ndarray, pr_mev: np.ndarray, model_frame: str) -> dict:
-    """Cached-column dictionary (GeV, detector-frame components, beam-frame angles) from smeared 4-vectors
-    whose momentum components are in `model_frame`. Energies are rebuilt from the smeared 3-momentum and
-    the particle mass (the model's E component is not used); the muon angle is the 3D beam-frame angle as
-    the tuple's `muon_thetaX/Y` give it; the proton angle is the beam-frame angle like `MasterAnaDev_proton_theta`."""
-    mu = np.asarray(mu_mev, np.float64) * GEV; pr = np.asarray(pr_mev, np.float64) * GEV
+def reflect_costheta(ct: np.ndarray) -> np.ndarray:
+    """cos(theta) draws folded back into [-1, 1]: values above 1 are reflected about 1 (2 - ct), below -1 about -1."""
+    ct = np.asarray(ct, np.float64)
+    ct = np.where(ct > 1.0, 2.0 - ct, ct)
+    ct = np.where(ct < -1.0, -2.0 - ct, ct)
+    return np.clip(ct, -1.0, 1.0)
+
+
+def output_momentum(out: np.ndarray, names=COMPONENTS) -> np.ndarray:
+    """(n, 3) momentum [same units as `out`] in the model frame from the model's output features.
+
+    Four-component models: the smeared (px, py, pz) as they are. Models that also predict `p` and `costheta`:
+    magnitude from the predicted p, polar angle from the predicted costheta (clipped to [-1, 1]) and only the
+    azimuth from the predicted (px, py) — every predicted quantity is used once and the 3-vector is consistent
+    with the momentum and angle the analysis grids bin in."""
+    out = np.asarray(out, np.float64); idx = {n: i for i, n in enumerate(names)}
+    if "p" in idx and "costheta" in idx and all(c in idx for c in ("px", "py")):
+        p = np.clip(out[:, idx["p"]], 0.0, None)
+        # a Gaussian draw in costheta near the forward direction spills above 1: reflect it about 1 (a truncated
+        # Gaussian's mass folded back) rather than clip it, which would pile copies at exactly theta = 0
+        ct = reflect_costheta(out[:, idx["costheta"]]); st = np.sqrt(1.0 - ct * ct)
+        phi = np.arctan2(out[:, idx["py"]], out[:, idx["px"]])
+        return np.stack([p * st * np.cos(phi), p * st * np.sin(phi), p * ct], axis=1)
+    if all(c in idx for c in ("px", "py", "pz")):
+        return np.stack([out[:, idx["px"]], out[:, idx["py"]], out[:, idx["pz"]]], axis=1)
+    raise ValueError(f"cannot build a 3-momentum from output features {names}")
+
+
+def synthetic_reco(mu_out: np.ndarray, pr_out: np.ndarray, model_frame: str, outputs=COMPONENTS) -> dict:
+    """Cached-column dictionary (GeV, detector-frame components, beam-frame angles) from the model's smeared
+    outputs (MeV, momentum components in `model_frame`; see `output_momentum` for models with p / costheta
+    outputs). Energies are rebuilt from the 3-momentum and the particle mass (the model's E output is not
+    used); the muon angle is the 3D beam-frame angle as the tuple's `muon_thetaX/Y` give it; the proton angle
+    is the beam-frame angle like `MasterAnaDev_proton_theta`."""
+    mu = output_momentum(mu_out, outputs) * GEV; pr = output_momentum(pr_out, outputs) * GEV
     to_det = frame_rotation_angle(model_frame, "detector"); to_beam = frame_rotation_angle(model_frame, "beam")
-    mx, my, mz = rotate_about_x(mu[:, 1], mu[:, 2], mu[:, 3], to_det)
-    bx, by, bz = rotate_about_x(mu[:, 1], mu[:, 2], mu[:, 3], to_beam)
+    mx, my, mz = rotate_about_x(mu[:, 0], mu[:, 1], mu[:, 2], to_det)
+    bx, by, bz = rotate_about_x(mu[:, 0], mu[:, 1], mu[:, 2], to_beam)
     p_mu = np.sqrt(mx * mx + my * my + mz * mz)
     with np.errstate(invalid="ignore", divide="ignore"):
         th_mu = np.arccos(np.clip(bz / np.where(p_mu > 0, p_mu, np.nan), -1.0, 1.0))
-    px, py, pz = rotate_about_x(pr[:, 1], pr[:, 2], pr[:, 3], to_det)
-    qx, qy, qz = rotate_about_x(pr[:, 1], pr[:, 2], pr[:, 3], to_beam)
+    px, py, pz = rotate_about_x(pr[:, 0], pr[:, 1], pr[:, 2], to_det)
+    qx, qy, qz = rotate_about_x(pr[:, 0], pr[:, 1], pr[:, 2], to_beam)
     p_p = np.sqrt(px * px + py * py + pz * pz)
     with np.errstate(invalid="ignore", divide="ignore"):
         th_p = np.arccos(np.clip(qz / np.where(p_p > 0, p_p, np.nan), -1.0, 1.0))
@@ -221,7 +251,8 @@ def fold_tables(surrogates: list, t: TruthTable, weights=None, seed: int = 0, ma
     frame = model.spec.frame
     if frame is None:
         raise ValueError("the VBLL model's frame is not pinned (spec.frame is null)")
-    mu, pr = truth_4vectors(channel, t, mask, frame)
+    mu4, pr4 = truth_4vectors(channel, t, mask, frame)
+    mu, pr = model.input_features(mu4), model.input_features(pr4)          # spec.inputs from the 4-vectors
     per_m = []
     for s in surrogates:
         x, y = s.measurement.truth_observables(channel, t)
@@ -240,7 +271,7 @@ def fold_tables(surrogates: list, t: TruthTable, weights=None, seed: int = 0, ma
         sl = slice(lo, min(lo + block, n)); nb = sl.stop - sl.start
         mu_s = model.smear("muon", mu[sl], n_samples=K, seed=seed * 1_000_003 + 2 * b)
         pr_s = model.smear("proton", pr[sl], n_samples=K, seed=seed * 1_000_003 + 2 * b + 1)
-        recos = [synthetic_reco(mu_s[k], pr_s[k], frame) for k in range(K)]
+        recos = [synthetic_reco(mu_s[k], pr_s[k], frame, model.spec.outputs) for k in range(K)]
         if truncate:
             pass_k = np.stack([reco_window_pass(channel, r) for r in recos])
             n_pass = pass_k.sum(axis=0)

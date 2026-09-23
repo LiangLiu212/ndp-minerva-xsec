@@ -164,6 +164,27 @@ def _cmd_surrogate_build(a):
     return 1 if bad else 0
 
 
+def _cmd_surrogate_train_vbll(a):
+    """Train a VBLL surrogate on the channel's selected signal pairs (ml environment) -> surrogates/<channel>/_vbll/<name>/."""
+    from .channels import load_channel
+    from .surrogate.vbll_train import collect_pairs, save_pairs, load_pairs, train_vbll, save_model
+    cfg = load_site_config(); ch = load_channel(a.channel)
+    pairs_path = Path(a.pairs) if a.pairs else cfg.require("data_dir") / "cache" / f"vbll_pairs_{ch.name}_{a.frame}.npz"
+    if pairs_path.exists() and not a.recollect:
+        pairs = load_pairs(pairs_path); print(f"pairs: {pairs['n_pairs']} from {pairs_path} (frame {pairs['frame']})")
+    else:
+        print(f"collecting pairs (frame {a.frame}) ...")
+        pairs = collect_pairs(cfg, ch, frame=a.frame); save_pairs(pairs, pairs_path); print(f"pairs: {pairs['n_pairs']} -> {pairs_path}")
+    inputs = tuple(a.inputs.split(",")); outputs = tuple(a.outputs.split(","))
+    spec, state, info = train_vbll(pairs, inputs=inputs, outputs=outputs, head_type=a.head, d_embed=a.d_embed, hidden=a.hidden, n_layers=a.n_layers,
+                                   noise_prior_scale=a.noise_prior_scale, lr=a.lr, epochs=a.epochs, patience=a.patience, batch_size=a.batch_size,
+                                   val_fraction=a.val_fraction, seed=a.seed, threads=a.threads)
+    out = save_model(cfg.surrogates / ch.name / "_vbll" / a.name, spec, state, info, pairs_path)
+    print(json.dumps({"saved": str(out), "epochs_run": info["epochs_run"], "best_val_nll": info["best_val_nll"], "train_s": info["train_s"],
+                      "validation_metrics": info["validation_metrics"]}, indent=1, default=str))
+    return 0
+
+
 def _cmd_surrogate_inspect(a):
     from .surrogate.base import load_surrogate
     s = load_surrogate(a.path)
@@ -391,6 +412,16 @@ def main(argv=None) -> int:
     _add_vbll_args(p); p.add_argument("--no-closure", action="store_true", help="(vbll) save the wrappers without folding the MC truth")
     p.add_argument("--out", help="output root (default surrogates/<channel>[/<measurement>])"); p.set_defaults(fn=_cmd_surrogate_build)
     p = ps.add_parser("inspect"); p.add_argument("path"); p.set_defaults(fn=_cmd_surrogate_inspect)
+    p = ps.add_parser("train-vbll", help="train a VBLL surrogate on the channel's selected signal pairs (needs the ml environment)")
+    p.add_argument("--channel", required=True); p.add_argument("--name", required=True, help="model name under surrogates/<channel>/_vbll/")
+    p.add_argument("--inputs", default="E,px,py,pz,p,costheta"); p.add_argument("--outputs", default="E,px,py,pz,p,costheta")
+    p.add_argument("--frame", default="beam", choices=("beam", "detector")); p.add_argument("--head", default="het", choices=("het", "standard"))
+    p.add_argument("--d-embed", type=int, default=8); p.add_argument("--hidden", type=int, default=64); p.add_argument("--n-layers", type=int, default=3)
+    p.add_argument("--noise-prior-scale", type=float, default=0.01); p.add_argument("--lr", type=float, default=1e-3)
+    p.add_argument("--epochs", type=int, default=80); p.add_argument("--patience", type=int, default=10); p.add_argument("--batch-size", type=int, default=512)
+    p.add_argument("--val-fraction", type=float, default=0.2); p.add_argument("--seed", type=int, default=42); p.add_argument("--threads", type=int)
+    p.add_argument("--pairs", help="pairs .npz (default <data_dir>/cache/vbll_pairs_<channel>_<frame>.npz, collected if absent)")
+    p.add_argument("--recollect", action="store_true"); p.set_defaults(fn=_cmd_surrogate_train_vbll)
     pd = sub.add_parser("data", help="data availability / caches").add_subparsers(dest="dcmd", required=True)
     p = pd.add_parser("status"); p.add_argument("--channel"); p.set_defaults(fn=_cmd_data_status)
     p = pd.add_parser("cache", help="build the truth/reco .npz caches from the channel's AnaTuples")

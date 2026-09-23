@@ -1,0 +1,163 @@
+collecting pairs (frame beam) ...
+  [  18.4s] FHC/1A: 77520 pairs
+  [  23.4s] FHC/1B: 20713 pairs
+  [  32.6s] FHC/1C: 40081 pairs
+  [  59.8s] FHC/1D: 116558 pairs
+  [  82.2s] FHC/1E: 96844 pairs
+  [ 112.8s] FHC/1F: 127609 pairs
+  [ 139.0s] FHC/1G: 108561 pairs
+  [ 141.5s] FHC/1L: 9835 pairs
+  [ 180.5s] FHC/1M: 151693 pairs
+  [ 202.4s] FHC/1N: 85914 pairs
+  [ 209.1s] FHC/1O: 24246 pairs
+  [ 217.7s] FHC/1P: 31603 pairs
+  dropping 137 pairs with a non-finite component
+pairs: 891040 -> /exp/dune/data/users/liangliu/minerva-open-data/cache/vbll_pairs_minerva_me_ccqelike_1mu1p_beam.npz
+epoch   1 | train objective -6.4997 | val NLL 1.8051 * | 42 s
+epoch   2 | train objective -7.2021 | val NLL 1.7672 * | 45 s
+epoch   3 | train objective -7.2867 | val NLL 1.7973 | 45 s
+epoch   4 | train objective -7.3519 | val NLL 1.7407 * | 43 s
+epoch   5 | train objective -7.3763 | val NLL 1.7551 | 44 s
+epoch   6 | train objective -7.4009 | val NLL 1.7235 * | 45 s
+epoch   7 | train objective -7.4259 | val NLL 1.7562 | 45 s
+epoch   8 | train objective -7.4302 | val NLL 1.7299 | 44 s
+epoch   9 | train objective -7.4442 | val NLL 1.7418 | 44 s
+epoch  10 | train objective -7.4604 | val NLL 1.7209 * | 43 s
+epoch  11 | train objective -7.4627 | val NLL 1.7065 * | 44 s
+epoch  12 | train objective -7.4679 | val NLL 1.7099 | 42 s
+epoch  13 | train objective -7.4779 | val NLL 1.6838 * | 41 s
+epoch  14 | train objective -7.4871 | val NLL 1.7178 | 44 s
+epoch  15 | train objective -7.4928 | val NLL 1.7460 | 42 s
+epoch  16 | train objective -7.4967 | val NLL 1.7021 | 42 s
+epoch  17 | train objective -7.4937 | val NLL 1.7581 | 45 s
+epoch  18 | train objective -7.5016 | val NLL 1.7077 | 42 s
+epoch  19 | train objective -7.5045 | val NLL 1.7053 | 44 s
+epoch  20 | train objective -7.5038 | val NLL 1.7256 | 45 s
+epoch  21 | train objective -7.5132 | val NLL 1.7116 | 42 s
+epoch  22 | train objective -7.5202 | val NLL 1.7299 | 45 s
+epoch  23 | train objective -7.5231 | val NLL 1.7123 | 45 s
+early stopping at epoch 23 (best val NLL 1.6838)
+{
+ "saved": "/exp/dune/data/users/liangliu/ndp-dev/ndp-platform/surrogates/minerva_me_ccqelike_1mu1p/_vbll/fhc6_het",
+ "epochs_run": 23,
+ "best_val_nll": 1.6838344208889722,
+ "train_s": 1029.0,
+ "validation_metrics": {
+  "muon": {
+   "n": 178208,
+   "pull_mean_std": {
+    "E": [
+     0.016937609761953354,
+     0.9624348878860474
+    ],
+    "px": [
+     -0.0902775228023529,
+     0.9733588099479675
+    ],
+    "py": [
+     0.022832414135336876,
+     0.9751980304718018
+    ],
+    "pz": [
+     0.017550086602568626,
+     0.9645699858665466
+    ],
+    "p": [
+     0.018328148871660233,
+     0.9635141491889954
+    ],
+    "costheta": [
+     0.082443468272686,
+     1.0202676057815552
+    ]
+   },
+   "sigma_cv": {
+    "E": 0.2922397553920746,
+    "px": 0.7104397416114807,
+    "py": 0.5736607909202576,
+    "pz": 0.29244348406791687,
+    "p": 0.2918376922607422,
+    "costheta": 0.5919898748397827
+   },
+   "coverage": {
+    "0.68": 0.853011649308673,
+    "0.90": 0.9479456590052074,
+    "0.95": 0.9648856018435387
+   },
+   "residual_robust_sigma_physical": {
+    "E": 418.8397521972656,
+    "px": 44.34938430786133,
+    "py": 44.931678771972656,
+    "pz": 407.27484130859375,
+    "p": 417.01739501953125,
+    "costheta": 0.0004994725459255278
+   },
+   "predicted_sigma_median_physical": {
+    "E": 979.8001098632812,
+    "px": 72.88066864013672,
+    "py": 76.49481201171875,
+    "pz": 968.9646606445312,
+    "p": 978.9404907226562,
+    "costheta": 0.0006202809745445848
+   }
+  },
+  "proton": {
+   "n": 178208,
+   "pull_mean_std": {
+    "E": [
+     0.031311992555856705,
+     1.000802993774414
+    ],
+    "px": [
+     -0.011076570488512516,
+     1.0007901191711426
+    ],
+    "py": [
+     0.00666427006945014,
+     1.0020815134048462
+    ],
+    "pz": [
+     0.04413995519280434,
+     1.0250605344772339
+    ],
+    "p": [
+     0.03166624903678894,
+     0.9972907304763794
+    ],
+    "costheta": [
+     0.013736318796873093,
+     1.0033583641052246
+    ]
+   },
+   "sigma_cv": {
+    "E": 0.30563634634017944,
+    "px": 0.37487083673477173,
+    "py": 0.35450315475463867,
+    "pz": 0.23733718693256378,
+    "p": 0.2714948058128357,
+    "costheta": 0.28725358843803406
+   },
+   "coverage": {
+    "0.68": 0.878379945531813,
+    "0.90": 0.9318474292212845,
+    "0.95": 0.9461369111749566
+   },
+   "residual_robust_sigma_physical": {
+    "E": 23.51264190673828,
+    "px": 46.258766174316406,
+    "py": 66.80223083496094,
+    "pz": 34.07282257080078,
+    "p": 39.48480987548828,
+    "costheta": 0.03601861000061035
+   },
+   "predicted_sigma_median_physical": {
+    "E": 42.77590560913086,
+    "px": 121.95723724365234,
+    "py": 128.5390167236328,
+    "pz": 66.23358917236328,
+    "p": 70.20744323730469,
+    "costheta": 0.07739810645580292
+   }
+  }
+ }
+}

@@ -73,6 +73,7 @@ python -m ndp gibuu smoke models/gibuu_2025_me_fhc_c12.yaml --channel minerva_me
 python tests/run_tests.py                    # or, inside pixi: pixi run test
 pixi install -e ml && pixi run -e ml python <script>   # VBLL detector surrogate: torch + vbll live only in the `ml` env (ndp/surrogate/vbll_model.py, surrogates/<channel>/_vbll/)
 pixi run -e ml python -m ndp surrogate build --channel minerva_me_ccqelike_1mu1p --measurement muon_p --kind vbll   # wrap the grid's binned response with the ported VBLL model + closure on the MC truth
+pixi run -e ml python -m ndp surrogate train-vbll --channel minerva_me_ccqelike_1mu1p --name fhc6_het --inputs E,px,py,pz,p,costheta --outputs E,px,py,pz,p,costheta --frame beam   # train a VBLL surrogate on the channel's selected signal pairs -> surrogates/<channel>/_vbll/<name>/
 pixi run -e ml python -m ndp run models/gibuu_2025_me_fhc_c12.yaml --channel minerva_me_ccqelike_1mu1p --measurement all --modes folded --efficiency-run runs/<eff run> --surrogate-kind vbll   # migration from the VBLL smearing, efficiency + background from the binned responses
 pixi run build-genie && pixi run snapshot-genie-env   # (re)build the in-repo GENIE
 ```

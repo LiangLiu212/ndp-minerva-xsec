@@ -1,0 +1,25 @@
+[fhc6     0.2s] training: 23 epochs, best val NLL 1.6838
+[fhc6     0.2s] building wrappers + closure for fhc6_het on ('muon_p', 'muon_theta', 'muon_costheta') ...
+[fhc6    26.8s]   folded FHC/1A: 223595 signal events in 19.7 s (sample pass fraction 0.954)
+[fhc6    33.3s]   folded FHC/1B: 59686 signal events in 5.0 s (sample pass fraction 0.954)
+[fhc6    45.8s]   folded FHC/1C: 114440 signal events in 9.7 s (sample pass fraction 0.954)
+[fhc6    82.7s]   folded FHC/1D: 333672 signal events in 28.5 s (sample pass fraction 0.954)
+[fhc6   114.0s]   folded FHC/1E: 279329 signal events in 24.3 s (sample pass fraction 0.954)
+[fhc6   157.9s]   folded FHC/1F: 388079 signal events in 34.1 s (sample pass fraction 0.954)
+[fhc6   193.9s]   folded FHC/1G: 326272 signal events in 27.9 s (sample pass fraction 0.954)
+[fhc6   197.3s]   folded FHC/1L: 31803 signal events in 2.7 s (sample pass fraction 0.955)
+[fhc6   253.2s]   folded FHC/1M: 492908 signal events in 43.3 s (sample pass fraction 0.954)
+[fhc6   284.7s]   folded FHC/1N: 283729 signal events in 24.5 s (sample pass fraction 0.954)
+[fhc6   294.4s]   folded FHC/1O: 86875 signal events in 7.6 s (sample pass fraction 0.954)
+[fhc6   307.1s]   folded FHC/1P: 113839 signal events in 9.8 s (sample pass fraction 0.954)
+[fhc6   307.1s] muon_p: saved /exp/dune/data/users/liangliu/ndp-dev/ndp-platform/surrogates/minerva_me_ccqelike_1mu1p/muon_p/vbll_fhc6_het; closure pred/reco = 1.0000, max rel dev (cells > 50) = 0.27845957199328686
+[fhc6   307.1s] muon_theta: saved /exp/dune/data/users/liangliu/ndp-dev/ndp-platform/surrogates/minerva_me_ccqelike_1mu1p/muon_theta/vbll_fhc6_het; closure pred/reco = 1.0000, max rel dev (cells > 50) = 0.0718238799173951
+[fhc6   307.1s] muon_costheta: saved /exp/dune/data/users/liangliu/ndp-dev/ndp-platform/surrogates/minerva_me_ccqelike_1mu1p/muon_costheta/vbll_fhc6_het; closure pred/reco = 1.0000, max rel dev (cells > 50) = 0.21235211554006195
+[fhc6   307.1s] closure muon_p: x60_het within 5 %: 4/8, fhc6_het: 3/8
+[fhc6   307.1s] closure muon_theta: x60_het within 5 %: 2/14, fhc6_het: 13/14
+[fhc6   307.1s] closure muon_costheta: x60_het within 5 %: 1/8, fhc6_het: 7/8
+[fhc6   315.3s] GiBUU: 56132 signal events smeared, window pass fraction 0.9700
+[fhc6   316.1s] muon_p: smeared total 175118, ratio range 0.34-1.56; diagonal % MC 67.9 / x60_het 37.2 / fhc6_het 42.9
+[fhc6   317.0s] muon_theta: smeared total 174171, ratio range 0.54-1.21; diagonal % MC 76.5 / x60_het 23.0 / fhc6_het 73.9
+[fhc6   317.8s] muon_costheta: smeared total 174432, ratio range 0.36-1.29; diagonal % MC 90.9 / x60_het 46.5 / fhc6_het 88.0
+[fhc6   318.3s] wrote muon_vbll_fhc6.json + figures

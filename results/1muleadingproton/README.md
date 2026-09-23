@@ -186,3 +186,82 @@ Compared with section 3, the MINERvA reconstruction migrates far less than the V
 reconstruction's ratio stays between 0.84 and 1.34 where the surrogate's runs from 0.42 to 1.70, and in angle it
 stays within 7 percent where the surrogate's runs from 0.82 to 1.96. Script: `make_muon_mc_stages.py` (default pixi
 environment, one playlist at a time, about 5 minutes); histogram contents and the numbers above: `muon_mc_stages.json`.
+
+## 5. A VBLL surrogate trained in the platform with momentum and cos(theta) as extra inputs and outputs
+
+A new model, `fhc6_het`, was trained inside the platform (`ndp surrogate train-vbll`, script
+`ndp/surrogate/vbll_train.py`) instead of porting the collaborator's checkpoint. Per particle the network reads six
+inputs, the true (E, px, py, pz) plus the true momentum p and cos(theta), and predicts the same six reconstructed
+quantities, all in the beam frame and in MeV. The training pairs are the platform's own: the true and reconstructed
+muon and leading proton of every selected signal candidate in the fiducial volume of the 12 ME FHC StandardMC
+playlists, 891,040 pairs, of which 712,832 trained the model and 178,208 were held out. Architecture and objective are
+those of the VBLL_SurrogateModel repository (embedding, three layers of 64, one heteroscedastic VBLL head per particle,
+with the training-loss fix); Adam at 1e-3, batches of 512, early stopping on the validation predictive
+negative log-likelihood. It stopped after 23 epochs (17 minutes on 16 threads) at a validation NLL of 1.684. When the
+model is applied, the reconstructed 3-momentum takes its magnitude from the predicted p, its polar angle from the
+predicted cos(theta) (draws above 1 reflected back below 1) and its azimuth from the predicted (px, py).
+
+![training curves](figs/fhc6_training_curves.png)
+
+On the held-out pairs the 68 percent coverage is 0.853 for the muon and 0.878 for the proton; the predicted muon
+momentum width has a median of 979 MeV against a residual core width of 417 MeV, and the transverse components
+73 to 77 MeV against 44 to 45 MeV. The ported x60_het model had 1346 against 477 MeV and 115 to 130 against 58 to
+63 MeV, so the new model is tighter but its widths are still calibrated to the root-mean-square of the residual, not
+its core.
+
+### Closure on the official MC
+
+Both models were used to fold the fiducial truth signal of the official MC (2,734,227 events) on the three muon
+grids and compared with the selected signal per bin, the same closure the platform certifies its surrogates with.
+
+![closure on three grids](figs/fhc6_closure_three_grids.png)
+
+| grid | bins within 5 percent, x60_het | bins within 5 percent, fhc6_het |
+|---|---|---|
+| muon momentum, 8 bins | 4 | 3 |
+| muon angle, 14 bins | 2 | 13 |
+| muon cos(theta), 8 bins | 1 | 7 |
+
+The new model closes in angle: the fold over the selected signal is between 0.93 and 1.03 in every angle bin and
+between 0.985 and 1.015 in every cos(theta) bin except the one at the window edge (0.79). In momentum it is no
+better than the ported model: 0.92 to 0.95 between 3 and 6 GeV/c, 1.25 at 7.5 to 10 GeV/c and 0.72 at 14 to 20 GeV/c,
+the same over-smearing pattern.
+
+### Applied to GiBUU
+
+The same three stages as section 3, with the new model in place of the ported one (dashed: the ported model).
+97 percent of the smeared copies pass the reconstruction windows; totals are conserved.
+
+![muon momentum, fhc6 smeared](figs/muon_p_vbll_fhc6_smeared.png)
+
+![muon angle, fhc6 smeared](figs/muon_theta_vbll_fhc6_smeared.png)
+
+![muon cos theta, fhc6 smeared](figs/muon_costheta_vbll_fhc6_smeared.png)
+
+Muon momentum: median 5.75 GeV/c after smearing (5.25 before), smeared over unsmeared within 10 percent below 7 GeV/c,
+up to 1.56 between 9 and 11 GeV/c and 0.34 to 0.75 above 17 GeV/c. Muon angle: median 6.25 degrees, ratio within
+about 5 percent from 2 to 12 degrees, 0.87 to 0.96 below 2 degrees and 0.54 to 1.21 in the last bins. cos(theta):
+median 0.9935, ratio within a few percent above 0.965.
+
+![muon momentum, fhc6 migration](figs/muon_p_vbll_fhc6_migration.png)
+
+![muon angle, fhc6 migration](figs/muon_theta_vbll_fhc6_migration.png)
+
+![muon cos theta, fhc6 migration](figs/muon_costheta_vbll_fhc6_migration.png)
+
+![diagonal fractions, MC vs both surrogates](figs/migration_diagonal_mc_vs_vbll_fhc6.png)
+
+Probability of reconstructing in the true bin, averaged over the signal:
+
+| grid | official MC | VBLL x60_het | VBLL fhc6_het |
+|---|---|---|---|
+| muon momentum, 8 bins | 68 % | 37 % | 43 % |
+| muon angle, 14 bins | 77 % | 23 % | 74 % |
+| muon cos(theta), 8 bins | 91 % | 47 % | 88 % |
+
+With the platform's own pairs and the angle among its outputs, the surrogate reproduces the detector's angular
+migration to within a few percent per bin; the momentum migration remains about half as sharp as the detector's,
+which is what the momentum width calibrated to the residual's root-mean-square implies. Files: model
+`surrogates/minerva_me_ccqelike_1mu1p/_vbll/fhc6_het/`; script `make_muon_vbll_fhc6.py` (ml pixi environment, about
+6 minutes after training); numbers in `muon_vbll_fhc6.json`; training log `train_fhc6_het.log`; pairs cache
+`<data_dir>/cache/vbll_pairs_minerva_me_ccqelike_1mu1p_beam.npz` (not in git).

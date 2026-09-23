@@ -1,18 +1,24 @@
 {
   "kind": "vbll_event",
   "binning": {
-    "x_name": "lep_p",
+    "x_name": "lep_theta_deg",
     "y_name": "unit",
     "x_edges": [
+      0.0,
+      1.0,
       2.0,
       3.0,
       4.0,
       5.0,
       6.0,
-      7.5,
+      7.0,
+      8.0,
+      9.0,
       10.0,
+      11.0,
+      12.0,
       14.0,
-      20.0
+      17.0
     ],
     "y_edges": [
       0.0,
@@ -22,7 +28,7 @@
   },
   "meta": {
     "model_dir": "surrogates/minerva_me_ccqelike_1mu1p/_vbll/x60_het",
-    "binned_dir": "surrogates/minerva_me_ccqelike_1mu1p/muon_p/binned_FHC_1A-1P",
+    "binned_dir": "surrogates/minerva_me_ccqelike_1mu1p/muon_theta/binned_FHC_1A-1P",
     "model_provenance": {
       "source": "VBLL_SurrogateModel (github.com/fnal-nd-aiml), branch sdey2_dev, checkpoint best_model_x60_het.pt",
       "checkpoint": {
@@ -40,7 +46,7 @@
     },
     "built": "2026-09-23T16:47:55+0000",
     "kind_note": "migration = VBLL event-level smearing; efficiency, background, MC-stat variance = the grid's binned response",
-    "measurement": "muon_p",
+    "measurement": "muon_theta",
     "channel": "minerva_me_ccqelike_1mu1p",
     "n_samples": 20,
     "seed": 0,
@@ -49,11 +55,11 @@
     "model_head": "het",
     "model_units": "MeV",
     "closure": {
-      "n_pred": 891174.2581347275,
+      "n_pred": 891175.4456495745,
       "n_reco": 891177.0,
-      "ratio_pred_over_reco": 0.999996923321324,
-      "max_abs_dev": 24424.78416761104,
-      "max_rel_dev_cells_gt_50": 0.2975424916745994,
+      "ratio_pred_over_reco": 0.9999982558454432,
+      "max_abs_dev": 15341.02362195975,
+      "max_rel_dev_cells_gt_50": 0.6190639450369133,
       "compared_with": "selected signal in the true phase space with true cell inside the grid (migration column sums)",
       "built": "2026-09-23T16:52:04+0000"
     }
