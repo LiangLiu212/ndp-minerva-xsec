@@ -29,3 +29,35 @@ The same angle as cos(theta), from the signal window's edge cos(17 degrees) = 0.
 
 Script: `make_muon_truth_signal.py` (default pixi environment); histogram contents and the numbers above:
 `muon_truth_signal.json`.
+
+## 2. Selection cuts applied
+
+The cuts are the channel's reconstruction-level selection (`minerva_ccqelike_1mu1p_v0`): tracker fiducial vertex,
+MINOS-matched negative muon, dead time, muon window (17 degrees, 2 to 20 GeV/c), a contained proton candidate with
+dE/dx score above 0.35 inside 90 degrees and 0.4 to 1.3 GeV/c, no Michel electron, at most one isolated blob. A
+generator sample has no reconstruction, so the cuts are applied as the selection efficiency learned from the official
+MC (the 12 ME FHC playlists): per true cell of a grid, efficiency = selected truth signal / truth signal in the
+fiducial volume. Each signal event of section 1 is weighted by the efficiency of its true cell on the grid of the
+plotted variable; the lower panel of each plot shows the resulting efficiency per bin. Events are otherwise unchanged,
+so the distributions are still in true kinematics.
+
+The cuts keep 175,118 of the 533,040 signal events at the data exposure, a mean efficiency of 0.33.
+
+![muon momentum, cuts applied](figs/muon_p_cuts_applied.png)
+
+Muon momentum: the efficiency rises from 0.24 in the 2 to 3 GeV/c bin to 0.38 at 7.5 to 10 GeV/c and falls back to
+0.35 above 14 GeV/c; after the cuts the median is 5.25 GeV/c and the mean 5.65 GeV/c, peak bin 5.0 to 5.5 GeV/c.
+
+![muon angle, cuts applied](figs/muon_theta_cuts_applied.png)
+
+Muon angle: the efficiency falls steadily with angle, from 0.46 below 1 degree to 0.13 in the 14 to 17 degree bin,
+because the MINOS match favours forward muons; after the cuts the median is 6.25 degrees and the mean 6.79 degrees,
+peak bin 5.5 to 6.0 degrees.
+
+![muon cos theta, cuts applied](figs/muon_costheta_cuts_applied.png)
+
+The same in cos(theta): efficiency from 0.09 at the window edge to 0.40 in the most forward bin; after the cuts the
+median is 0.9935 and the mean 0.9915, peak bin 0.9970 to 0.9980.
+
+Script: `make_muon_cuts_applied.py` (default pixi environment); histogram contents, the grid efficiencies and the numbers
+above: `muon_cuts_applied.json`.
