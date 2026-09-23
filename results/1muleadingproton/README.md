@@ -61,3 +61,37 @@ median is 0.9935 and the mean 0.9915, peak bin 0.9970 to 0.9980.
 
 Script: `make_muon_cuts_applied.py` (default pixi environment); histogram contents, the grid efficiencies and the numbers
 above: `muon_cuts_applied.json`.
+
+## 3. VBLL surrogate smearing applied
+
+The detector resolution is applied with the ported VBLL surrogate `x60_het` (a VBLL_SurrogateModel checkpoint trained
+on MINERvA StandardMC pairs of true and reconstructed muon and proton 4-vectors; port and certification in
+`report/VBLL_surrogate_1mu1p.md`). For every signal event of section 2 the true muon and leading-proton 4-vectors
+are rotated into the model's detector frame and 20 reconstructed copies are drawn from the model's predictive
+distribution; the copies are conditioned on the selection's kinematic windows (85.6 percent of them pass, the
+event's weight being shared among the passing ones, no event lost) and each event keeps the selection efficiency of
+section 2. The plotted quantities are now the smeared, reconstructed muon momentum and angle to the beam. This is
+the prediction that the platform compares with the data in reconstructed space; the lower panel shows the ratio of
+the smeared to the unsmeared distribution, the effect of the migration alone.
+
+The smearing conserves the totals of section 2 (175,118 events at the data exposure on the momentum grid).
+
+![muon momentum, VBLL smeared](figs/muon_p_vbll_smeared.png)
+
+Muon momentum: median 5.25 GeV/c and peak bin 5.0 to 5.5 GeV/c as before the smearing; the migration is within 5
+percent below 6 GeV/c, removes 5 to 15 percent between 6 and 8 GeV/c, adds up to 70 percent between 9 and 11 GeV/c and
+removes 20 to 60 percent above 16 GeV/c. This is the effect of the model's muon energy width, 1.35 GeV on average,
+which is larger than the 0.48 GeV core width of the residual it was trained on.
+
+![muon angle, VBLL smeared](figs/muon_theta_vbll_smeared.png)
+
+Muon angle: median 6.25 degrees, peak bin 5.0 to 5.5 degrees (5.5 to 6.0 before); both ends of the window gain,
+30 to 70 percent below 2 degrees and 60 to 100 percent above 14 degrees, while 4 to 12 degrees lose about 10 percent.
+
+![muon cos theta, VBLL smeared](figs/muon_costheta_vbll_smeared.png)
+
+The same in cos(theta): median 0.9945 (0.9935 before), peak bin 0.9970 to 0.9980 unchanged; the bins nearest the
+window edge, cos(theta) below 0.962, gain a factor 2 to 3 and the most forward bin gains 37 percent.
+
+Script: `make_muon_vbll_smeared.py` (ml pixi environment: `pixi run -e ml python ...`); histogram contents, including
+the smeared distributions without the efficiency, and the numbers above: `muon_vbll_smeared.json`.
