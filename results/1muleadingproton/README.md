@@ -93,5 +93,33 @@ Muon angle: median 6.25 degrees, peak bin 5.0 to 5.5 degrees (5.5 to 6.0 before)
 The same in cos(theta): median 0.9945 (0.9935 before), peak bin 0.9970 to 0.9980 unchanged; the bins nearest the
 window edge, cos(theta) below 0.962, gain a factor 2 to 3 and the most forward bin gains 37 percent.
 
+### Migration matrices
+
+The same smeared copies, histogrammed in two dimensions: true value on the horizontal axis, VBLL-reconstructed value
+on the vertical axis. Each column is normalised to the events of its true bin, so a cell reads as the probability
+P(reconstructed bin | true bin) in percent. The left panel uses the analysis grid of the corresponding measurement,
+the grid on which the platform folds; the right panel uses the fine bins of the plots above. No copy leaves the
+grids' ranges, because for these three variables the ranges coincide with the reconstruction windows the copies are
+conditioned on.
+
+![muon momentum, VBLL migration](figs/muon_p_vbll_migration.png)
+
+Muon momentum on the 8-bin grid: 32 to 35 percent of the events stay in their true bin below 6 GeV/c, 41 percent at
+6 to 7.5 GeV/c and 51 to 57 percent in the three wide bins above 7.5 GeV/c; averaged over the signal, 37 percent stay.
+
+![muon angle, VBLL migration](figs/muon_theta_vbll_migration.png)
+
+Muon angle on the 14-bin grid (1-degree bins up to 12 degrees): 40 to 45 percent stay in their bin below 3 degrees,
+falling to 10 percent at 10 to 12 degrees where the smearing exceeds the bin width, 17 to 20 percent in the two wider
+bins above 12 degrees; 23 percent on average.
+
+![muon cos theta, VBLL migration](figs/muon_costheta_vbll_migration.png)
+
+Muon cos(theta) on the 8-bin grid: 80 percent stay in the most forward bin (cos(theta) above 0.9945) and 7 to 23
+percent in the six bins below 0.989; 47 percent on average.
+
+The matrices in percent, the diagonal fractions and the per-column losses are in `muon_vbll_smeared.json` under
+`migration`.
+
 Script: `make_muon_vbll_smeared.py` (ml pixi environment: `pixi run -e ml python ...`); histogram contents, including
 the smeared distributions without the efficiency, and the numbers above: `muon_vbll_smeared.json`.

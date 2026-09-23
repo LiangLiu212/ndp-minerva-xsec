@@ -92,5 +92,54 @@ for name, grid, x_true, _, f_reco, edges, xlabel in specs:
                  "max_ratio": float(np.nanmax(ratio)), "min_ratio": float(np.nanmin(ratio))}
     print(name, {k: (round(v, 4) if isinstance(v, float) else v) for k, v in out[name].items() if k.startswith(("total", "median", "peak", "max_", "min_"))})
     print("   ratio per bin:", np.round(ratio, 2).tolist())
+
+# ---- migration matrices: true vs smeared (reconstructed), from the same copies -------------------------------
+# Column-normalised: P(reco bin | true bin), each true column summing to 1 over the reco bins inside the range
+# (copies smeared outside the range are the column's loss and are reported). Weights: w x share of the passing
+# copies, as above; the selection efficiency is constant within a true cell of the analysis grid and drops out of
+# the normalisation there. Left: the analysis grid of the measurement (what the folding uses); right: fine bins.
+out["migration"] = {}
+for name, grid, x_true, _, f_reco, edges, xlabel in specs:
+    m = load_measurement(ch, grid)
+    coarse = np.asarray(m.x.edges, float)
+    mats = {}
+    for tag, e in (("analysis_grid", coarse), ("fine", edges)):
+        H = np.zeros((len(e) - 1, len(e) - 1))          # [reco, true]
+        lost = np.zeros(len(e) - 1)
+        for k, r in enumerate(recos):
+            ok = pass_k[k]; v = f_reco(r)[ok]; xt_ok = x_true[ok]; wk = (ws * share)[ok]
+            H += np.histogram2d(v, xt_ok, bins=[e, e], weights=wk)[0]
+            inside = (v >= e[0]) & (v < e[-1])
+            lost += np.histogram(xt_ok[~inside], bins=e, weights=wk[~inside])[0]
+        col = H.sum(axis=0) + lost
+        with np.errstate(invalid="ignore", divide="ignore"):
+            P = np.where(col > 0, H / col, np.nan)
+        mats[tag] = {"edges": e.tolist(), "counts_reco_by_true": H, "P_reco_given_true": P, "loss_fraction_per_true_bin": np.where(col > 0, lost / col, np.nan)}
+    Pc = mats["analysis_grid"]["P_reco_given_true"]
+    diag = np.diag(Pc)
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(13, 5.6))
+    im1 = a1.pcolormesh(coarse, coarse, Pc * 100.0, cmap="Blues", vmin=0, vmax=100, shading="flat")
+    for j in range(len(coarse) - 1):
+        for i in range(len(coarse) - 1):
+            if np.isfinite(Pc[i, j]) and Pc[i, j] >= 0.005:
+                a1.text(0.5 * (coarse[j] + coarse[j + 1]), 0.5 * (coarse[i] + coarse[i + 1]), f"{100 * Pc[i, j]:.0f}", ha="center", va="center",
+                        fontsize=7 if len(coarse) > 10 else 8, color="white" if Pc[i, j] > 0.5 else "black")
+    a1.set_xlabel(f"true {xlabel}"); a1.set_ylabel(f"reconstructed (VBLL) {xlabel}")
+    a1.set_title(f"P(reco bin | true bin) [%] on the {grid} grid", fontsize=10)
+    fig.colorbar(im1, ax=a1, label="%")
+    Pf = mats["fine"]["P_reco_given_true"]
+    im2 = a2.pcolormesh(edges, edges, Pf * 100.0, cmap="Blues", vmin=0, shading="flat")
+    a2.plot([edges[0], edges[-1]], [edges[0], edges[-1]], color=ps.color_for("reference"), lw=0.8, ls="--")
+    a2.set_xlabel(f"true {xlabel}"); a2.set_ylabel(f"reconstructed (VBLL) {xlabel}"); a2.set_title("same, fine bins", fontsize=10)
+    fig.colorbar(im2, ax=a2, label="%")
+    fig.suptitle(f"VBLL x60_het migration of the selected GiBUU signal: {xlabel}", fontsize=11)
+    fig.tight_layout(); fig.savefig(figs / f"{name}_vbll_migration.png", dpi=150, bbox_inches="tight"); plt.close(fig)
+    out["migration"][name] = {"grid": grid, "grid_edges": coarse.tolist(), "P_reco_given_true_percent_reco_by_true": (np.nan_to_num(Pc) * 100).round(2).tolist(),
+                              "diagonal_percent": (np.nan_to_num(diag) * 100).round(1).tolist(),
+                              "loss_fraction_per_true_bin": np.nan_to_num(mats["analysis_grid"]["loss_fraction_per_true_bin"]).round(4).tolist(),
+                              "weighted_mean_diagonal_percent": float(100 * np.nansum(diag * mats["analysis_grid"]["counts_reco_by_true"].sum(0)) / mats["analysis_grid"]["counts_reco_by_true"].sum())}
+    print(f"{name} migration on {grid}: diagonal % {out['migration'][name]['diagonal_percent']}, weighted mean {out['migration'][name]['weighted_mean_diagonal_percent']:.1f} %, "
+          f"loss/true bin {out['migration'][name]['loss_fraction_per_true_bin']}")
+
 json.dump(out, open(HERE / "muon_vbll_smeared.json", "w"), indent=1)
 print({k: v for k, v in out.items() if not isinstance(v, dict)})
