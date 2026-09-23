@@ -85,6 +85,15 @@ the measurement's observables and runs the closure check.
   reco/true (p∥), plus the acceptance; samples reconstructed events from any truth sample, so it
   works on any binning. Gaussian core only — tails are not modelled (documented limitation). Its
   interface is what a conditional normalising flow or diffusion model would implement.
+- **VBLLEventSurrogate** (`vbll_event`, `ndp/surrogate/vbll.py`): a learned event-level surrogate — a ported
+  VBLL checkpoint (`surrogates/<channel>/_vbll/<name>/`, `ndp/surrogate/vbll_model.py`; torch only in the `ml`
+  pixi environment) smears the true (muon, leading-proton) 4-vectors of every signal event K times in the frame
+  it was trained in; the smeared copies become synthetic reco columns from which *every* grid's reco observable
+  is evaluated with the same `reco_observables` functions as the data, conditioned on the selection's kinematic
+  windows. It replaces only the migration P: the efficiency of the true cell, the background and the MC-stat
+  variance still come from the grid's binned response it wraps (`ndp surrogate build --kind vbll`,
+  `ndp run … --surrogate-kind vbll`). Closure = the fold of the training truth vs the selected signal per reco
+  cell (statistical, not exact — the gate is the analyst's).
 
 ### Normalisation constants (channel `normalization`)
 `phi_per_pot_cm2` (integrated flux, 0–100 GeV) and `n_nucleons` (fiducial target) convert a

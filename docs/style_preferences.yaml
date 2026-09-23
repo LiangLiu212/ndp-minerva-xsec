@@ -1,0 +1,146 @@
+# Style & response preferences — BUILT-IN DEFAULT.
+#
+# These are one project's seeded choices — the `solid-dark` role palette, step
+# histograms, and the magma sequential map — picked to reproduce this repo's
+# pre-refactor figures exactly. They are NOT the Okabe-Ito colorblind-safe set;
+# that is carried below as the `okabe_ito` swatch table, available to name a
+# colorblind-safe color from an `override=` or a future scheme switch.
+#
+# This file is the fallback `scripts/plot_style.py` loads when the project has
+# no `docs/style_preferences.yaml` yet, so plotting works out-of-the-box on a
+# fresh checkout. It is NOT the live source of truth: once a project has a
+# `docs/style_preferences.yaml` (materialized on first use of the
+# `/ndp-plot-prefs` or `/ndp-execute` skill, then edited via Set-prefs), THAT
+# file wins and this default is ignored. Treat this copy as read-only.
+#
+# `scripts/plot_style.py` is the ONLY way a color or marker enters a plot.
+#
+# A persistent change goes through `/ndp-plot-prefs` (rewrites this file
+# and records the change in the project's decision log).
+# A one-off tweak for a single figure uses the `override=` argument on a
+# plot_style accessor and touches nothing here.
+#
+# Treat as read-only: edit your own preferences file instead.
+
+schema_version: "1.0"
+
+# --------------------------------------------------------------------------
+# Plot style
+# --------------------------------------------------------------------------
+
+# How a histogram is rendered. "bar" = matplotlib default filled bars.
+# "step" / "step_filled" = HEP-style outline / filled step histograms.
+# plot_style.hist_style() returns this; drawing helpers honor it.
+# [user-set 2026-06-24: step]
+hist_style: step
+
+palette:
+  # User-selected (2026-06-24): solid-dark scheme — deep, saturated, mutually
+  # distinguishable colors (user preference: "solid, dark colors when
+  # possible"). Role→hue families match the prior assignment (blue data,
+  # orange signal, green bkg, red efficiency, purple purity) but darkened.
+  # Switch the whole scheme via /ndp-plot-prefs.
+  name: solid-dark
+
+  # Per-role colors. Roles — not call sites — drive every color.
+  roles:
+    data:       "#08519c"   # dark blue — data points
+    mc_signal:  "#a63603"   # dark orange — stacked signal in data/MC + cutflow MC
+    mc_bkg:     "#006d2c"   # dark green — stacked background
+    efficiency: "#a50f15"   # dark red — efficiency-vs-variable points
+    purity:     "#54278f"   # dark purple — purity bars
+    ratio:      "#08519c"   # dark blue — data/MC ratio points (= data)
+    reference:  "gray"      # y=1 guide lines, ratio unity line + band (structural)
+    syst_band:  "#08519c"   # systematic error band fill (= data blue, shown via alpha)
+
+  # Full Okabe-Ito swatch table, retained as the accessible reference set so
+  # future roles / one-off override= choices can name a colorblind-safe color
+  # instead of inventing one (and as the fallback if the scheme is revisited).
+  okabe_ito:
+    orange:    "#E69F00"
+    sky:       "#56B4E9"
+    green:     "#009E73"
+    blue:      "#0072B2"
+    vermilion: "#D55E00"
+    purple:    "#CC79A7"
+    black:     "#000000"
+
+# Sequential / 2D colormap for heatmaps (recoilE_vs_pT_2d-style plots).
+# Perceptually-uniform. [user-set 2026-06-24: magma]
+sequential_palette: magma
+
+# Point markers by role (only point-drawn roles need one). bar roles
+# (mc_signal, mc_bkg, purity) ignore this.
+markers:
+  data:       "o"
+  efficiency: "o"
+  ratio:      "o"
+
+# Non-color structural styling, sourced so call sites stay literal-free
+# where it matters. markersize/capsize are per-role; alpha stays per-call
+# (it legitimately varies with plot density) and lives at the call site.
+error_bars:
+  efficiency_markersize: 5
+  efficiency_capsize:    3
+  data_markersize:       4
+  ratio_markersize:      4
+
+# y=1 guide line on efficiency/purity, and the data/MC unity line + band.
+# Color is palette.roles.reference; the rest are non-color structural knobs.
+reference_line:
+  guide_linestyle: ":"     # efficiency / purity guide at y=1
+  guide_linewidth: 0.5
+  ratio_linestyle: "--"    # data/MC unity line
+  ratio_linewidth: 0.8
+ratio_band:
+  lo:    0.9
+  hi:    1.1
+  alpha: 0.1
+syst_band:
+  alpha: 0.25            # fill alpha for the systematic error band on main panel
+  ratio_alpha: 0.20      # fill alpha for the syst band on the ratio panel
+  edgecolor: "none"       # no edge on the band fill
+
+# Lower ratio panel attached beneath every data-vs-MC / model-vs-MC plot
+# (see the comparison-plot convention in scripts/comparison_plot.md).
+# Colors/markers come from palette.roles; the unity line + band reuse
+# reference_line + ratio_band above. These are the structural knobs.
+ratio_panel:
+  main_height: 3          # gridspec height_ratios -> [main_height, panel_height]
+  panel_height: 1
+  data_mc_label:    "Data / MC"     # events comparison: data / MC total
+  model_data_label: "Model / Data"  # xsec comparison: each model / data
+  data_mc_ylim:    [0.5, 1.5]
+  model_data_ylim: [0.7, 1.3]
+  model_linewidth: 1.5    # step-curve width in the ratio panel
+
+# Figure / font defaults applied via plot_style.apply_rcparams(). Empty =
+# leave matplotlib defaults untouched (preserves current output). The
+# harness can populate these.
+rcparams: {}
+
+# --------------------------------------------------------------------------
+# Response style
+# --------------------------------------------------------------------------
+response:
+  # Where run results are reported: "inline" in chat, "file" written to the
+  # run dir, or "both". [user-set 2026-06-24: both]
+  results: both
+  # End-of-turn summary verbosity: "terse" (1-2 sentences),
+  # "normal", or "detailed".
+  summary_verbosity: terse
+  # Whether every reported result echoes its benchmark JSON inline.
+  # [user-set 2026-06-24: true]
+  echo_benchmark_json: true
+
+# --------------------------------------------------------------------------
+# Xsec-specific preferences — reserved slots, intentionally unset.
+# These are physics choices for the analyst to make explicitly; nothing here
+# should be guessed or defaulted.
+# --------------------------------------------------------------------------
+xsec:
+  status: deferred
+  binning_convention: null        # e.g. published ancillary bin edges
+  shape_vs_norm_default: null     # "shape", "norm", or "both"
+  always_overlay: []              # published references to always include
+  chi2_reporting: null            # e.g. "chi2/ndf", "p-value"

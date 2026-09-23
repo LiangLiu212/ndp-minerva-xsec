@@ -52,9 +52,26 @@ def resolve_surrogate(channel: ChannelSpec, measurement: Measurement, cfg: SiteC
     return None, None
 
 
+def wrap_surrogate(cfg, channel, measurement, sur, sur_path, surrogate_kind: str | None = None, vbll_opts: dict | None = None):
+    """The surrogate a run folds with: the resolved one (binned / parametric) or, with surrogate_kind='vbll', the
+    grid's binned response wrapped with a ported VBLL model (migration from the event-level smearing; efficiency,
+    background and MC-stat variance from the binned response). vbll_opts: model_name, n_samples, seed,
+    truncate_to_reco_windows (ndp.surrogate.vbll.VBLLEventSurrogate.from_parts)."""
+    if sur is None or surrogate_kind in (None, "binned"):
+        return sur
+    if surrogate_kind == "vbll":
+        from .surrogate.binned import BinnedResponse
+        from .surrogate.vbll import VBLLEventSurrogate
+        if not isinstance(sur, BinnedResponse):
+            raise ValueError(f"surrogate kind 'vbll' needs the grid's binned response (found {sur.kind})")
+        return VBLLEventSurrogate.from_parts(cfg, channel, measurement, sur, sur_path, **(vbll_opts or {}))
+    raise ValueError(f"unknown surrogate kind {surrogate_kind!r} (binned | vbll)")
+
+
 def run_model(model: str | Path | ModelSpec, channel_name: str, *, measurement: str | Path | None = None,
               cfg: SiteConfig | None = None, out_root: str | Path | None = None, surrogate_path: str | None = None,
-              modes: tuple = ("folded", "unfolded"), fold_events: bool = False, slug: str | None = None) -> Path:
+              modes: tuple = ("folded", "unfolded"), fold_events: bool = False, slug: str | None = None,
+              surrogate_kind: str | None = None, vbll_opts: dict | None = None) -> Path:
     t_start = time.time()
     cfg = cfg or load_site_config()
     channel = load_channel(channel_name)
@@ -107,11 +124,13 @@ def run_model(model: str | Path | ModelSpec, channel_name: str, *, measurement: 
                 warnings.append(f"no detector surrogate for measurement {meas.name!r} "
                                 f"(run `ndp surrogate build --channel {channel.name} --measurement {meas.name}`)")
             else:
+                sur = wrap_surrogate(cfg, channel, meas, sur, sur_path, surrogate_kind, vbll_opts)
                 data = fld.data_reco_cells(channel, meas, cfg)
                 res = fld.compare_folded(channel, meas, pred.truth, sur, data, use_events=fold_events)
                 res_out = {k: v for k, v in res.items() if not k.endswith("_cells")}
                 res_out.update({"surrogate": str(sur_path.relative_to(cfg.repo_root)) if str(sur_path).startswith(str(cfg.repo_root)) else str(sur_path),
-                                "surrogate_kind": sur.kind, "surrogate_meta": sur.meta, "data_sources": data["sources"]})
+                                "surrogate_kind": sur.kind, "surrogate_meta": sur.meta, "data_sources": data["sources"],
+                                "fold_info": getattr(sur, "last_fold_info", None)})
                 ctx_out["folded"] = res_out
                 np.savez(run_dir / "folded_cells.npz", **{k: v for k, v in res.items() if k.endswith("_cells")})
                 fig_paths.append(plots.folded_projections(res, figs / "folded_projections.png",
@@ -193,7 +212,8 @@ def run_model(model: str | Path | ModelSpec, channel_name: str, *, measurement: 
 
 
 def run_model_multi(model: str | Path | ModelSpec, channel_name: str, *, measurements: list | None = None, cfg: SiteConfig | None = None,
-                    out_root: str | Path | None = None, efficiency_run: str | Path | None = None, slug: str | None = None) -> Path:
+                    out_root: str | Path | None = None, efficiency_run: str | Path | None = None, slug: str | None = None,
+                    surrogate_kind: str | None = None, vbll_opts: dict | None = None) -> Path:
     """One model against several measurements in folded space, in one run directory: the model is realised once,
     the data is read once (one playlist at a time), and per grid three predictions are compared with the data —
     the full fold (efficiency x migration + background), the efficiency-only fold, and, when an efficiency run
@@ -206,7 +226,7 @@ def run_model_multi(model: str | Path | ModelSpec, channel_name: str, *, measure
     names = [n for n in list_measurements(channel) if n != "published"] if not measurements else list(measurements)
     meas = [load_measurement(channel, n) for n in names]
     spec = model if isinstance(model, ModelSpec) else ModelSpec.load(model)
-    run_dir = unique_run_dir(out_root or cfg.runs, slug or f"{spec.name}__{channel.name}__all{len(meas)}")
+    run_dir = unique_run_dir(out_root or cfg.runs, slug or f"{spec.name}__{channel.name}__all{len(meas)}" + ("__vbll" if surrogate_kind == "vbll" else ""))
     figs = ensure_dir(run_dir / "figs"); mdir = ensure_dir(run_dir / "measurements")
     warnings: list[str] = []; timings: dict = {}
     dump_yaml_or_json(spec.to_dict(), run_dir / ("model.yaml" if spec.path and spec.path.suffix in (".yaml", ".yml") else "model.json"))
@@ -244,14 +264,17 @@ def run_model_multi(model: str | Path | ModelSpec, channel_name: str, *, measure
         if sur is None or not isinstance(sur, BinnedResponse):
             warnings.append(f"no binned surrogate for measurement {m.name!r}"); continue
         try:
-            full = compare_folded(channel, m, pred.truth, sur, data[m.name], folding="full")
+            sur_full = wrap_surrogate(cfg, channel, m, sur, sur_path, surrogate_kind, vbll_opts)
+            full = compare_folded(channel, m, pred.truth, sur_full, data[m.name], folding="full")
             eff = compare_folded(channel, m, pred.truth, sur, data[m.name], folding="eff_only")
             ans = compare_folded(channel, m, pred.truth, sur, data[m.name], folding="weighted", truth_weights=ansatz_w) if maps else None
         except Exception as e:  # keep the run alive; report the failure loudly
             warnings.append(f"{m.name}: folded comparison failed: {type(e).__name__}: {e}"); continue
         bkg_cat = sur.background_by_category(data[m.name]["pot"])
         bkg_cat_proj = {c: m.binning.project(v, "x", False).tolist() for c, v in bkg_cat.items()} if bkg_cat else None
-        entry = {"surrogate": str(sur_path), "pot_data": data[m.name]["pot"], "n_data_selected": data[m.name]["n_selected"],
+        entry = {"surrogate": str(sur_path), "surrogate_kind": sur_full.kind, "surrogate_meta": (sur_full.meta if sur_full is not sur else None),
+                 "fold_info": getattr(sur_full, "last_fold_info", None),
+                 "pot_data": data[m.name]["pot"], "n_data_selected": data[m.name]["n_selected"],
                  "expected": full["expected"], "totals": {"full": full["totals"], "eff_only": eff["totals"], "ansatz": ans["totals"] if ans else None},
                  "gof": {"full": full["gof"], "eff_only": eff["gof"], "ansatz": ans["gof"] if ans else None},
                  "projections": {"full": full["projections"]["x"], "eff_only": eff["projections"]["x"], "ansatz": ans["projections"]["x"] if ans else None,
@@ -268,7 +291,8 @@ def run_model_multi(model: str | Path | ModelSpec, channel_name: str, *, measure
     timings["folded_s"] = round(time.time() - t0, 1)
     ctx_out = {"platform_version": __version__, "model": spec.to_dict(), "channel": {"name": channel.name, "description": channel.description},
                "measurements": results, "prediction_summary": {k: v for k, v in pred.truth.summary().items()}, "provenance": pred.provenance,
-               "efficiency_run": str(efficiency_run) if efficiency_run else None, "figures": [str(p.relative_to(run_dir)) for p in fig_paths],
+               "efficiency_run": str(efficiency_run) if efficiency_run else None, "surrogate_kind": surrogate_kind or "binned", "vbll_opts": vbll_opts,
+               "figures": [str(p.relative_to(run_dir)) for p in fig_paths],
                "warnings": warnings}
     dump_json(ctx_out, run_dir / "scorecard.json")
     _write_multi_report(run_dir, ctx_out, channel)
@@ -276,6 +300,7 @@ def run_model_multi(model: str | Path | ModelSpec, channel_name: str, *, measure
     manifest = {"run_id": run_dir.name, "kind": "model_multi_folded", "timestamp": timestamp(), "platform_version": __version__,
                 "platform_git": git_state(cfg.repo_root), "model": spec.to_dict(), "model_fingerprint": spec.fingerprint(),
                 "channel": channel.name, "channel_file": str(channel.path), "measurements": names, "efficiency_run": str(efficiency_run) if efficiency_run else None,
+                "surrogate_kind": surrogate_kind or "binned", "vbll_opts": vbll_opts,
                 "inputs": sources_fingerprints(cfg, channel) + ([{"role": "model_truth_source", "path": str(pred.truth.meta.get("source"))}] if pred.truth.meta.get("source") else []),
                 "versions": versions(), "site_config": cfg.as_dict(), "timings_s": timings | {"total_s": round(time.time() - t_start, 1)},
                 "outputs": ["scorecard.json", "report.md", "truth_summary.json", *ctx_out["figures"]], "warnings": warnings}
@@ -288,6 +313,12 @@ def _write_multi_report(run_dir: Path, ctx: dict, channel) -> None:
     L = [f"# {m['name']} on {channel.name}: folded comparison on {len(ctx['measurements'])} grids", "",
          f"*Model kind:* `{m['kind']}`. " + (m.get("description", "").strip()), "",
          "## Model sample", ""] + [f"- **{k}**: {v}" for k, v in ps.items() if k != "norm"] + [f"- **normalisation**: {ps.get('norm')}", ""]
+    if ctx.get("surrogate_kind") == "vbll":
+        vo = ctx.get("vbll_opts") or {}
+        L += [f"*Surrogate:* `vbll_event` — the migration comes from the ported VBLL model `{vo.get('model_name', 'x60_het')}` "
+              f"({vo.get('n_samples', 20)} smeared copies per truth event, seed {vo.get('seed', 0)}, "
+              f"{'conditioned on the reco kinematic windows' if vo.get('truncate_to_reco_windows', True) else 'no window conditioning'}); "
+              "efficiency, background and MC-stat variance from each grid's binned response. The eff-only and ansatz columns are unchanged.", ""]
     L += ["## Per grid: data vs prediction (full fold = signal × efficiency × migration + MC background; eff-only = no migration; "
           "ansatz = signal weighted by the factorised efficiency maps)", "",
           "| grid | data | full | eff-only | ansatz | background | data/full | −2lnL/ndf (full) | −2lnL/ndf (eff-only) |", "|---|---|---|---|---|---|---|---|---|"]

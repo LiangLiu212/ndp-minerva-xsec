@@ -59,11 +59,15 @@ class Surrogate(ABC):
 
 
 def load_surrogate(directory: str | Path) -> Surrogate:
-    from . import binned, parametric
+    from . import binned, parametric, vbll
     d = Path(directory)
     spec = json.loads((d / "surrogate.json").read_text())
+    if spec.get("kind") == "vbll_model":
+        raise ValueError(f"{d} is a ported VBLL model (weights + normaliser), not a per-measurement surrogate; "
+                         "wrap it with ndp.surrogate.vbll.VBLLEventSurrogate.from_parts or `ndp surrogate build --kind vbll`")
     z = np.load(d / "arrays.npz", allow_pickle=False)
     arrays = {k: z[k] for k in z.files}
     binning = Binning.from_dict(spec["binning"])
-    kinds = {"binned_response": binned.BinnedResponse, "parametric_smearing": parametric.SmearingSurrogate}
+    kinds = {"binned_response": binned.BinnedResponse, "parametric_smearing": parametric.SmearingSurrogate,
+             "vbll_event": vbll.VBLLEventSurrogate}
     return kinds[spec["kind"]]._from_arrays(binning, arrays, spec.get("meta", {}))

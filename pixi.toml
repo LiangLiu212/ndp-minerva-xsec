@@ -70,8 +70,26 @@ awkward = ">=2.6"
 xrootd = ">=5.6"
 fsspec-xrootd = ">=0.4"
 
+# --- ML surrogates: CPU torch + vbll for the VBLL detector surrogate (ndp/surrogate/vbll_model.py), a separate
+#     slim environment so the default one stays torch-free: pixi install -e ml; pixi run -e ml python ... ---
+[feature.ml.dependencies]
+python = "3.12.*"
+numpy = ">=1.26"
+scipy = ">=1.11"
+pandas = ">=2.2"
+pyyaml = ">=6"
+uproot = ">=5.3"
+awkward = ">=2.6"
+matplotlib-base = ">=3.8"
+pytest = ">=8"
+pytorch-cpu = ">=2.6,<2.7"
+
+[feature.ml.pypi-dependencies]
+vbll = "==0.4.9"
+
 [environments]
 grid = { features = ["grid"], no-default-feature = true }
+ml = { features = ["ml"], no-default-feature = true }
 
 [tasks]
 build-pythia6 = { cmd = "scripts/build_pythia6.sh", description = "Build ROOTEGPythia6 (Pythia6 + TPythia6) into external/ROOTEGPythia6/install" }

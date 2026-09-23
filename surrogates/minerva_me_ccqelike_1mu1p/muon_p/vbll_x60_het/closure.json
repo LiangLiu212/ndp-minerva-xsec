@@ -1,0 +1,173 @@
+{
+ "n_pred": 891174.2581347275,
+ "n_reco": 891177.0,
+ "ratio_pred_over_reco": 0.999996923321324,
+ "max_abs_dev": 24424.78416761104,
+ "max_rel_dev_cells_gt_50": 0.2975424916745994,
+ "pred_cells": [
+  63795.235930644165,
+  133218.376106053,
+  178911.53482471625,
+  178129.78690237695,
+  188506.87675787808,
+  112706.78416761104,
+  28881.08836219392,
+  7024.575083254006
+ ],
+ "reco_cells": [
+  65900.0,
+  137344.0,
+  185432.0,
+  193000.0,
+  185908.0,
+  88282.0,
+  25311.0,
+  10000.0
+ ],
+ "binned_fold_cells": [
+  65900.0,
+  137344.0,
+  185432.0,
+  193000.0,
+  185908.0,
+  88282.0,
+  25311.0,
+  10000.0
+ ],
+ "compared_with": "selected signal in the true phase space with true cell inside the grid (migration column sums)",
+ "inputs": [
+  {
+   "input": "FHC/1A",
+   "n_events": 223595,
+   "sum_w": 223595.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "detector",
+   "n_events_all_samples_out_of_window": 1,
+   "sample_pass_fraction": 0.8232180952167982,
+   "elapsed_s": 15.3
+  },
+  {
+   "input": "FHC/1B",
+   "n_events": 59686,
+   "sum_w": 59686.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "detector",
+   "n_events_all_samples_out_of_window": 0,
+   "sample_pass_fraction": 0.8236730556579432,
+   "elapsed_s": 3.9
+  },
+  {
+   "input": "FHC/1C",
+   "n_events": 114440,
+   "sum_w": 114440.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "detector",
+   "n_events_all_samples_out_of_window": 0,
+   "sample_pass_fraction": 0.823465571478504,
+   "elapsed_s": 7.2
+  },
+  {
+   "input": "FHC/1D",
+   "n_events": 333672,
+   "sum_w": 333672.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "detector",
+   "n_events_all_samples_out_of_window": 2,
+   "sample_pass_fraction": 0.8237249454554173,
+   "elapsed_s": 21.9
+  },
+  {
+   "input": "FHC/1E",
+   "n_events": 279329,
+   "sum_w": 279329.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "detector",
+   "n_events_all_samples_out_of_window": 2,
+   "sample_pass_fraction": 0.8235659383737457,
+   "elapsed_s": 18.6
+  },
+  {
+   "input": "FHC/1F",
+   "n_events": 388079,
+   "sum_w": 388079.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "detector",
+   "n_events_all_samples_out_of_window": 0,
+   "sample_pass_fraction": 0.8232486169053208,
+   "elapsed_s": 26.0
+  },
+  {
+   "input": "FHC/1G",
+   "n_events": 326272,
+   "sum_w": 326272.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "detector",
+   "n_events_all_samples_out_of_window": 1,
+   "sample_pass_fraction": 0.823478876520204,
+   "elapsed_s": 21.4
+  },
+  {
+   "input": "FHC/1L",
+   "n_events": 31803,
+   "sum_w": 31803.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "detector",
+   "n_events_all_samples_out_of_window": 0,
+   "sample_pass_fraction": 0.8248891613998679,
+   "elapsed_s": 2.1
+  },
+  {
+   "input": "FHC/1M",
+   "n_events": 492908,
+   "sum_w": 492908.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "detector",
+   "n_events_all_samples_out_of_window": 3,
+   "sample_pass_fraction": 0.8232688453017601,
+   "elapsed_s": 31.9
+  },
+  {
+   "input": "FHC/1N",
+   "n_events": 283729,
+   "sum_w": 283729.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "detector",
+   "n_events_all_samples_out_of_window": 1,
+   "sample_pass_fraction": 0.8232203969280546,
+   "elapsed_s": 17.4
+  },
+  {
+   "input": "FHC/1O",
+   "n_events": 86875,
+   "sum_w": 86875.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "detector",
+   "n_events_all_samples_out_of_window": 0,
+   "sample_pass_fraction": 0.8232892086330935,
+   "elapsed_s": 5.7
+  },
+  {
+   "input": "FHC/1P",
+   "n_events": 113839,
+   "sum_w": 113839.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "detector",
+   "n_events_all_samples_out_of_window": 1,
+   "sample_pass_fraction": 0.8234840432540693,
+   "elapsed_s": 7.4
+  }
+ ],
+ "built": "2026-09-22T20:46:10+0000"
+}

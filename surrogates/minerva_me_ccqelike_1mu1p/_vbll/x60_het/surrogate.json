@@ -1,0 +1,390 @@
+{
+  "kind": "vbll_model",
+  "binning": null,
+  "spec": {
+    "d_embed": 8,
+    "hidden": 64,
+    "n_layers": 3,
+    "head_type": "het",
+    "parameterization": "diagonal",
+    "wishart_scale": 1.0,
+    "prior_scale": 1.0,
+    "dof": 1.0,
+    "noise_prior_scale": 0.01,
+    "n_train_per_particle": 124314,
+    "particles": [
+      "muon",
+      "proton"
+    ],
+    "components": [
+      "E",
+      "px",
+      "py",
+      "pz"
+    ],
+    "units": "MeV",
+    "frame": "detector",
+    "normaliser": {
+      "input": {
+        "muon": {
+          "E": [
+            5611.856136873314,
+            2503.961313533301
+          ],
+          "px": [
+            22.025498375068974,
+            503.99282224132935
+          ],
+          "py": [
+            -309.006464449718,
+            537.8554948427226
+          ],
+          "pz": [
+            5547.275639870221,
+            2517.9754843644564
+          ]
+        },
+        "proton": {
+          "E": [
+            1329.5799311406154,
+            307.376691614225
+          ],
+          "px": [
+            -20.258689662017275,
+            485.1496656405725
+          ],
+          "py": [
+            -46.15629836663429,
+            498.10425355172765
+          ],
+          "pz": [
+            576.8898290650677,
+            403.8471927456849
+          ]
+        }
+      },
+      "output": {
+        "muon": {
+          "E": [
+            5513.017864694243,
+            2669.7880881965043
+          ],
+          "px": [
+            25.26115302409364,
+            528.962196926995
+          ],
+          "py": [
+            -302.2243018144661,
+            558.3923389084168
+          ],
+          "pz": [
+            5450.540758897662,
+            2668.0668155272483
+          ]
+        },
+        "proton": {
+          "E": [
+            1218.0340820023207,
+            131.36916530719864
+          ],
+          "px": [
+            -15.155256562194346,
+            396.0011862227658
+          ],
+          "py": [
+            -33.861172403927156,
+            399.37574074807895
+          ],
+          "pz": [
+            490.178540596664,
+            250.08845771874257
+          ]
+        }
+      }
+    },
+    "meta": {
+      "source": "VBLL_SurrogateModel (github.com/fnal-nd-aiml), branch sdey2_dev, checkpoint best_model_x60_het.pt",
+      "vbll_repo_git": {
+        "sha": "77c4764f86b1f8b23951e18660f9bb084886cdc4",
+        "dirty": false
+      },
+      "checkpoint": {
+        "path": "/exp/icarus/app/users/sdey2/FDPSurrogateModel/VBLL_SurrogateModel/output_data/checkpoints/best_model_x60_het.pt",
+        "sha256": "1bfae7dfe18a56de05521f8b2a65dbbbd0d5a926325c5570dd2eab6e04d5ce7f",
+        "size_bytes": 86194,
+        "mtime": "2026-09-09T03:47:58Z"
+      },
+      "training_csv": {
+        "path": "/exp/dune/data/users/liangliu/ndp-dev/VBLL_SurrogateModel/input_data/x60/MINERvALargeDataset_x60_v1/masteranadev_selected_events_x60.csv",
+        "fingerprint": {
+          "path": "/exp/dune/data/users/liangliu/ndp-dev/VBLL_SurrogateModel/input_data/x60/MINERvALargeDataset_x60_v1/masteranadev_selected_events_x60.csv",
+          "size_bytes": 89741578,
+          "mtime": 1788978803,
+          "fingerprint": "sha256(head1MiB+tail1MiB)",
+          "sha256_partial": "9cba96cf103e5b16c20b717481ebefd95dc377a77ee7729e0ee647dbe159f20d"
+        },
+        "provenance": "MINERvA Open Data ME FHC StandardMC Playlist 1D, all 61 files (runs 111100-111160), selected events, MeV; selection stage / frame / proton pairing: plan Step 2"
+      },
+      "training_config": {
+        "batch_size": 64,
+        "d_embed": 8,
+        "hidden": 64,
+        "n_layers": 3,
+        "wishart_scale": 1.0,
+        "prior_scale": 1.0,
+        "dof": 1.0,
+        "noise_prior_scale": 0.01,
+        "head_type": "het",
+        "lr": 0.001,
+        "epochs": 100,
+        "patience": 15,
+        "lambda_cls": 0.01,
+        "split_seed": 42,
+        "train_fraction": 0.5,
+        "outlier_threshold_mev": 20000.0
+      },
+      "split_counts": {
+        "n_train_events": 124314,
+        "n_val_samples": 248630,
+        "n_outlier_samples": 9464,
+        "n_train_samples": 248628
+      },
+      "normaliser_note": "train-split mean/std per (particle, component); inputs = truth 4-vector, outputs = reco 4-vector; recomputed here with data.build_loaders (the checkpoint does not store them)",
+      "readme_reference_numbers": {
+        "muon": {
+          "sigma_cv_E": 0.3371,
+          "coverage_68": 0.877,
+          "outlier_sigma_E_ratio": 2.8
+        },
+        "proton": {
+          "sigma_cv_E": 0.4241,
+          "coverage_68": 0.838,
+          "outlier_sigma_E_ratio": 1.08
+        }
+      },
+      "built": "2026-09-22T16:59:05+0000",
+      "built_by": "runs/2026-09-22_vbll_surrogate_1mu1p/step1_port.py",
+      "versions": {
+        "torch": "2.6.0",
+        "vbll": "0.4.9",
+        "python": "3.12.14"
+      },
+      "frame_note": "pinned 2026-09-22 (plan Step 2, bench/step2_training_pairs.json): all 253,361 CSV events matched to Playlist 1D rows; truth and reco 4-vector components are identical to the cache's detector-frame columns (MasterAnaDev_leptonE / _proton_*_fromdEdx / mc primary lepton), 0 % identical to their beam-rotated values -> inputs and outputs are detector-frame, MeV",
+      "training_pairs": {
+        "truth_proton": "the leading (highest-momentum) true proton WITHOUT the signal window: equals the platform's leading-in-window proton lp_* in 99.98 % of the rows that have one (181,313 / 181,344), never the reco candidate's truth match (nonzero even when the candidate is not a proton)",
+        "selection": "NOT the platform's minerva_ccqelike_1mu1p_v0: 66,725 of 253,361 CSV events pass its 12 cuts (first failing cut: ZRange 77,139, Apothem 35,541, ProtonScore 42,403, NoMichel 8,744, HasMINOSMatch 7,070, MuonWindow 5,403, IsNeutrino 4,925, IsoBlobs 3,219, ProtonWindow 1,450, NoDeadtime 742); the CSV holds 27.8 % of the 240,201 platform-selected rows of 1D",
+        "signal_fraction": {
+          "channel_signal_flag": 0.5563,
+          "in_tracker_fiducial": 0.5538,
+          "signal_and_in_fiducial": 0.3197,
+          "signal_and_in_fiducial_given_in_fiducial": 0.5773
+        },
+        "evidence": "runs/2026-09-22_vbll_surrogate_1mu1p/bench/step2_training_pairs.json",
+        "population": "whole-detector sample (reco vertex z 4.0-8.6 m: 30 % of events upstream of the tracker fiducial, in the nuclear-target region), exclusive reco topology (n_hadron_tracks 1, n_prongs 2, no secondary protons at the 95th percentile) and truth-meson-poor (4.5 % of its platform-selected events have a true meson vs 57 % of the platform-selected events it lacks); QE 62 %, RES 19 %, DIS 7 %, 2p2h 12 % by GENIE type; signal fraction 0.556 overall, 0.577 inside the tracker fiducial; evidence bench/step2_selection_scan.json"
+      }
+    }
+  },
+  "arrays": {
+    "embedding.weight": [
+      [
+        2,
+        8
+      ],
+      "float32"
+    ],
+    "backbone.0.weight": [
+      [
+        64,
+        12
+      ],
+      "float32"
+    ],
+    "backbone.0.bias": [
+      [
+        64
+      ],
+      "float32"
+    ],
+    "backbone.2.weight": [
+      [
+        64,
+        64
+      ],
+      "float32"
+    ],
+    "backbone.2.bias": [
+      [
+        64
+      ],
+      "float32"
+    ],
+    "backbone.4.weight": [
+      [
+        64,
+        64
+      ],
+      "float32"
+    ],
+    "backbone.4.bias": [
+      [
+        64
+      ],
+      "float32"
+    ],
+    "reg_heads.muon.noise_mean": [
+      [
+        4
+      ],
+      "float32"
+    ],
+    "reg_heads.muon.W_mean": [
+      [
+        4,
+        64
+      ],
+      "float32"
+    ],
+    "reg_heads.muon.M_mean": [
+      [
+        4,
+        64
+      ],
+      "float32"
+    ],
+    "reg_heads.muon.W_logdiag": [
+      [
+        4,
+        64
+      ],
+      "float32"
+    ],
+    "reg_heads.muon.M_logdiag": [
+      [
+        4,
+        64
+      ],
+      "float32"
+    ],
+    "reg_heads.proton.noise_mean": [
+      [
+        4
+      ],
+      "float32"
+    ],
+    "reg_heads.proton.W_mean": [
+      [
+        4,
+        64
+      ],
+      "float32"
+    ],
+    "reg_heads.proton.M_mean": [
+      [
+        4,
+        64
+      ],
+      "float32"
+    ],
+    "reg_heads.proton.W_logdiag": [
+      [
+        4,
+        64
+      ],
+      "float32"
+    ],
+    "reg_heads.proton.M_logdiag": [
+      [
+        4,
+        64
+      ],
+      "float32"
+    ],
+    "cls_head.noise_mean": [
+      [
+        2
+      ],
+      "float32"
+    ],
+    "cls_head.noise_logdiag": [
+      [
+        2
+      ],
+      "float32"
+    ],
+    "cls_head.W_mean": [
+      [
+        2,
+        64
+      ],
+      "float32"
+    ],
+    "cls_head.W_logdiag": [
+      [
+        2,
+        64
+      ],
+      "float32"
+    ],
+    "cls_head.W_offdiag": [
+      [
+        2,
+        64,
+        64
+      ],
+      "float32"
+    ]
+  },
+  "certification": {
+    "date": "2026-09-22",
+    "by": "runs/2026-09-22_vbll_surrogate_1mu1p/step1_port.py (+ 100-seed scan)",
+    "strict_load_all_parameters_equal": true,
+    "bitwise_parity_with_reference_on_val_and_outliers": true,
+    "readme_x60_het_numbers": {
+      "muon": {
+        "sigma_cv_E": {
+          "readme": 0.3371,
+          "100_seeds_mean": 0.3357,
+          "100_seeds_std": 0.0017,
+          "z_readme": 0.8
+        },
+        "coverage_68": {
+          "readme": 0.877,
+          "5_seeds_mean": 0.8773
+        },
+        "outlier_sigma_E_ratio": {
+          "readme": 2.8,
+          "100_seeds_mean": 2.8046
+        }
+      },
+      "proton": {
+        "sigma_cv_E": {
+          "readme": 0.4241,
+          "100_seeds_mean": 0.4265,
+          "100_seeds_std": 0.0027,
+          "z_readme": -0.9
+        },
+        "coverage_68": {
+          "readme": 0.838,
+          "5_seeds_mean": 0.838
+        },
+        "outlier_sigma_E_ratio": {
+          "readme": 1.08,
+          "100_seeds_mean": 1.0828
+        }
+      }
+    },
+    "note": "the reference evaluation draws sigma from the noise-map posterior per call (vbll 0.4.9 HetRegression.predictive_sample), so its CV / coverage / ratio numbers carry a sampling spread; all README values lie within it",
+    "physical_units_val_E": {
+      "muon": {
+        "residual_robust_sigma_mev": 477.1,
+        "predicted_sigma_median_mev": 1345.8,
+        "pull_std": 0.97
+      },
+      "proton": {
+        "residual_robust_sigma_mev": 61.0,
+        "predicted_sigma_median_mev": 79.1,
+        "pull_std": 1.049
+      }
+    }
+  }
+}

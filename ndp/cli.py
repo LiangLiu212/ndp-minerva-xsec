@@ -74,7 +74,8 @@ def _cmd_run(a):
     want = (a.measurement or "").strip()
     if want == "all" or "," in want:
         names = None if want == "all" else [n.strip() for n in want.split(",")]
-        rd = run_model_multi(a.model, a.channel, measurements=names, out_root=a.out, efficiency_run=a.efficiency_run, slug=a.slug)
+        rd = run_model_multi(a.model, a.channel, measurements=names, out_root=a.out, efficiency_run=a.efficiency_run, slug=a.slug,
+                             surrogate_kind=a.surrogate_kind, vbll_opts=_vbll_opts(a))
         man = json.loads((rd / "manifest.json").read_text())
         print(f"run dir: {rd}")
         if man["warnings"]:
@@ -84,7 +85,7 @@ def _cmd_run(a):
         print((rd / "report.md").read_text())
         return 0
     rd = run_model(a.model, a.channel, measurement=a.measurement, out_root=a.out, surrogate_path=a.surrogate, modes=modes,
-                   fold_events=a.fold_events, slug=a.slug)
+                   fold_events=a.fold_events, slug=a.slug, surrogate_kind=a.surrogate_kind, vbll_opts=_vbll_opts(a))
     man = json.loads((rd / "manifest.json").read_text())
     print(f"run dir: {rd}")
     print(json.dumps(man["results_summary"], indent=2))
@@ -94,6 +95,18 @@ def _cmd_run(a):
             print("  -", w)
     print((rd / "report.md").read_text())
     return 0
+
+
+def _vbll_opts(a) -> dict:
+    """`--vbll-*` options of `run` / `surrogate build` -> VBLLEventSurrogate.from_parts keyword arguments."""
+    return {"model_name": a.vbll_model, "n_samples": a.vbll_samples, "seed": a.vbll_seed, "truncate_to_reco_windows": not a.no_vbll_truncate}
+
+
+def _add_vbll_args(p):
+    p.add_argument("--vbll-model", default="x60_het", help="ported VBLL model under surrogates/<channel>/_vbll/ (default x60_het)")
+    p.add_argument("--vbll-samples", type=int, default=20, help="smeared copies per truth event (default 20)")
+    p.add_argument("--vbll-seed", type=int, default=0)
+    p.add_argument("--no-vbll-truncate", action="store_true", help="do not condition the smeared reco on the selection's kinematic windows")
 
 
 def _cmd_surrogate_build(a):
@@ -114,6 +127,19 @@ def _cmd_surrogate_build(a):
         out = cfg.surrogates / ch.name / "binned_from_run_2026-06-19"
         sur.save(out); plots.response_figure(sur, out / "response.png", "binned response from run artifacts")
         print(json.dumps(sur.diagnostics(), indent=2)); print("saved", out)
+        return 0
+    if a.kind == "vbll":
+        # wrap each grid's binned response with a ported VBLL model (event-level migration) + closure on the MC truth
+        from .channels import list_measurements
+        from .surrogate.vbll import build_vbll
+        want = (a.measurement or "").strip()
+        names = [n for n in list_measurements(ch) if n != "published"] if want == "all" else ([n.strip() for n in want.split(",")] if want else [None])
+        ms = [load_measurement(ch, n) for n in names]
+        res = build_vbll(ch, ms, cfg, out_root=a.out, closure=not a.no_closure, **_vbll_opts(a))
+        slim = [{k: v for k, v in r.items() if k != "closure"} |
+                ({"closure": {kk: vv for kk, vv in r["closure"].items() if kk not in ("pred_cells", "reco_cells", "binned_fold_cells", "inputs")}} if "closure" in r else {})
+                for r in res]
+        print(json.dumps(slim, indent=2, default=str))
         return 0
     kinds = ("binned", "parametric") if a.kind == "all" else (a.kind,)
     from .channels import list_measurements
@@ -350,13 +376,19 @@ def main(argv=None) -> int:
     p.add_argument("--out"); p.add_argument("--surrogate"); p.add_argument("--modes", default="folded,unfolded")
     p.add_argument("--fold-events", action="store_true", help="smear truth events (parametric surrogate) instead of folding true cells")
     p.add_argument("--efficiency-run", help="with --measurement all|a,b: an `ndp efficiency run` directory whose maps give the ansatz prediction")
+    p.add_argument("--surrogate-kind", choices=("binned", "vbll"), default="binned",
+                   help="binned: the grid's binned response; vbll: its efficiency + background with the migration from a ported VBLL model")
+    _add_vbll_args(p)
     p.add_argument("--slug"); p.set_defaults(fn=_cmd_run)
     ps = sub.add_parser("surrogate", help="build / inspect detector surrogates").add_subparsers(dest="scmd", required=True)
     p = ps.add_parser("build"); p.add_argument("--channel", required=True)
     p.add_argument("--measurement", help="one name, a comma list, or `all` (every measurement YAML of the channel)")
     p.add_argument("--chunked", action="store_true", help="accumulate one playlist / file at a time (automatic with playlist products or several measurements)")
     p.add_argument("--source", choices=("mc", "artifacts"), default="mc")
-    p.add_argument("--kind", choices=("binned", "parametric", "all"), default="all"); p.add_argument("--n-samples", type=int, default=20)
+    p.add_argument("--kind", choices=("binned", "parametric", "all", "vbll"), default="all",
+                   help="vbll: wrap the grid's binned response with a ported VBLL model (surrogates/<channel>/<measurement>/vbll_<model>/) + closure on the MC truth")
+    p.add_argument("--n-samples", type=int, default=20)
+    _add_vbll_args(p); p.add_argument("--no-closure", action="store_true", help="(vbll) save the wrappers without folding the MC truth")
     p.add_argument("--out", help="output root (default surrogates/<channel>[/<measurement>])"); p.set_defaults(fn=_cmd_surrogate_build)
     p = ps.add_parser("inspect"); p.add_argument("path"); p.set_defaults(fn=_cmd_surrogate_inspect)
     pd = sub.add_parser("data", help="data availability / caches").add_subparsers(dest="dcmd", required=True)

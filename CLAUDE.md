@@ -27,7 +27,7 @@ a result is believable); you run the machinery and report faithfully.
   measurement); a rebuilt surrogate must fold the training MC's truth back onto its own reco counts
   exactly (`ndp surrogate build` prints the closure; `tests/test_measurements.py`,
   `tests/test_minerva_certification.py`). Say which surrogate a run used.
-- **The environment is `pixi.toml`.** `pixi install` builds it; `pixi run build-pythia6` /
+- **The environment is `pixi.toml`.** `pixi install` builds it (`pixi install -e ml` the separate torch + vbll environment for the VBLL surrogate; the default one stays torch-free); `pixi run build-pythia6` /
   `build-genie` / `snapshot-genie-env` produce the in-repo GENIE under `external/`. Do not
   `pip install` into other environments or edit `external/genie/Generator` sources by hand —
   patches belong in `scripts/build_genie.sh` so a rebuild reproduces them. Outside pixi the default
@@ -71,6 +71,9 @@ python -m ndp efficiency apply --channel <c> --run runs/<eff run> --sample truth
 python -m ndp run models/gibuu_2025_me_fhc_c12.yaml --channel minerva_me_ccqelike_1mu1p --measurement all --modes folded --efficiency-run runs/<eff run>   # data vs model signal + MC background on every grid
 python -m ndp gibuu smoke models/gibuu_2025_me_fhc_c12.yaml --channel minerva_me_ccqelike_1mu1p --ensembles 100   # one local GiBUU job; campaigns: grid/README.md (ndp gibuu plan/submit-cmd/status/harvest/merge)
 python tests/run_tests.py                    # or, inside pixi: pixi run test
+pixi install -e ml && pixi run -e ml python <script>   # VBLL detector surrogate: torch + vbll live only in the `ml` env (ndp/surrogate/vbll_model.py, surrogates/<channel>/_vbll/)
+pixi run -e ml python -m ndp surrogate build --channel minerva_me_ccqelike_1mu1p --measurement muon_p --kind vbll   # wrap the grid's binned response with the ported VBLL model + closure on the MC truth
+pixi run -e ml python -m ndp run models/gibuu_2025_me_fhc_c12.yaml --channel minerva_me_ccqelike_1mu1p --measurement all --modes folded --efficiency-run runs/<eff run> --surrogate-kind vbll   # migration from the VBLL smearing, efficiency + background from the binned responses
 pixi run build-genie && pixi run snapshot-genie-env   # (re)build the in-repo GENIE
 ```
 

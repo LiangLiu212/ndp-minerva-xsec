@@ -104,6 +104,11 @@ def compare_folded(channel: ChannelSpec, measurement: Measurement, t: TruthTable
             raise ValueError("folding='weighted' needs truth_weights (one per truth event)")
         sumw, _, _, mask = measurement.truth_cells(channel, t, weights=np.asarray(truth_weights) * t["weight"])
         pred_sig = sumw * exp["scale"]; folding_how = "truth events x per-event efficiency weights (no migration)"
+    elif folding == "full" and hasattr(surrogate, "fold_table"):
+        # event-level surrogate on the full truth kinematics (vbll_event): efficiency of the true cell x the reco
+        # cell of each smeared copy; background and MC-stat variance come from the grid's binned response
+        pred_sig = surrogate.fold_table(channel, t, weights=t["weight"] * exp["scale"])
+        folding_how = f"event-level smearing ({surrogate.kind}) of the truth events x efficiency(true cell)"
     elif use_events and hasattr(surrogate, "sample_reco"):
         mask = channel.in_phase_space(t) & channel.is_signal(t)
         x, y = measurement.truth_observables(channel, t)
