@@ -121,5 +121,34 @@ percent in the six bins below 0.989; 47 percent on average.
 The matrices in percent, the diagonal fractions and the per-column losses are in `muon_vbll_smeared.json` under
 `migration`.
 
+### Migration matrices from the official MC, same bins
+
+The same matrices from the MINERvA StandardMC of the 12 ME FHC playlists, the sample the platform's binned responses
+are learned from: reconstructed candidates passing the channel selection whose truth is signal inside the fiducial
+volume, 891,177 events, true muon kinematics from the primary lepton and reconstructed ones from the MINERvA
+reconstruction (`reco_p`, `reco_theta`). Same analysis grids, same fine bins, same column normalisation. On the analysis
+grids the matrices reproduce the migration counts stored in the binned responses exactly.
+
+![muon momentum, MC migration](figs/muon_p_mc_migration.png)
+
+![muon angle, MC migration](figs/muon_theta_mc_migration.png)
+
+![muon cos theta, MC migration](figs/muon_costheta_mc_migration.png)
+
+![diagonal fractions, MC vs VBLL](figs/migration_diagonal_mc_vs_vbll.png)
+
+Probability of reconstructing in the true bin, official MC against the VBLL surrogate, averaged over the signal:
+
+| grid | official MC | VBLL x60_het |
+|---|---|---|
+| muon momentum, 8 bins | 68 % (63 to 83 % per bin) | 37 % (32 to 57 %) |
+| muon angle, 14 bins | 77 % (72 to 92 %) | 23 % (10 to 45 %) |
+| muon cos(theta), 8 bins | 91 % (71 to 96 %) | 47 % (7 to 80 %) |
+
+The MINERvA reconstruction keeps three quarters of the muons inside a 1-degree bin and two thirds inside a 1 GeV/c
+bin; the VBLL surrogate, whose sigma is calibrated to the root-mean-square of a heavy-tailed residual rather than to
+its core, spreads them over several bins, most strongly in angle. Matrices, counts and diagonals: `muon_mc_migration.json`;
+script `make_muon_mc_migration.py` (default pixi environment, one playlist at a time, about 4 minutes).
+
 Script: `make_muon_vbll_smeared.py` (ml pixi environment: `pixi run -e ml python ...`); histogram contents, including
 the smeared distributions without the efficiency, and the numbers above: `muon_vbll_smeared.json`.
