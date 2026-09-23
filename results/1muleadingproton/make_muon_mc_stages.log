@@ -1,0 +1,16 @@
+[  23.3s] FHC/1A: 223595 fiducial truth signal, 77520 selected
+[  30.3s] FHC/1B: 59686 fiducial truth signal, 20713 selected
+[  42.1s] FHC/1C: 114440 fiducial truth signal, 40081 selected
+[  76.4s] FHC/1D: 333672 fiducial truth signal, 116558 selected
+[ 105.2s] FHC/1E: 279329 fiducial truth signal, 96844 selected
+[ 145.2s] FHC/1F: 388079 fiducial truth signal, 127609 selected
+[ 179.5s] FHC/1G: 326272 fiducial truth signal, 108561 selected
+[ 182.8s] FHC/1L: 31803 fiducial truth signal, 9835 selected
+[ 232.7s] FHC/1M: 492908 fiducial truth signal, 151693 selected
+[ 261.1s] FHC/1N: 283729 fiducial truth signal, 85914 selected
+[ 269.6s] FHC/1O: 86875 fiducial truth signal, 24246 selected
+[ 280.7s] FHC/1P: 113839 fiducial truth signal, 31603 selected
+muon_p: totals {'true_all': 580714.5631744133, 'true_selected': 189274.5051036671, 'reco_selected': 189274.50510366703} | medians all 5.25 sel-true 5.25 reco 5.25 | reco/true range 0.84-1.34
+muon_theta: totals {'true_all': 580714.5631744135, 'true_selected': 189274.50510366706, 'reco_selected': 189274.5051036671} | medians all 7.25 sel-true 6.25 reco 6.25 | reco/true range 0.98-1.07
+muon_costheta: totals {'true_all': 580714.5631744134, 'true_selected': 189274.50510366703, 'reco_selected': 189274.5051036671} | medians all 0.9926 sel-true 0.9935 reco 0.9935 | reco/true range 0.96-1.18
+[ 281.4s] fiducial truth signal 2734227, selected 891177, efficiency 0.3259; POT scale 0.2124

@@ -152,3 +152,37 @@ script `make_muon_mc_migration.py` (default pixi environment, one playlist at a 
 
 Script: `make_muon_vbll_smeared.py` (ml pixi environment: `pixi run -e ml python ...`); histogram contents, including
 the smeared distributions without the efficiency, and the numbers above: `muon_vbll_smeared.json`.
+
+## 4. Official MC, signal channel: true without cut, true with cuts, reconstructed
+
+The same three stages for the MINERvA StandardMC of the 12 ME FHC playlists (4.978e21 POT, scaled by 0.2124 to the
+data exposure), signal channel only. "True, no cut" is every truth signal event with its true vertex inside the
+tracker fiducial volume, the denominator of the selection efficiency. "True, cuts applied" is the reconstructed
+candidates passing the channel selection whose truth is signal in the fiducial volume, the numerator, drawn in their
+true muon kinematics. "Reconstructed" is the same candidates in the kinematics the MINERvA reconstruction assigned
+them. The lower panels show the selection efficiency per bin and the reconstructed-over-true ratio of the selected
+events, the migration alone. Unweighted CV MC; true angles from the primary lepton rotated into the beam frame,
+reconstructed angles from the tuple's beam-frame branches.
+
+2,734,227 fiducial truth signal events (580,715 at the data exposure), 891,177 selected (189,275), efficiency 0.326.
+
+![muon momentum, MC stages](figs/muon_p_mc_stages.png)
+
+Muon momentum: median 5.25 GeV/c at all three stages, mean 5.33, 5.56 and 5.59 GeV/c; the reconstruction moves
+events upward above 8 GeV/c (reconstructed over true 1.2 to 1.3 between 9 and 16 GeV/c, 0.84 to 0.93 in the last
+bins) and is within 3 percent below 6 GeV/c.
+
+![muon angle, MC stages](figs/muon_theta_mc_stages.png)
+
+Muon angle: the cuts move the median from 7.25 to 6.25 degrees, the reconstruction leaves it there; reconstructed
+over true is within 2 percent up to 12 degrees and up to 7 percent above 14 degrees.
+
+![muon cos theta, MC stages](figs/muon_costheta_mc_stages.png)
+
+The same in cos(theta): median 0.9926, 0.9935, 0.9935; reconstructed over true within a few percent everywhere except
+the bin at the window edge (1.18).
+
+Compared with section 3, the MINERvA reconstruction migrates far less than the VBLL surrogate: in momentum the
+reconstruction's ratio stays between 0.84 and 1.34 where the surrogate's runs from 0.42 to 1.70, and in angle it
+stays within 7 percent where the surrogate's runs from 0.82 to 1.96. Script: `make_muon_mc_stages.py` (default pixi
+environment, one playlist at a time, about 5 minutes); histogram contents and the numbers above: `muon_mc_stages.json`.
