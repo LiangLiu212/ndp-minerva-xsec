@@ -1,0 +1,29 @@
+[fhc4     0.2s] training: 23 epochs, best val NLL 1.2382
+[fhc4     0.2s] building wrappers + closure for fhc4_het on ('muon_p', 'muon_theta', 'muon_costheta') ...
+[fhc4    22.4s]   folded FHC/1A: 223595 signal events in 15.2 s (sample pass fraction 0.882)
+[fhc4    28.2s]   folded FHC/1B: 59686 signal events in 4.3 s (sample pass fraction 0.883)
+[fhc4    39.1s]   folded FHC/1C: 114440 signal events in 8.0 s (sample pass fraction 0.883)
+[fhc4    70.2s]   folded FHC/1D: 333672 signal events in 22.6 s (sample pass fraction 0.883)
+[fhc4    97.0s]   folded FHC/1E: 279329 signal events in 19.7 s (sample pass fraction 0.883)
+[fhc4   134.5s]   folded FHC/1F: 388079 signal events in 27.5 s (sample pass fraction 0.882)
+[fhc4   165.9s]   folded FHC/1G: 326272 signal events in 23.1 s (sample pass fraction 0.883)
+[fhc4   169.1s]   folded FHC/1L: 31803 signal events in 2.4 s (sample pass fraction 0.884)
+[fhc4   215.0s]   folded FHC/1M: 492908 signal events in 33.5 s (sample pass fraction 0.882)
+[fhc4   241.8s]   folded FHC/1N: 283729 signal events in 19.8 s (sample pass fraction 0.883)
+[fhc4   250.0s]   folded FHC/1O: 86875 signal events in 6.0 s (sample pass fraction 0.883)
+[fhc4   261.1s]   folded FHC/1P: 113839 signal events in 8.2 s (sample pass fraction 0.882)
+[fhc4   261.1s] muon_p: saved /exp/dune/data/users/liangliu/ndp-dev/ndp-platform/surrogates/minerva_me_ccqelike_1mu1p/muon_p/vbll_fhc4_het; closure pred/reco = 1.0000, max rel dev (cells > 50) = 0.28323039639371966
+[fhc4   261.1s] muon_theta: saved /exp/dune/data/users/liangliu/ndp-dev/ndp-platform/surrogates/minerva_me_ccqelike_1mu1p/muon_theta/vbll_fhc4_het; closure pred/reco = 1.0000, max rel dev (cells > 50) = 0.38720088766990346
+[fhc4   261.1s] muon_costheta: saved /exp/dune/data/users/liangliu/ndp-dev/ndp-platform/surrogates/minerva_me_ccqelike_1mu1p/muon_costheta/vbll_fhc4_het; closure pred/reco = 1.0000, max rel dev (cells > 50) = 0.802980627808362
+[fhc4   261.1s] closure muon_p: x60_het within 5 %: 4/8, fhc4_het: 3/8
+[fhc4   261.1s] closure muon_theta: x60_het within 5 %: 2/14, fhc4_het: 2/14
+[fhc4   261.1s] closure muon_costheta: x60_het within 5 %: 1/8, fhc4_het: 1/8
+[fhc4   268.6s] GiBUU: 56132 signal events smeared, window pass fraction 0.9105
+[fhc4   269.4s] muon_p: smeared total 175118, ratio range 0.34-1.44; diagonal % MC 67.9 / x60_het 37.2 / fhc4_het 43.6
+[fhc4   270.4s] muon_theta: smeared total 174171, ratio range 0.85-1.66; diagonal % MC 76.5 / x60_het 23.0 / fhc4_het 27.3
+[fhc4   271.3s] muon_costheta: smeared total 174432, ratio range 0.83-2.35; diagonal % MC 90.9 / x60_het 46.5 / fhc4_het 51.4
+[fhc4   271.7s] wrote muon_vbll_fhc4.json + figures
+muon_p: diagonal difference (fhc4 - MC, pp) [-43.4, -36.2, -29.7, -24.2, -15.4, -5.0, -3.3, -7.7]; max |off-diagonal difference| 27.0 pp
+muon_theta: diagonal difference (fhc4 - MC, pp) [-7.0, -14.0, -23.1, -31.8, -40.0, -46.3, -50.8, -54.8, -57.3, -59.3, -59.4, -60.2, -63.3, -64.3]; max |off-diagonal difference| 16.8 pp
+muon_costheta: diagonal difference (fhc4 - MC, pp) [-68.6, -60.6, -62.7, -63.4, -63.0, -58.4, -42.0, -11.3]; max |off-diagonal difference| 23.2 pp
+wrote figs/<grid>_migration_mc_vs_fhc4.png + migration_mc_vs_fhc4.json

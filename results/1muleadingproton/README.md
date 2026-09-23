@@ -286,3 +286,52 @@ which is what the momentum width calibrated to the residual's root-mean-square i
 `surrogates/minerva_me_ccqelike_1mu1p/_vbll/fhc6_het/`; script `make_muon_vbll_fhc6.py` (ml pixi environment, about
 6 minutes after training); numbers in `muon_vbll_fhc6.json`; training log `train_fhc6_het.log`; pairs cache
 `<data_dir>/cache/vbll_pairs_minerva_me_ccqelike_1mu1p_beam.npz` (not in git).
+
+## 6. Migration of the official MC against the VBLL surrogates with only the four-vector
+
+Two four-vector models: the ported `x60_het` (trained by the collaborator on the whole-detector Playlist 1D sample,
+detector frame) and `fhc4_het`, trained here exactly like `fhc6_het` of section 5, same 712,832 / 178,208 pairs, same
+beam frame, same architecture and objective, but with (E, px, py, pz) as the only inputs and outputs. It stopped
+after 23 epochs at a validation NLL of 1.238 (a four-output number, not comparable with the six-output one) with
+validation widths within 2 MeV of `fhc6_het`'s. Same layout as before: each surrogate's migration on the selected GiBUU
+signal next to the official MC's on the selected signal, column-normalised, with the difference in percentage points.
+
+![muon momentum, MC vs x60](figs/muon_p_migration_mc_vs_x60.png)
+
+![muon angle, MC vs x60](figs/muon_theta_migration_mc_vs_x60.png)
+
+![muon cos theta, MC vs x60](figs/muon_costheta_migration_mc_vs_x60.png)
+
+![muon momentum, MC vs fhc4](figs/muon_p_migration_mc_vs_fhc4.png)
+
+![muon angle, MC vs fhc4](figs/muon_theta_migration_mc_vs_fhc4.png)
+
+![muon cos theta, MC vs fhc4](figs/muon_costheta_migration_mc_vs_fhc4.png)
+
+![diagonal fractions, MC vs x60 and fhc4](figs/migration_diagonal_mc_vs_vbll_fhc4.png)
+
+Probability of reconstructing in the true bin, averaged over the signal, all four:
+
+| grid | official MC | x60_het (4-vector, ported) | fhc4_het (4-vector, platform pairs) | fhc6_het (+ p, cos theta) |
+|---|---|---|---|---|
+| muon momentum, 8 bins | 68 % | 37 % | 44 % | 43 % |
+| muon angle, 14 bins | 77 % | 23 % | 27 % | 74 % |
+| muon cos(theta), 8 bins | 91 % | 47 % | 51 % | 88 % |
+
+Closure on the official MC within 5 percent: `fhc4_het` 3 of 8 momentum bins, 2 of 14 angle bins, 1 of 8 cos(theta)
+bins, the same as the ported model (`figs/fhc4_closure_three_grids.png`). Against the MC its diagonal is short by 43
+to 15 points in the momentum bins below 7.5 GeV/c and by 7 to 64 points in angle, growing with the angle
+(`migration_mc_vs_fhc4.json`).
+
+So the training sample is not what separates the two angular results of section 5: trained on the platform's own
+pairs, a four-vector model migrates the angle almost as much as the ported one (27 against 23 percent in the true bin),
+while the six-feature model reaches 74 percent. With independent Gaussian widths on px, py and pz calibrated to the
+root-mean-square of their residuals, the angle inherits a width several times its core resolution; predicting
+cos(theta) as its own output lets it carry its own, narrower width. The momentum migration is the same for the two
+platform-trained models, 43 to 44 percent against the detector's 68, and is not helped by the extra features.
+
+Files: model `surrogates/minerva_me_ccqelike_1mu1p/_vbll/fhc4_het/` with its wrappers `vbll_fhc4_het` on the three
+grids; `make_muon_vbll_fhc6.py fhc4_het` and `make_migration_side_by_side.py {x60_het,fhc4_het}` (both scripts take the
+model name); numbers in `muon_vbll_fhc4.json`, `migration_mc_vs_x60.json`, `migration_mc_vs_fhc4.json`; logs
+`train_fhc4_het.log`, `make_muon_vbll_fhc4.log`; the GiBUU three-stage and migration figures of this model are
+`figs/muon_*_vbll_fhc4_*.png`.

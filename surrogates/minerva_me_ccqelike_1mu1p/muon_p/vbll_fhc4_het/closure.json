@@ -1,0 +1,173 @@
+{
+ "n_pred": 891176.9999999963,
+ "n_reco": 891177.0,
+ "ratio_pred_over_reco": 0.9999999999999958,
+ "max_abs_dev": 18088.00251466407,
+ "max_rel_dev_cells_gt_50": 0.28323039639371966,
+ "pred_cells": [
+  54357.91972989341,
+  128558.32882761503,
+  184023.2948711336,
+  189263.81749992378,
+  197144.92380954372,
+  106370.00251466407,
+  24291.01671115986,
+  7167.696036062804
+ ],
+ "reco_cells": [
+  65900.0,
+  137344.0,
+  185432.0,
+  193000.0,
+  185908.0,
+  88282.0,
+  25311.0,
+  10000.0
+ ],
+ "binned_fold_cells": [
+  65900.0,
+  137344.0,
+  185432.0,
+  193000.0,
+  185908.0,
+  88282.0,
+  25311.0,
+  10000.0
+ ],
+ "compared_with": "selected signal in the true phase space with true cell inside the grid (migration column sums)",
+ "inputs": [
+  {
+   "input": "FHC/1A",
+   "n_events": 223595,
+   "sum_w": 223595.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "beam",
+   "n_events_all_samples_out_of_window": 0,
+   "sample_pass_fraction": 0.8822057738321519,
+   "elapsed_s": 15.2
+  },
+  {
+   "input": "FHC/1B",
+   "n_events": 59686,
+   "sum_w": 59686.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "beam",
+   "n_events_all_samples_out_of_window": 0,
+   "sample_pass_fraction": 0.8830538149649834,
+   "elapsed_s": 4.3
+  },
+  {
+   "input": "FHC/1C",
+   "n_events": 114440,
+   "sum_w": 114440.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "beam",
+   "n_events_all_samples_out_of_window": 0,
+   "sample_pass_fraction": 0.8825432541069556,
+   "elapsed_s": 8.0
+  },
+  {
+   "input": "FHC/1D",
+   "n_events": 333672,
+   "sum_w": 333672.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "beam",
+   "n_events_all_samples_out_of_window": 0,
+   "sample_pass_fraction": 0.8831358339926635,
+   "elapsed_s": 22.6
+  },
+  {
+   "input": "FHC/1E",
+   "n_events": 279329,
+   "sum_w": 279329.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "beam",
+   "n_events_all_samples_out_of_window": 0,
+   "sample_pass_fraction": 0.8827730024451453,
+   "elapsed_s": 19.7
+  },
+  {
+   "input": "FHC/1F",
+   "n_events": 388079,
+   "sum_w": 388079.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "beam",
+   "n_events_all_samples_out_of_window": 0,
+   "sample_pass_fraction": 0.8824615606616178,
+   "elapsed_s": 27.5
+  },
+  {
+   "input": "FHC/1G",
+   "n_events": 326272,
+   "sum_w": 326272.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "beam",
+   "n_events_all_samples_out_of_window": 0,
+   "sample_pass_fraction": 0.8829280477638289,
+   "elapsed_s": 23.1
+  },
+  {
+   "input": "FHC/1L",
+   "n_events": 31803,
+   "sum_w": 31803.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "beam",
+   "n_events_all_samples_out_of_window": 0,
+   "sample_pass_fraction": 0.883999937112851,
+   "elapsed_s": 2.4
+  },
+  {
+   "input": "FHC/1M",
+   "n_events": 492908,
+   "sum_w": 492908.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "beam",
+   "n_events_all_samples_out_of_window": 0,
+   "sample_pass_fraction": 0.8824333344153473,
+   "elapsed_s": 33.5
+  },
+  {
+   "input": "FHC/1N",
+   "n_events": 283729,
+   "sum_w": 283729.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "beam",
+   "n_events_all_samples_out_of_window": 0,
+   "sample_pass_fraction": 0.8826207402133727,
+   "elapsed_s": 19.8
+  },
+  {
+   "input": "FHC/1O",
+   "n_events": 86875,
+   "sum_w": 86875.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "beam",
+   "n_events_all_samples_out_of_window": 0,
+   "sample_pass_fraction": 0.8827015827338129,
+   "elapsed_s": 6.0
+  },
+  {
+   "input": "FHC/1P",
+   "n_events": 113839,
+   "sum_w": 113839.0,
+   "n_samples": 20,
+   "truncate_to_reco_windows": true,
+   "model_frame": "beam",
+   "n_events_all_samples_out_of_window": 0,
+   "sample_pass_fraction": 0.8822767241455037,
+   "elapsed_s": 8.2
+  }
+ ],
+ "built": "2026-09-23T17:41:36+0000"
+}
