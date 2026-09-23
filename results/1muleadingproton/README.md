@@ -23,5 +23,9 @@ True muon momentum of the signal events: median 5.25 GeV/c, mean 5.43 GeV/c, pea
 
 True muon angle to the beam of the signal events: median 7.25 degrees, mean 7.67 degrees, peak bin 6.0 to 6.5 degrees.
 
+![muon cos theta, truth signal](figs/muon_costheta_truth_signal.png)
+
+The same angle as cos(theta), from the signal window's edge cos(17 degrees) = 0.9563 to 1 in 44 bins of 0.001: median 0.9926, mean 0.9892, peak bin 0.9970 to 0.9980.
+
 Script: `make_muon_truth_signal.py` (default pixi environment); histogram contents and the numbers above:
 `muon_truth_signal.json`.

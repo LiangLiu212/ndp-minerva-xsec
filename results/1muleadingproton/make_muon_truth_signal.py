@@ -45,8 +45,10 @@ figs = HERE / "figs"; figs.mkdir(exist_ok=True)
 color = ps.color_for("mc_signal")
 out = {"sample": str(GIBUU.relative_to(PLATFORM)), "n_generated_cc": int(t.n), "n_signal": int(sig.sum()), "pot_data": pot,
        "weight_scale": scale, "signal_events_at_data_pot": float(ws.sum()), "generated_cc_events_at_data_pot": float(w.sum())}
+cos17 = float(np.cos(np.radians(17.0)))     # the signal window's lower edge in cos(theta): 0.956305
 for name, x, edges, xlabel in (("muon_p", p, np.linspace(2, 20, 37), "true muon momentum [GeV/c]"),
-                               ("muon_theta", th, np.linspace(0, 17, 35), "true muon angle to the beam [deg]")):
+                               ("muon_theta", th, np.linspace(0, 17, 35), "true muon angle to the beam [deg]"),
+                               ("muon_costheta", np.cos(np.radians(th)), np.linspace(cos17, 1.0, 45), "true muon cos(theta) to the beam")):
     h, _ = np.histogram(x, bins=edges, weights=ws)
     fig, ax = plt.subplots(figsize=(7, 4.8))
     ax.stairs(h, edges, color=color, lw=1.8, baseline=0, fill=True, alpha=0.25)
