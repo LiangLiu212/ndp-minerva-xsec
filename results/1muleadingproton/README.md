@@ -251,6 +251,27 @@ median 0.9935, ratio within a few percent above 0.965.
 
 ![diagonal fractions, MC vs both surrogates](figs/migration_diagonal_mc_vs_vbll_fhc6.png)
 
+### Official MC and fhc6_het migration matrices side by side
+
+The two analysis-grid matrices of the sections above next to each other, both column-normalised to
+P(reconstructed bin | true bin) in percent, with their difference in percentage points (fhc6_het minus MC). The
+true-bin populations differ, MINERvA StandardMC on the left and GiBUU on the right, which the column normalisation
+removes.
+
+![muon momentum, MC vs fhc6](figs/muon_p_migration_mc_vs_fhc6.png)
+
+![muon angle, MC vs fhc6](figs/muon_theta_migration_mc_vs_fhc6.png)
+
+![muon cos theta, MC vs fhc6](figs/muon_costheta_migration_mc_vs_fhc6.png)
+
+On the diagonal the surrogate falls short of the detector by 40, 38, 32 and 25 percentage points in the four
+momentum bins below 6 GeV/c and by 3 to 16 points above, the missing probability going to the neighbouring bins
+(off-diagonal differences up to 24 points); in angle it is within 4 points of the detector from 3 degrees upward and
+short by 33 and 18 points in the two most forward 1-degree bins; in cos(theta) it is within 4 points everywhere except
+the bin at the window edge (14 points). Numbers: `migration_mc_vs_fhc6.json`; script `make_migration_side_by_side.py`
+(default pixi environment, reads the two JSON files).
+
+
 Probability of reconstructing in the true bin, averaged over the signal:
 
 | grid | official MC | VBLL x60_het | VBLL fhc6_het |
