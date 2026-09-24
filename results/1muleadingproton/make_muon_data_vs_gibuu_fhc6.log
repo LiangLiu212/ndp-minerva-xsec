@@ -1,0 +1,32 @@
+ WARN Using local manifest /exp/dune/data/users/liangliu/ndp-dev/ndp-platform/pixi.toml rather than /opt/pixi/pixi.toml from environment variable `PIXI_PROJECT_MANIFEST`
+ WARN cache for Repodata at /home/liangliu/.cache/rattler/cache/repodata is on a network/parallel filesystem (NFS/SMB/FUSE/BeeGFS/Lustre/GPFS/CephFS), redirected to /tmp/pixi-cache-liangliu/repodata for this run. Set [cache.repodata] in config.toml or PIXI_CACHE_DIR to override, or [cache.netfs-redirect] = "never" to keep the original path.
+ WARN the lock file is up-to-date but uses an older format (v6), run `pixi lock` to upgrade to v7 for improved reproducibility
+[fhc6     7.8s] data FHC/1A: 30049 selected of 2791649 candidates
+[fhc6     9.4s] data FHC/1B: 6219 selected of 584997 candidates
+[fhc6    12.1s] data FHC/1C: 14492 selected of 1344315 candidates
+[fhc6    19.6s] data FHC/1D: 48014 selected of 4496705 candidates
+[fhc6    25.3s] data FHC/1E: 33341 selected of 3171212 candidates
+[fhc6    33.9s] data FHC/1F: 51398 selected of 5017972 candidates
+[fhc6    40.8s] data FHC/1G: 42748 selected of 4190758 candidates
+[fhc6    42.3s] data FHC/1L: 3819 selected of 395771 candidates
+[fhc6    49.7s] data FHC/1M: 45111 selected of 4670828 candidates
+[fhc6    55.4s] data FHC/1N: 32864 selected of 3293267 candidates
+[fhc6    57.2s] data FHC/1O: 8327 selected of 887960 candidates
+[fhc6    60.0s] data FHC/1P: 13271 selected of 1393149 candidates
+[fhc6    83.0s] mc FHC/1A: 160001 selected, 77520 signal, 82481 background
+[fhc6    89.9s] mc FHC/1B: 42998 selected, 20713 signal, 22285 background
+[fhc6   101.7s] mc FHC/1C: 82727 selected, 40081 signal, 42646 background
+[fhc6   135.5s] mc FHC/1D: 240201 selected, 116558 signal, 123643 background
+[fhc6   162.9s] mc FHC/1E: 199320 selected, 96844 signal, 102476 background
+[fhc6   199.7s] mc FHC/1F: 263360 selected, 127609 signal, 135751 background
+[fhc6   230.6s] mc FHC/1G: 224335 selected, 108561 signal, 115774 background
+[fhc6   234.6s] mc FHC/1L: 20374 selected, 9835 signal, 10539 background
+[fhc6   279.7s] mc FHC/1M: 314751 selected, 151693 signal, 163058 background
+[fhc6   305.7s] mc FHC/1N: 178688 selected, 85914 signal, 92774 background
+[fhc6   314.2s] mc FHC/1O: 50243 selected, 24246 signal, 25997 background
+[fhc6   324.8s] mc FHC/1P: 65790 selected, 31603 signal, 34187 background
+[fhc6   324.8s] data selected 329653; MC selected 1842788 raw (891177 signal, 951611 background), purity 0.484; POT scale 0.2124
+[fhc6   327.9s] muon_p: data 329653 | MC 391384 (sig 189275 + bkg 202110) data/MC 0.842 -2lnL/ndf 11929/36 | GiBUU+VBLL 377228 (sig 175118) data/pred 0.874 -2lnL/ndf 8988/36 | ratio ranges MC 0.74-1.24, GiBUU 0.75-1.50
+[fhc6   329.0s] muon_theta: data 329653 | MC 391384 (sig 189275 + bkg 202110) data/MC 0.842 -2lnL/ndf 12514/34 | GiBUU+VBLL 376281 (sig 174171) data/pred 0.876 -2lnL/ndf 7433/34 | ratio ranges MC 0.44-0.93, GiBUU 0.53-1.01
+[fhc6   330.2s] muon_costheta: data 329653 | MC 391384 (sig 189275 + bkg 202110) data/MC 0.842 -2lnL/ndf 12244/44 | GiBUU+VBLL 376542 (sig 174432) data/pred 0.875 -2lnL/ndf 7225/44 | ratio ranges MC 0.66-1.02, GiBUU 0.79-1.17
+[fhc6   330.2s] wrote muon_data_vs_gibuu_fhc6.json + figures

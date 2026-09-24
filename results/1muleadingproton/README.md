@@ -335,3 +335,91 @@ grids; `make_muon_vbll_fhc6.py fhc4_het` and `make_migration_side_by_side.py {x6
 model name); numbers in `muon_vbll_fhc4.json`, `migration_mc_vs_x60.json`, `migration_mc_vs_fhc4.json`; logs
 `train_fhc4_het.log`, `make_muon_vbll_fhc4.log`; the GiBUU three-stage and migration figures of this model are
 `figs/muon_*_vbll_fhc4_*.png`.
+
+## 7. Full reconstructed space: data against GiBUU + VBLL, with the official MC background
+
+Everything above is signal only. This section compares the data with a complete prediction of the selected sample in
+the reconstructed muon kinematics, on the fine bins of the sections above. The data are the candidates of the 12 ME FHC
+playlists (1.057e21 POT) passing the channel selection `minerva_ccqelike_1mu1p_v0`, in the kinematics the MINERvA
+reconstruction assigned them: 329,653 events, the count the platform's folded runs use
+(`runs/2026-09-22_gibuu_2025_me_fhc_c12__minerva_me_ccqelike_1mu1p__muon_p__vbll/scorecard.json`). Two predictions are
+put against them:
+
+- **Official MC**: the selected StandardMC candidates of the same 12 playlists, scaled by POT_data / POT_mc = 0.2124 and
+  split by the reco rows' truth into signal (truth signal inside the fiducial volume, the "reconstructed" histogram of
+  section 4: 891,177 candidates, 189,275 at the data exposure) and background (951,611 candidates, 202,110 at the data
+  exposure, the same table the efficiency run `runs/2026-09-15_efficiency_minerva_me_ccqelike_1mu1p` records). The
+  selection's purity is 0.484. The background is split by the final-state pions of the true event: one charged pion
+  94,927 (47 percent), one neutral pion 45,622 (23 percent), two or more pions 25,375 (13 percent), no pion 36,185
+  (18 percent).
+- **GiBUU + VBLL**: the GiBUU signal of section 1, weighted by the selection efficiency of section 2 and smeared with
+  `fhc6_het` as in section 5, on top of the same official MC background. The smeared signal is 175,118 events on the
+  momentum grid and 174,171 and 174,432 on the angle and cos(theta) grids, because the efficiency of section 2 is taken
+  per true cell of the plotted variable's grid.
+
+Neither prediction is fitted or constrained by a sideband, and no systematic uncertainty is included: the error bars
+are the data's statistical uncertainties, the grey band the MC statistical uncertainty of the stacked MC components
+(signal plus background on the official-MC side, background only on the GiBUU side; the statistical uncertainty of the
+smeared GiBUU signal is not drawn). The goodness of fit is the Poisson -2lnL over the bins (`ndp.compare.folded.poisson_gof`),
+statistical only.
+
+| | data | official MC | GiBUU + VBLL fhc6_het |
+|---|---|---|---|
+| selected events | 329,653 | 391,384 (189,275 signal + 202,110 background) | 377,228 (175,118 + 202,110) |
+| data / prediction | | 0.842 | 0.874 |
+| -2lnL / ndf, momentum (36 bins) | | 11,929 / 36 | 8,988 / 36 |
+| -2lnL / ndf, angle (34 bins) | | 12,514 / 34 | 7,433 / 34 |
+| -2lnL / ndf, cos(theta) (44 bins) | | 12,244 / 44 | 7,225 / 44 |
+
+Both predictions exceed the data, the official MC by 19 percent and GiBUU + VBLL by 14 percent, and the -2lnL values are
+dominated by that normalisation: with 330,000 events a shift of 1 percent is many standard deviations. The background is
+identical on both sides and is 52 percent of the official MC prediction, so a difference between the two panels of a
+figure is a difference between the GiBUU and GENIE signal predictions (GiBUU's seen through the surrogate), while the
+common excess over the data is shared between the signal models, the GENIE background model and the normalisation (flux,
+POT, detector), none of which carries an uncertainty here.
+
+### Data over GiBUU + VBLL, background from the official MC
+
+![muon momentum, data vs GiBUU + VBLL](figs/muon_p_data_vs_gibuu_fhc6.png)
+
+![muon angle, data vs GiBUU + VBLL](figs/muon_theta_data_vs_gibuu_fhc6.png)
+
+![muon cos theta, data vs GiBUU + VBLL](figs/muon_costheta_data_vs_gibuu_fhc6.png)
+
+### Official MC and GiBUU + VBLL side by side, same data
+
+![muon momentum, MC vs GiBUU + VBLL](figs/muon_p_data_vs_mc_and_gibuu_fhc6.png)
+
+Muon momentum: the medians are 5.25 GeV/c for the data and both predictions. Data over official MC is 0.74 in the 2 to
+2.5 GeV/c bin, 0.78 to 0.83 between 2.5 and 7 GeV/c, crosses 1 at 9.5 GeV/c and is 1.02 to 1.24 above 10.5 GeV/c: the
+MC spectrum is too soft. Data over GiBUU + VBLL is 0.75 in the first bin, 0.86 to 0.92 between 2.5 and 6 GeV/c, falls to
+0.78 to 0.81 between 7 and 9.5 GeV/c, crosses 1 at 11 GeV/c and is 1.12 to 1.50 above 11.5 GeV/c. The right panel mixes
+the generator with the surrogate's momentum closure defect of section 5 (fold over selected signal 0.92 to 0.95 between 3
+and 6 GeV/c, 1.25 at 7.5 to 10 GeV/c, 0.72 at 14 to 20 GeV/c): the over-smearing moves predicted signal from the tail
+into 7 to 10 GeV/c, which is where the ratio dips and why it climbs to 1.5 above 15 GeV/c. At the peak the surrogate's 5
+to 8 percent signal deficit, on a signal fraction of 0.39 to 0.48, would lower the ratio by about 0.03 if corrected, so
+about 0.05 of GiBUU's 0.08 advantage over the MC between 3 and 6 GeV/c is the generator's and the rest the surrogate's
+(an estimate from the closure numbers, not a measurement).
+
+![muon angle, MC vs GiBUU + VBLL](figs/muon_theta_data_vs_mc_and_gibuu_fhc6.png)
+
+Muon angle: the medians are 6.75 degrees for the data and both predictions; the data peak in 6.0 to 6.5 degrees, both
+predictions in 5.5 to 6.0. Data over official MC rises from 0.44 in the most forward half degree to 0.53 to 0.67 up to 2
+degrees, 0.73 to 0.84 from 2 to 6 degrees and 0.86 to 0.93 from 6 to 17 degrees. Data over GiBUU + VBLL has the same shape,
+5 to 10 percent closer to the data everywhere: 0.53, then 0.65 to 0.78, 0.81 to 0.85 and 0.87 to 1.01 over the same
+ranges, reaching 1 only in the last bin. Both generators predict too many forward muons; in the first bin the smeared GiBUU
+signal is 282 events against the MC's 472, 40 percent lower, where its signal total is 8 percent lower. The excess is far larger
+than the surrogate's angular closure defect (within 7 percent per bin in section 5), so it is not a smearing artefact.
+
+![muon cos theta, MC vs GiBUU + VBLL](figs/muon_costheta_data_vs_mc_and_gibuu_fhc6.png)
+
+The same in cos(theta): median 0.9926 for the data against 0.9935 for both predictions; the data peak in 0.997 to 0.998,
+the MC in 0.998 to 0.999, GiBUU in 0.997 to 0.998. Data over official MC is 0.66 in the most forward bin (0.999 to 1),
+0.78 in the next, 0.82 to 0.85 from 0.994 to 0.998, 0.86 to 0.97 from 0.961 to 0.994 and 0.87 to 1.02 in the five bins
+at the window edge; data over GiBUU + VBLL is 0.79, 0.82, 0.83 to 0.85, 0.89 to 1.00 and 0.98 to 1.17 over the same
+ranges, the edge bins carrying statistical errors of about 4 percent.
+
+Script: `make_muon_data_vs_gibuu.py` (default pixi environment, about 6 minutes for the two passes over the playlists;
+`--replot` redraws the figures from the JSON; the model name is an argument, `fhc4_het` and `x60_het` read the smeared
+signal from `muon_vbll_fhc4.json` and `muon_vbll_smeared.json`); histogram contents by component, ratios, goodness of fit
+and the numbers above: `muon_data_vs_gibuu_fhc6.json`; log `make_muon_data_vs_gibuu_fhc6.log`.
